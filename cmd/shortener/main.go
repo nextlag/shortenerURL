@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -43,7 +43,7 @@ func (db database) getHandler(w http.ResponseWriter, r *http.Request) {
 
 func (db database) postHandler(w http.ResponseWriter, r *http.Request) {
 	// Читаем тело запроса
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "bad request 400", http.StatusBadRequest)
 		return
