@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// БД для сокращенных URL
 type database map[string]string
 
 var db = database{}
