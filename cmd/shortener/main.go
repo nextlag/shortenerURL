@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 type database map[string]string
 
-var db = database{
-	"EwHXdJfB": "https://practicum.yandex.ru/",
-}
+var db = database{}
 
 func route(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -41,16 +42,39 @@ func (db database) getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (db database) postHandler(w http.ResponseWriter, r *http.Request) {
+	// Читаем тело запроса
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "bad request 400", http.StatusBadRequest)
+		return
+	}
+
+	// Генерируем случайную строку для сокращенного URL
+	shortURL := generateRandomString(8)
+
 	// Заголовки ответа
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", "30")
 	// 201 status
 	w.WriteHeader(http.StatusCreated)
-	// Отправляем тело ответа
-	_, err := fmt.Fprintf(w, "http://localhost:8080/EwHXdJfB")
+	// Отправляем тело ответа с сокращенным URL
+	_, err = fmt.Fprintf(w, "http://localhost:8080/%s", shortURL)
 	if err != nil {
 		return
 	}
+
+	// Сохраняем сокращенный URL в базу данных
+	db[shortURL] = string(body)
+}
+
+func generateRandomString(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
 }
 
 func main() {
