@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
 )
 
 type database map[string]string
@@ -68,7 +67,6 @@ func (db database) postHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateRandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
 	for i := 0; i < length; i++ {
