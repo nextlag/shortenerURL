@@ -19,7 +19,7 @@ func route(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		db.postHandler(w, r)
 	default:
-		fmt.Errorf("bad request 400", http.StatusBadRequest)
+		http.Error(w, "bad request 400", http.StatusBadRequest)
 	}
 }
 
