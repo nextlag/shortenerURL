@@ -1,5 +1,10 @@
 package storage
 
+type Storage interface {
+	Get()
+	Put()
+}
+
 type Database map[string]string
 
 type InMemoryStorage struct {

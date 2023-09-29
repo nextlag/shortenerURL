@@ -9,7 +9,7 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
-	db := storage.NewInMemoryStorage()      // Создайте экземпляр хранилища
-	mux.HandleFunc(`/`, handlers.Route(db)) // Передайте хранилище в обработчик
+	db := storage.NewInMemoryStorage()
+	mux.HandleFunc(`/`, handlers.Route(db))
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

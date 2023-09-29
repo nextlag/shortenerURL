@@ -7,7 +7,7 @@ import (
 
 func GetHandler(db *storage.InMemoryStorage, w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		//
+		// Получаем идентификатор
 		id := r.URL.Path[1:]
 		// Проверяем, есть ли соответствующий оригинальный URL для данного идентификатора
 		originalURL, ok := db.Get(id)

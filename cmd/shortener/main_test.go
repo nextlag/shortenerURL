@@ -32,18 +32,18 @@ func TestGetHandler(t *testing.T) {
 
 		// Проверяем статус код ответа, он должен быть 307 (Temporary Redirect)
 		if resp.StatusCode != http.StatusTemporaryRedirect {
-			t.Errorf("Expected status code %d, but got %d", http.StatusTemporaryRedirect, resp.StatusCode)
+			t.Errorf("expected status code %d, but got %d", http.StatusTemporaryRedirect, resp.StatusCode)
 		}
 
 		// Проверяем заголовок Location
 		location := resp.Header.Get("Location")
 		if location != "http://example.com" {
-			t.Errorf("Expected Location header to be 'http://example.com', but got '%s'", location)
+			t.Errorf("expected Location header to be 'http://example.com', but got '%s'", location)
 		}
 
 		// Закрываем тело HTTP-ответа
 		if err := resp.Body.Close(); err != nil {
-			t.Errorf("Error closing response body: %v", err)
+			t.Errorf("error closing response body: %v", err)
 		}
 	})
 
@@ -64,12 +64,12 @@ func TestGetHandler(t *testing.T) {
 
 		// Проверяем статус код ответа, он должен быть 400 (Bad Request)
 		if resp.StatusCode != http.StatusBadRequest {
-			t.Errorf("Expected status code %d, but got %d", http.StatusBadRequest, resp.StatusCode)
+			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, resp.StatusCode)
 		}
 
 		// Закрываем тело HTTP-ответа
 		if err := resp.Body.Close(); err != nil {
-			t.Errorf("Error closing response body: %v", err)
+			t.Errorf("error closing response body: %v", err)
 		}
 	})
 }
@@ -90,28 +90,28 @@ func TestPostHandler(t *testing.T) {
 	// Проверяем статус код ответа, он должен быть 201 (Created)
 	resp := w.Result()
 	if resp.StatusCode != http.StatusCreated {
-		t.Errorf("Expected status code %d, but got %d", http.StatusCreated, resp.StatusCode)
+		t.Errorf("expected status code %d, but got %d", http.StatusCreated, resp.StatusCode)
 	}
 
 	// Проверяем, что тело ответа содержит сгенерированный URL
 	expectedURL := "http://localhost:8080/"
 	shortURL := strings.TrimPrefix(w.Body.String(), expectedURL)
 	if len(shortURL) != 8 {
-		t.Errorf("Expected short URL to be of length 8, but got %d", len(shortURL))
+		t.Errorf("expected short URL to be of length 8, but got %d", len(shortURL))
 	}
 
 	// Проверяем, что данные были добавлены в хранилище
 	storedURL, ok := db.Get(shortURL)
 	if !ok {
-		t.Error("Expected URL to be stored in the database, but it's not")
+		t.Error("expected URL to be stored in the database, but it's not")
 	}
 	if storedURL != body {
-		t.Errorf("Expected request body to be saved in the database, but it's not. Got: %s, Expected: %s", storedURL, body)
+		t.Errorf("expected request body to be saved in the database, but it's not. Got: %s, Expected: %s", storedURL, body)
 	}
 
 	// Закрываем тело HTTP-ответа
 	if err := resp.Body.Close(); err != nil {
-		t.Errorf("Error closing response body: %v", err)
+		t.Errorf("error closing response body: %v", err)
 	}
 }
 
