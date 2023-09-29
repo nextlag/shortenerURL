@@ -40,6 +40,11 @@ func TestGetHandler(t *testing.T) {
 		if location != "http://example.com" {
 			t.Errorf("Expected Location header to be 'http://example.com', but got '%s'", location)
 		}
+
+		// Закрываем тело HTTP-ответа
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Error closing response body: %v", err)
+		}
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
@@ -60,6 +65,11 @@ func TestGetHandler(t *testing.T) {
 		// Проверяем статус код ответа, он должен быть 400 (Bad Request)
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Errorf("Expected status code %d, but got %d", http.StatusBadRequest, resp.StatusCode)
+		}
+
+		// Закрываем тело HTTP-ответа
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Error closing response body: %v", err)
 		}
 	})
 }
@@ -97,6 +107,11 @@ func TestPostHandler(t *testing.T) {
 	}
 	if storedURL != body {
 		t.Errorf("Expected request body to be saved in the database, but it's not. Got: %s, Expected: %s", storedURL, body)
+	}
+
+	// Закрываем тело HTTP-ответа
+	if err := resp.Body.Close(); err != nil {
+		t.Errorf("Error closing response body: %v", err)
 	}
 }
 
