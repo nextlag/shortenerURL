@@ -3,8 +3,6 @@ package main_test
 import (
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -42,13 +40,6 @@ func TestGetHandler(t *testing.T) {
 		if location != "http://example.com" {
 			t.Errorf("Expected Location header to be 'http://example.com', but got '%s'", location)
 		}
-		// Закрываем тело HTTP-ответов
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				log.Print(err)
-			}
-		}(resp.Body)
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
@@ -107,14 +98,8 @@ func TestPostHandler(t *testing.T) {
 	if storedURL != body {
 		t.Errorf("Expected request body to be saved in the database, but it's not. Got: %s, Expected: %s", storedURL, body)
 	}
-	// Закрываем тело HTTP-ответов
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}(resp.Body)
 }
+
 func TestMain(m *testing.M) {
 	// Выполнение всех тестов
 	exitCode := m.Run()
