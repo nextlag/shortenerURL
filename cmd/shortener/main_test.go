@@ -3,6 +3,8 @@ package main_test
 import (
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,114 +15,86 @@ import (
 func TestGetHandler(t *testing.T) {
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
+	// Пушим данныые
 	db.Put("example", "http://example.com")
 
 	t.Run("Valid ID", func(t *testing.T) {
 		// Создаем фейковый запрос с валидным идентификатором
 		req := httptest.NewRequest("GET", "/example", nil)
-		// Создаем фейковый ResponseWriter
 		w := httptest.NewRecorder()
 
-		// Создаем обработчик для маршрута и вызываем его
+		// Создаем и вызываем handler для маршрута
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handlers.GetHandler(db, w, r)
 		})
 		handler.ServeHTTP(w, req)
-
-		// Получаем HTTP ответ
 		resp := w.Result()
 
-		// Проверяем статус код ответа, он должен быть 307 (Temporary Redirect)
-		if resp.StatusCode != http.StatusTemporaryRedirect {
-			t.Errorf("expected status code %d, but got %d", http.StatusTemporaryRedirect, resp.StatusCode)
-		}
-
-		// Проверяем заголовок Location
+		// Проверяем статус кода
+		assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
+		// Получаем значение Location
 		location := resp.Header.Get("Location")
-		if location != "http://example.com" {
-			t.Errorf("expected Location header to be 'http://example.com', but got '%s'", location)
-		}
-
+		// Проверяем значение Location
+		assert.Equal(t, "http://example.com", location)
 		// Закрываем тело HTTP-ответа
-		if err := resp.Body.Close(); err != nil {
-			t.Errorf("error closing response body: %v", err)
-		}
+		require.NoError(t, resp.Body.Close())
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
 		// Создаем фейковый запрос с невалидным идентификатором
 		req := httptest.NewRequest("GET", "/nonexistent", nil)
-		// Создаем фейковый ResponseWriter
 		w := httptest.NewRecorder()
-
-		// Создаем обработчик для маршрута и вызываем его
+		// Создаем и вызываем обработчик для маршрута
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handlers.GetHandler(db, w, r)
 		})
 		handler.ServeHTTP(w, req)
-
-		// Получаем HTTP ответ
 		resp := w.Result()
 
-		// Проверяем статус код ответа, он должен быть 400 (Bad Request)
-		if resp.StatusCode != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, resp.StatusCode)
-		}
-
+		// Проверяем статус кода
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		// Закрываем тело HTTP-ответа
-		if err := resp.Body.Close(); err != nil {
-			t.Errorf("error closing response body: %v", err)
-		}
+		require.NoError(t, resp.Body.Close())
 	})
 }
 
 func TestPostHandler(t *testing.T) {
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
-
-	// Создаем фейковый запрос с телом
 	body := "http://example.com"
+	// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 	reqBody := strings.NewReader(body)
+	// Создаем новый POST запрос (путь "/", reqBody - тело)
 	req := httptest.NewRequest("POST", "/", reqBody)
+	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
+	// Вызываем обработчик для HTTP POST запроса
 	handlers.PostHandler(db, w, req)
-
-	// Проверяем статус код ответа, он должен быть 201 (Created)
+	// Получаем результат (HTTP-ответ) после выполнения запроса.
 	resp := w.Result()
-	if resp.StatusCode != http.StatusCreated {
-		t.Errorf("expected status code %d, but got %d", http.StatusCreated, resp.StatusCode)
-	}
-
-	// Проверяем, что тело ответа содержит сгенерированный URL
+	// Проверяем статус
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	// Определяем ожидаемый URL для сравнения с сгенерированным URL в ответе.
 	expectedURL := "http://localhost:8080/"
+	// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
 	shortURL := strings.TrimPrefix(w.Body.String(), expectedURL)
-	if len(shortURL) != 8 {
-		t.Errorf("expected short URL to be of length 8, but got %d", len(shortURL))
-	}
-
-	// Проверяем, что данные были добавлены в хранилище
+	// Проверяем длину shortURL
+	assert.Equal(t, 8, len(shortURL))
+	// Получаем сокращенный URL
 	storedURL, ok := db.Get(shortURL)
-	if !ok {
-		t.Error("expected URL to be stored in the database, but it's not")
-	}
-	if storedURL != body {
-		t.Errorf("expected request body to be saved in the database, but it's not. Got: %s, Expected: %s", storedURL, body)
-	}
-
+	// Проверяем, что URL был сохранен
+	assert.True(t, ok)
+	// Проверяем, что значение URL в хранилище совпадает с ожидаемым
+	assert.Equal(t, body, storedURL)
 	// Закрываем тело HTTP-ответа
-	if err := resp.Body.Close(); err != nil {
-		t.Errorf("error closing response body: %v", err)
-	}
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestMain(m *testing.M) {
-	// Выполнение всех тестов
+	// Запускаем все тесты и получаем код завершения выполнения.
 	exitCode := m.Run()
-
-	// Закрытие всех тел ответов
+	// Закрываем все оставшиеся тела ответов
 	http.DefaultTransport.(*http.Transport).CloseIdleConnections()
-
+	// Завершаем выполнение программы с кодом завершения.
 	os.Exit(exitCode)
 }
