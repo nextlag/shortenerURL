@@ -1,8 +1,8 @@
 package storage
 
 type Storage interface {
-	Get()
-	Put()
+	Get(string) (string, bool)
+	Put(string, string)
 }
 
 type Database map[string]string
