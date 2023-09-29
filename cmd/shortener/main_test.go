@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -113,4 +114,13 @@ func TestPostHandler(t *testing.T) {
 			log.Print(err)
 		}
 	}(resp.Body)
+}
+func TestMain(m *testing.M) {
+	// Выполнение всех тестов
+	exitCode := m.Run()
+
+	// Закрытие всех тел ответов
+	http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+
+	os.Exit(exitCode)
 }
