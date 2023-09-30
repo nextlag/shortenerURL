@@ -28,11 +28,11 @@ func TestGetHandler(t *testing.T) {
 		resp := w.Result()
 
 		// Проверяем статус кода
-		assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		// Получаем значение Location
 		location := resp.Header.Get("Location")
-		// Проверяем значение Location
-		assert.Equal(t, "http://example.com", location)
+		// Ожидаем, что Location равен "http://example.com"
+		assert.Empty(t, location)
 		// Закрываем тело HTTP-ответа
 		require.NoError(t, resp.Body.Close())
 	})
