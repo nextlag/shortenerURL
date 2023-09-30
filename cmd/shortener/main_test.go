@@ -24,10 +24,7 @@ func TestGetHandler(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		// Создаем и вызываем handler для маршрута
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			handlers.GetHandler(db, w, r)
-		})
-		handler.ServeHTTP(w, req)
+		handlers.GetHandler(db).ServeHTTP(w, req)
 		resp := w.Result()
 
 		// Проверяем статус кода
@@ -45,12 +42,8 @@ func TestGetHandler(t *testing.T) {
 		req := httptest.NewRequest("GET", "/nonexistent", nil)
 		w := httptest.NewRecorder()
 		// Создаем и вызываем обработчик для маршрута
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			handlers.GetHandler(db, w, r)
-		})
-		handler.ServeHTTP(w, req)
+		handlers.GetHandler(db).ServeHTTP(w, req)
 		resp := w.Result()
-
 		// Проверяем статус кода
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		// Закрываем тело HTTP-ответа
@@ -64,12 +57,12 @@ func TestPostHandler(t *testing.T) {
 	body := "http://example.com"
 	// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 	reqBody := strings.NewReader(body)
-	// Создаем новый POST запрос (путь "/", reqBody - тело)
+	// Создаем новый POST запрос
 	req := httptest.NewRequest("POST", "/", reqBody)
 	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 	w := httptest.NewRecorder()
 	// Вызываем обработчик для HTTP POST запроса
-	handlers.PostHandler(db, w, req)
+	handlers.PostHandler(db).ServeHTTP(w, req)
 	// Получаем результат (HTTP-ответ) после выполнения запроса.
 	resp := w.Result()
 	// Проверяем статус

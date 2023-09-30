@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"log"
@@ -8,8 +10,17 @@ import (
 )
 
 func main() {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 	db := storage.NewInMemoryStorage()
-	mux.HandleFunc(`/`, handlers.Route(db))
-	log.Fatal(http.ListenAndServe(":8080", mux))
+
+	// Добавляем middleware для логирования запросов
+	r.Use(middleware.Logger)
+
+	// Создаем маршрут для обработки GET запросов
+	r.Get("/{id}", handlers.GetHandler(db))
+
+	// Создаем маршрут для обработки POST запросов
+	r.Post("/", handlers.PostHandler(db))
+
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
