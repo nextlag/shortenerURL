@@ -86,7 +86,7 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	config.Cfg = config.MustLoad()
+	config.Cfg = config.Load()
 	// Запускаем все тесты и получаем код завершения выполнения.
 	exitCode := m.Run()
 	// Закрываем все оставшиеся тела ответов
