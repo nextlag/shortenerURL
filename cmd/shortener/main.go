@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"log"
@@ -10,17 +11,29 @@ import (
 )
 
 func main() {
-	r := chi.NewRouter()
+	cfg := config.Cfg
+	fmt.Println(cfg)
+
+	router := chi.NewRouter()
 	db := storage.NewInMemoryStorage()
 
 	// Добавляем middleware для логирования запросов
-	r.Use(middleware.Logger)
+	//router.Use(middleware.Logger)
 
 	// Создаем маршрут для обработки GET запросов
-	r.Get("/{id}", handlers.GetHandler(db))
-
+	router.Get("/{id}", handlers.GetHandler(db))
 	// Создаем маршрут для обработки POST запросов
-	r.Post("/", handlers.PostHandler(db))
+	router.Post("/", handlers.PostHandler(db))
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	// Создаем экземпляр HTTP-сервера с заданными параметрами
+	srv := &http.Server{
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+	}
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatal("failed to start server", err)
+	}
 }

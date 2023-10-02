@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,7 @@ func TestGetHandler(t *testing.T) {
 	// Пушим данныые
 	db.Put("example", "http://example.com")
 
+	// Тестим валидный запрос
 	t.Run("Valid ID", func(t *testing.T) {
 		// Создаем фейковый запрос с валидным идентификатором
 		req := httptest.NewRequest("GET", "/example", nil)
@@ -36,15 +38,15 @@ func TestGetHandler(t *testing.T) {
 		// Закрываем тело HTTP-ответа
 		require.NoError(t, resp.Body.Close())
 	})
-
+	// Тестим невалидный запрос
 	t.Run("Invalid ID", func(t *testing.T) {
 		// Создаем фейковый запрос с невалидным идентификатором
 		req := httptest.NewRequest("GET", "/nonexistent", nil)
 		w := httptest.NewRecorder()
-		// Создаем и вызываем обработчик для маршрута
+		// Создаем и вызываем handler для маршрута
 		handlers.GetHandler(db).ServeHTTP(w, req)
 		resp := w.Result()
-		// Проверяем статус кода
+		// Проверяем, что статус BadRequest
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		// Закрываем тело HTTP-ответа
 		require.NoError(t, resp.Body.Close())
@@ -84,6 +86,7 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	config.Cfg = config.MustLoad()
 	// Запускаем все тесты и получаем код завершения выполнения.
 	exitCode := m.Run()
 	// Закрываем все оставшиеся тела ответов

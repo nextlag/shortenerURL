@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"io"
 	"math/rand"
@@ -17,12 +18,14 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 		}
 
 		shortURL := generateRandomString(8)
+		// Получаем URL из флага -b
+		urlS := config.Cfg.HTTPServer.URLShort
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Content-Length", "30")
 		w.WriteHeader(http.StatusCreated)
 
-		_, err = fmt.Fprintf(w, "http://localhost:8080/%s", shortURL)
+		_, err = fmt.Fprintf(w, "%s/%s", urlS, shortURL)
 		if err != nil {
 			return
 		}
