@@ -6,6 +6,7 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -45,10 +46,15 @@ func loadConfig(configPath string) (*Config, error) {
 }
 
 func MustLoad() *Config {
+	// Получаем текущий рабочий каталог
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 	configPath, configStartAddr, configShortURL := ParseFlags()
 
 	if *configPath == "" {
-		*configPath = "../../config/local.yaml"
+		*configPath = filepath.Join(wd, "config/local.yaml")
 	}
 	// Вывод пути к конфигурационному файлу (для проверки)
 	fmt.Printf("Путь к конфигурационному файлу: %s\n", *configPath)
