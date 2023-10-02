@@ -1,6 +1,4 @@
 env: "local"
 http_server:
   url_short: "localhost:8080"
-  addr: "localhost:8080"
-  timeout: 4s
-  idle_timeout: 60s
+  addr: ":8080"

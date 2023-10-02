@@ -6,12 +6,13 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
-	"path/filepath"
-	"time"
 )
 
 // Cfg - глобальная переменная, хранящая загруженную конфигурацию.
-var Cfg = MustLoad()
+var (
+	Cfg        = MustLoad()
+	ConfigPath = "../../config/local.yaml"
+)
 
 // Config Структура, представляющая конфигурацию приложения.
 type Config struct {
@@ -21,13 +22,11 @@ type Config struct {
 
 // HTTPServer Структура, представляющая конфигурацию HTTP-сервера.
 type HTTPServer struct {
-	Address     string        `yaml:"addr" addr-default:"localhost:8088" json:"address,omitempty"`
-	URLShort    string        `yaml:"URLShort" url_short:"localhost:8088" json:"url_short,omitempty"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s" json:"timeout,omitempty"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s" json:"idle_timeout,omitempty"`
+	Address  string `yaml:"addr" addr-default:":8080" json:"addr,omitempty"`
+	URLShort string `yaml:"url_short" url_short:"localhost:8080" json:"url_short,omitempty"`
 }
 
-// Парсинг флагов командной строки.
+// ParseFlags Парсинг флагов командной строки.
 func ParseFlags() (*string, *string, *string) {
 	configPath := flag.String("config", "", "Путь к конфигурационному файлу")
 	configStartAddr := flag.String("a", "", "Адрес HTTP-сервера")
@@ -46,15 +45,11 @@ func loadConfig(configPath string) (*Config, error) {
 }
 
 func MustLoad() *Config {
-	// Получаем текущий рабочий каталог
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+
 	configPath, configStartAddr, configShortURL := ParseFlags()
 
 	if *configPath == "" {
-		*configPath = filepath.Join(wd, "config/local.yaml")
+		*configPath = ConfigPath
 	}
 	// Вывод пути к конфигурационному файлу (для проверки)
 	fmt.Printf("Путь к конфигурационному файлу: %s\n", *configPath)
