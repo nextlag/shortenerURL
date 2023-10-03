@@ -1,34 +1,38 @@
 package handlers
 
 import (
-	"fmt"
-	"github.com/nextlag/shortenerURL/internal/config"
+	"encoding/json"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"io"
 	"math/rand"
 	"net/http"
 )
 
 func PostHandler(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "bad request 400", http.StatusBadRequest)
+		// Чтение JSON-тела запроса
+		var requestData struct {
+			URL string `json:"url"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 
+		// Генерация короткого URL
 		shortURL := generateRandomString(8)
 
-		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Content-Length", "30")
-		w.WriteHeader(http.StatusCreated)
+		// Сохранение соответствия в хранилище
+		db.Put(shortURL, requestData.URL)
 
-		_, err = fmt.Fprintf(w, "http://%s/%s", *config.URLShort, shortURL)
-		if err != nil {
-			return
+		// Отправка короткого URL в ответе
+		response := struct {
+			ShortURL string `json:"short_url"`
+		}{
+			ShortURL: shortURL,
 		}
-
-		db.Put(shortURL, string(body))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(response)
 	}
 }
 

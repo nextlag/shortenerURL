@@ -1,6 +1,8 @@
 package main_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -8,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -63,26 +64,35 @@ func TestPostHandler(t *testing.T) {
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
 	body := "http://example.com"
-	// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
-	reqBody := strings.NewReader(body)
+	// Создаем объект requestData для JSON-тела запроса
+	requestData := struct {
+		URL string `json:"url"`
+	}{
+		URL: body,
+	}
+	// Кодируем requestData в JSON и создаем объект reqBody, реализующий интерфейс io.Reader
+	reqBody, err := json.Marshal(requestData)
+	require.NoError(t, err)
 	// Создаем новый POST запрос
-	req := httptest.NewRequest("POST", "/", reqBody)
-	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
+	req := httptest.NewRequest("POST", "/", bytes.NewReader(reqBody))
+	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа
 	w := httptest.NewRecorder()
 	// Вызываем обработчик для HTTP POST запроса
 	handlers.PostHandler(db).ServeHTTP(w, req)
-	// Получаем результат (HTTP-ответ) после выполнения запроса.
+	// Получаем результат (HTTP-ответ) после выполнения запроса
 	resp := w.Result()
 	// Проверяем статус
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	// Определяем ожидаемый URL для сравнения с сгенерированным URL в ответе.
-	expectedURL := "http://localhost:8080/"
-	// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
-	shortURL := strings.TrimPrefix(w.Body.String(), expectedURL)
+	// Извлекаем сокращенную версию URL из тела HTTP-ответа
+	var response struct {
+		ShortURL string `json:"short_url"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	require.NoError(t, err)
 	// Проверяем длину shortURL
-	assert.Equal(t, 8, len(shortURL))
+	assert.Equal(t, 8, len(response.ShortURL))
 	// Получаем сокращенный URL
-	storedURL, ok := db.Get(shortURL)
+	storedURL, ok := db.Get(response.ShortURL)
 	// Проверяем, что URL был сохранен
 	assert.True(t, ok)
 	// Проверяем, что значение URL в хранилище совпадает с ожидаемым
