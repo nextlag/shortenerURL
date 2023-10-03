@@ -23,7 +23,7 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 		w.Header().Set("Content-Length", "30")
 		w.WriteHeader(http.StatusCreated)
 
-		_, err = fmt.Fprintf(w, "%s/%s", *config.URLShort, shortURL)
+		_, err = fmt.Fprintf(w, "http://%s/%s", *config.URLShort, shortURL)
 		if err != nil {
 			return
 		}
