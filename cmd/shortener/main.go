@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -12,8 +12,7 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
-	fmt.Println(*cfg)
+	flag.Parse()
 
 	router := chi.NewRouter()
 	db := storage.NewInMemoryStorage()
@@ -27,5 +26,5 @@ func main() {
 	// Создаем маршрут для обработки POST запросов
 	router.Post("/", handlers.PostHandler(db))
 
-	log.Fatal(http.ListenAndServe(cfg.Address, router))
+	log.Fatal(http.ListenAndServe(*config.Address, router))
 }

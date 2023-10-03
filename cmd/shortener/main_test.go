@@ -1,7 +1,6 @@
 package main_test
 
 import (
-	"flag"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	flag.Parse()
 	exitCode := m.Run()
 	// Закрываем все оставшиеся тела ответов
 	http.DefaultTransport.(*http.Transport).CloseIdleConnections()
