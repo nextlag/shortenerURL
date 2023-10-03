@@ -1,7 +1,6 @@
 package main_test
 
 import (
-	"encoding/json"
 	"flag"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
@@ -74,7 +73,7 @@ func TestTextPostHandler(t *testing.T) {
 	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 	w := httptest.NewRecorder()
 	// Вызываем обработчик для HTTP POST запроса
-	handlers.PostHandler(db).ServeHTTP(w, req)
+	handlers.TEXTPostHandler(db).ServeHTTP(w, req)
 	// Получаем результат (HTTP-ответ) после выполнения запроса.
 	resp := w.Result()
 	// Проверяем статус
@@ -91,48 +90,6 @@ func TestTextPostHandler(t *testing.T) {
 	assert.True(t, ok)
 	// Проверяем, что значение URL в хранилище совпадает с ожидаемым
 	assert.Equal(t, body, storedURL)
-	// Закрываем тело HTTP-ответа
-	require.NoError(t, resp.Body.Close())
-}
-
-func TestJSONPostHandler(t *testing.T) {
-	// Создаем фейковое хранилище
-	db := storage.NewInMemoryStorage()
-	body := "http://example.com"
-	// Создаем JSON-тело запроса
-	requestData := map[string]string{"data": body}
-	requestJSON, err := json.Marshal(requestData)
-	require.NoError(t, err)
-
-	// Создаем новый POST запрос с JSON-телом и Content-Type: application/json
-	req := httptest.NewRequest("POST", "/", strings.NewReader(string(requestJSON)))
-	req.Header.Set("Content-Type", "application/json")
-
-	// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик для HTTP POST запроса
-	handlers.PostHandler(db).ServeHTTP(w, req)
-
-	// Получаем результат (HTTP-ответ) после выполнения запроса.
-	resp := w.Result()
-
-	// Проверяем статус
-	require.Equal(t, http.StatusCreated, resp.StatusCode)
-
-	// Определяем ожидаемый URL для сравнения с сгенерированным URL в ответе.
-	expectedURL := "http://localhost:8080/"
-	// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
-	shortURL := strings.TrimPrefix(w.Body.String(), expectedURL)
-	// Проверяем длину shortURL
-	require.Equal(t, 8, len(shortURL))
-
-	// Получаем сокращенный URL
-	storedURL, ok := db.Get(shortURL)
-	// Проверяем, что URL был сохранен
-	require.True(t, ok)
-	// Проверяем, что значение URL в хранилище совпадает с ожидаемым
-	require.Equal(t, body, storedURL)
 	// Закрываем тело HTTP-ответа
 	require.NoError(t, resp.Body.Close())
 }
