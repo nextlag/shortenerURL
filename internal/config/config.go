@@ -12,5 +12,5 @@ var (
 
 func init() {
 	Address = flag.String("a", ":8080", "Address HTTP-server")
-	URLShort = flag.String("b", "127.0.0.1:8080", "Address HTTP-server")
+	URLShort = flag.String("b", "localhost:8080", "Address HTTP-server")
 }
