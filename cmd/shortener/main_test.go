@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"github.com/nextlag/shortenerURL/internal/config"
+	"flag"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +13,14 @@ import (
 	"testing"
 )
 
+func TestMain(m *testing.M) {
+	flag.Parse()
+	exitCode := m.Run()
+	// Закрываем все оставшиеся тела ответов
+	http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+	// Завершаем выполнение программы с кодом завершения.
+	os.Exit(exitCode)
+}
 func TestGetHandler(t *testing.T) {
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
@@ -83,14 +91,4 @@ func TestPostHandler(t *testing.T) {
 	assert.Equal(t, body, storedURL)
 	// Закрываем тело HTTP-ответа
 	require.NoError(t, resp.Body.Close())
-}
-
-func TestMain(m *testing.M) {
-	config.Cfg = config.Load()
-	// Запускаем все тесты и получаем код завершения выполнения.
-	exitCode := m.Run()
-	// Закрываем все оставшиеся тела ответов
-	http.DefaultTransport.(*http.Transport).CloseIdleConnections()
-	// Завершаем выполнение программы с кодом завершения.
-	os.Exit(exitCode)
 }

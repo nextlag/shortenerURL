@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	cfg := config.Cfg
-	fmt.Println(cfg)
+	cfg := config.Load()
+	fmt.Println(*cfg)
 
 	router := chi.NewRouter()
 	db := storage.NewInMemoryStorage()

@@ -4,19 +4,19 @@ import (
 	"flag"
 )
 
-// Cfg - глобальная переменная, хранящая загруженную конфигурацию.
-var Cfg = Load()
+//// Cfg - глобальная переменная, хранящая загруженную конфигурацию.
+//var Cfg = Load()
 
 // Config Структура, представляющая конфигурацию приложения.
 type Config struct {
-	Env        string `yaml:"env" env-default:"local"`
-	HTTPServer `yaml:"http_server"`
+	Env string
+	HTTPServer
 }
 
 // HTTPServer Структура, представляющая конфигурацию HTTP-сервера.
 type HTTPServer struct {
-	Address  string `yaml:"addr" json:"addr,omitempty"`
-	URLShort string `yaml:"url_short" json:"url_short,omitempty"`
+	Address  string
+	URLShort string
 }
 
 // ParseFlags Парсинг флагов командной строки.
