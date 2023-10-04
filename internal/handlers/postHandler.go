@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage"
@@ -12,12 +11,6 @@ import (
 
 func PostHandler(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		contentType := r.Header.Get("Content-Type")
-		if contentType != "text/plain" && contentType != "application/json" {
-			http.Error(w, "unsupported media type 400", http.StatusBadRequest)
-			return
-		}
-
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "bad request 400", http.StatusBadRequest)
@@ -29,18 +22,6 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Content-Length", "30")
 		w.WriteHeader(http.StatusCreated)
-
-		if contentType == "application/json" {
-			// Предполагается, что JSON имеет структуру {"data": "значение"}
-			var jsonData struct {
-				Data string `json:"data"`
-			}
-			if err := json.Unmarshal(body, &jsonData); err != nil {
-				http.Error(w, "bad request 400", http.StatusBadRequest)
-				return
-			}
-			body = []byte(jsonData.Data)
-		}
 
 		_, err = fmt.Fprintf(w, "%s/%s", *config.URLShort, shortURL)
 		if err != nil {
