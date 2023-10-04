@@ -2,15 +2,22 @@ package config
 
 import (
 	"flag"
+	"github.com/caarlos0/env/v6"
 )
 
-// HTTPServer Структура, представляющая конфигурацию HTTP-сервера.
-var (
-	Address  *string
-	URLShort *string
-)
+type ArgsHTTP struct {
+	Address  string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	URLShort string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+}
 
-func init() {
-	Address = flag.String("a", ":8080", "Address HTTP-server")
-	URLShort = flag.String("b", "http://localhost:8080", "Address HTTP-server")
+var AFlag ArgsHTTP
+
+func InitializeArgs() error {
+	flag.StringVar(&AFlag.Address, "a", AFlag.Address, "Address HTTP-server")
+	flag.StringVar(&AFlag.URLShort, "b", AFlag.URLShort, "Base URL")
+
+	if err := env.Parse(&AFlag); err != nil {
+		return err
+	}
+	return nil
 }

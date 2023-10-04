@@ -16,18 +16,14 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 			http.Error(w, "bad request 400", http.StatusBadRequest)
 			return
 		}
-
 		shortURL := generateRandomString(8)
 
-		//w.Header().Set("Content-Type", "text/plain")
-		//w.Header().Set("Content-Length", "30")
 		w.WriteHeader(http.StatusCreated)
 
-		_, err = fmt.Fprintf(w, "%s/%s", *config.URLShort, shortURL)
+		_, err = fmt.Fprintf(w, "%s/%s", config.AFlag.URLShort, shortURL)
 		if err != nil {
 			return
 		}
-
 		db.Put(shortURL, string(body))
 	}
 }
