@@ -20,7 +20,7 @@ func main() {
 	router.Get("/{id}", handlers.GetHandler(db))
 
 	// Создаем маршрут для обработки POST запросов
-	router.Post("/", handlers.Route(db))
+	router.Post("/", handlers.PostHandler(db))
 
 	log.Printf("Start server: %s | ShortenerURL: %s", *config.Address, *config.URLShort)
 	log.Fatal(http.ListenAndServe(*config.Address, router))
