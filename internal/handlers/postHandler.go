@@ -19,8 +19,8 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 
 		shortURL := generateRandomString(8)
 
-		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Content-Length", "30")
+		//w.Header().Set("Content-Type", "text/plain")
+		//w.Header().Set("Content-Length", "30")
 		w.WriteHeader(http.StatusCreated)
 
 		_, err = fmt.Fprintf(w, "%s/%s", *config.URLShort, shortURL)
