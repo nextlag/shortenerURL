@@ -41,7 +41,6 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 			}
 			body = []byte(jsonData.Data)
 		}
-
 		_, err = fmt.Fprintf(w, "%s/%s", *config.URLShort, shortURL)
 		if err != nil {
 			return
