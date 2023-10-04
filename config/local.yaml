@@ -1,4 +1,0 @@
-env: "local"
-http_server:
-  url_short: "localhost:8080"
-  addr: ":8080"

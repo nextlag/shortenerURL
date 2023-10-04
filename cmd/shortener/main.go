@@ -10,6 +10,12 @@ import (
 	"net/http"
 )
 
+func init() {
+	if err := config.InitializeArgs(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -22,6 +28,6 @@ func main() {
 	// Создаем маршрут для обработки POST запросов
 	router.Post("/", handlers.PostHandler(db))
 
-	log.Printf("Start server: %s | ShortenerURL: %s", *config.Address, *config.URLShort)
-	log.Fatal(http.ListenAndServe(*config.Address, router))
+	log.Printf("START HTTPServer: %s | ShortenerURL: %s", config.Args.Address, config.Args.URLShort)
+	log.Fatal(http.ListenAndServe(config.Args.Address, router))
 }

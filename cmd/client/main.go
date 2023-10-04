@@ -3,15 +3,23 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/nextlag/shortenerURL/internal/config"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 )
 
+func init() {
+	if err := config.InitializeArgs(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-	endpoint := "http://localhost:8081/"
+	endpoint := config.Args.URLShort
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли
