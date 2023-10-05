@@ -1,15 +1,20 @@
 package storage
 
+import (
+	"fmt"
+	"sync"
+)
+
+// Storage представляет интерфейс для хранилища данных
 type Storage interface {
-	Get(string) (string, bool)
-	Put(string, string)
+	Get(string) (string, error)
+	Put(string, string) error
 }
 
-type Database map[string]string
-
-// InMemoryStorage - представляет реализацию интерфейса Storage
+// InMemoryStorage представляет реализацию интерфейса Storage
 type InMemoryStorage struct {
-	data map[string]string
+	data  map[string]string
+	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
 // NewInMemoryStorage - конструктор для создания нового экземпляра InMemoryStorage
@@ -19,13 +24,26 @@ func NewInMemoryStorage() *InMemoryStorage {
 	}
 }
 
-// Get Метод - пытается получить значение по ключу из data и возвращает его вместе с флагом, указывающим, было ли значение найдено
-func (s *InMemoryStorage) Get(key string) (string, bool) {
+// Get возвращает значение по ключу
+func (s *InMemoryStorage) Get(key string) (string, error) {
+	s.mutex.Lock()         // Захватываем Mutex для чтения данных
+	defer s.mutex.Unlock() // Освобождаем Mutex после завершения чтения
+
 	value, ok := s.data[key]
-	return value, ok
+	if !ok {
+		return "", fmt.Errorf("key '%s' not found", key)
+	}
+	return value, nil
 }
 
-// Put - добавляет или обновляет значение по ключу
-func (s *InMemoryStorage) Put(key, value string) {
+// Put сохраняет значение по ключу
+func (s *InMemoryStorage) Put(key, value string) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	// Проверка на пустое значение ключа
+	if len(key) == 0 {
+		return fmt.Errorf("key '%s' cannot be empty", key)
+	}
 	s.data[key] = value
+	return nil
 }

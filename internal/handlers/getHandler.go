@@ -13,10 +13,9 @@ func GetHandler(db storage.Storage) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 
 		// Пытаемся найти оригинальный URL в хранилище
-		originalURL, ok := db.Get(id)
-		if !ok {
-			// Если сокращенный URL не найден, отправляем ошибку 400 Bad Request
-			http.Error(w, "bad request 400", http.StatusBadRequest)
+		originalURL, err := db.Get(id)
+		if err != nil {
+			http.Error(w, "not found 400", http.StatusBadRequest)
 			return
 		}
 
