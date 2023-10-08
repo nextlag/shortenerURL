@@ -19,7 +19,7 @@ func init() {
 }
 
 func main() {
-	endpoint := config.Args.URLShort
+	endpoint := config.Args.BaseURL
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли

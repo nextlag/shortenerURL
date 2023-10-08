@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -32,7 +33,7 @@ func setupRouter(db storage.Storage) *chi.Mux {
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    config.Args.Address,
+		Addr:    config.Args.Host,
 		Handler: router,
 	}
 }
@@ -74,12 +75,12 @@ func main() {
 	go handleShutdown(srv, idleConnsClosed)
 
 	// Вывод сообщения о старте сервера
-	log.Printf("Server address: %s || Base URL: %s", config.Args.Address, config.Args.URLShort)
+	log.Printf("Server address: %s || Base URL: %s", config.Args.Host, config.Args.BaseURL)
 
 	// Запуск HTTP-сервера
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		// Если сервер вернул ошибку, вывести сообщение об ошибке и завершить программу
-		log.Fatal(http.ListenAndServe(config.Args.Address, router))
+		log.Fatal(http.ListenAndServe(config.Args.Host, router))
 	}
 	// Ожидание завершения всех соединений перед завершением программы
 	<-idleConnsClosed
