@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -76,8 +77,8 @@ func main() {
 	// Вывод сообщения о старте сервера
 	log.Printf("Server address: %s || Base URL: %s", config.Args.Address, config.Args.URLShort)
 
-	// Запуск HTTP-сервера
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	// Запуск HTTP-сервера и сравнение err с http.ErrServerClosed
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		// Если сервер вернул ошибку, вывести сообщение об ошибке и завершить программу
 		log.Fatal(http.ListenAndServe(config.Args.Address, router))
 	}
