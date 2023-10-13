@@ -1,0 +1,13 @@
+version: '3'
+
+networks:
+  IFT-test:
+    driver: bridge
+
+services:
+  ift_tests:
+    build:
+      context: ..
+      dockerfile: ./Dockerfile.t
+    networks:
+      - IFT-test
