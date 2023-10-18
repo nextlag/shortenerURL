@@ -1,4 +1,4 @@
-FROM golang:1.21.1-alpine AS src
+FROM golang:1.21.3-alpine AS src
 
 # Install git
 RUN set -ex; \
