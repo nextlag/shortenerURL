@@ -26,8 +26,8 @@ func NewInMemoryStorage() *InMemoryStorage {
 
 // Get возвращает значение по ключу
 func (s *InMemoryStorage) Get(key string) (string, error) {
-	s.mutex.Lock()         // Захватываем Mutex для чтения данных
-	defer s.mutex.Unlock() // Освобождаем Mutex после завершения чтения
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	value, ok := s.data[key]
 	if !ok {
