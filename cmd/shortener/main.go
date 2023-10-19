@@ -73,7 +73,6 @@ func main() {
 
 	// Запуск обработчика завершения в отдельной горутине
 	go handleShutdown(srv, idleConnsClosed)
-
 	// Вывод сообщения о старте сервера
 	log.Printf("Server address: %s || Base URL: %s", config.Args.Address, config.Args.URLShort)
 
