@@ -26,7 +26,6 @@ func setupRouter(db storage.Storage, log *slog.Logger) *chi.Mux {
 	// создаем роутер
 	router := chi.NewRouter()
 	mw := mwLogger.New(log)
-
 	// Настройка обработчиков маршрутов для GET и POST запросов
 	router.With(mw).Get("/{id}", handlers.GetHandler(db))
 	router.With(mw).Post("/", handlers.PostHandler(db))
@@ -73,7 +72,6 @@ func main() {
 			done <- os.Interrupt
 		}
 	}()
-
 	log.Info("server started")
 	<-done
 	log.Info("server stopped")
