@@ -3,7 +3,7 @@ package save
 import (
 	"fmt"
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/lib/generateString"
+	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"io"
 	"net/http"
@@ -29,7 +29,7 @@ func New(urlSaver storage.Storage) http.HandlerFunc {
 
 		alias := req.Alias
 		if alias == "" {
-			alias = generateString.GenerateRandomString(aliasLength)
+			alias = generatestring.GenerateRandomString(aliasLength)
 		}
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
