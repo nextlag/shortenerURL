@@ -6,7 +6,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -109,12 +108,7 @@ func TestTextPostHandler(t *testing.T) {
 			handlers.PostHandler(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
-				if err != nil {
-					return
-				}
-			}(resp.Body)
+			defer resp.Body.Close()
 
 			// Проверяем статус
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)

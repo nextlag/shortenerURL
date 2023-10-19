@@ -1,17 +1,19 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func init() {
@@ -20,13 +22,13 @@ func init() {
 	}
 }
 
-func setupRouter(db storage.Storage) *chi.Mux {
-	// Создание роутера
+func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
+	// создаем роутер
 	router := chi.NewRouter()
-
+	mw := mwLogger.New(log)
 	// Настройка обработчиков маршрутов для GET и POST запросов
-	router.Get("/{id}", handlers.GetHandler(db))
-	router.Post("/", handlers.PostHandler(db))
+	router.With(mw).Get("/{id}", handlers.GetHandler(db))
+	router.With(mw).Post("/", handlers.PostHandler(db))
 	return router
 }
 
@@ -38,50 +40,48 @@ func setupServer(router http.Handler) *http.Server {
 	}
 }
 
-func handleShutdown(srv *http.Server, idleConnsClosed chan struct{}) {
-	// Создание канала для ожидания сигнала завершения операции
-	sigint := make(chan os.Signal, 1)
+func setupLogger() *zap.Logger {
+	// Настраиваем конфигурацию логгера
+	cfg := zap.NewDevelopmentConfig()
+	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
 
-	// Регистрация обработчика сигнала завершения (Ctrl+C)
-	signal.Notify(sigint, os.Interrupt)
-
-	// Ожидание сигнала завершения
-	<-sigint
-
-	// Завершение работы HTTP-сервера с использованием контекста
-	if err := srv.Shutdown(context.Background()); err != nil {
-		log.Printf("HTTP server Shutdown: %v", err)
+	// Создаем логгер
+	logger, err := cfg.Build()
+	if err != nil {
+		panic(err)
 	}
-
-	// Закрытие канала, чтобы разблокировать ожидание завершения программы
-	close(idleConnsClosed)
+	return logger
 }
+
 func main() {
+	logger := setupLogger()
 	flag.Parse()
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
 
 	// Настройка маршрутов
-	router := setupRouter(db)
+	rout := setupRouter(db, logger)
+	router := chi.NewRouter()
+	router.Use(mwLogger.New(logger))
 
 	// Создание HTTP-сервера с настроенными маршрутами
-	srv := setupServer(router)
+	srv := setupServer(rout)
 
-	// Создание канала для ожидания сигнала завершения
-	idleConnsClosed := make(chan struct{})
+	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 
-	// Запуск обработчика завершения в отдельной горутине
-	go handleShutdown(srv, idleConnsClosed)
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// Вывод сообщения о старте сервера
-	log.Printf("Server address: %s || Base URL: %s", config.Args.Address, config.Args.URLShort)
-
-	// Запуск HTTP-сервера и сравнение err с http.ErrServerClosed
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		// Если сервер вернул ошибку, вывести сообщение об ошибке и завершить программу
-		log.Fatal(http.ListenAndServe(config.Args.Address, router))
-	}
-	// Ожидание завершения всех соединений перед завершением программы
-	<-idleConnsClosed
+	// Запуск HTTP-сервера
+	go func() {
+		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			// Если сервер не стартанул вернуть ошибку
+			logger.Error("failed to start server", zap.String("error", err.Error()))
+			done <- os.Interrupt
+		}
+	}()
+	logger.Info("server started")
+	<-done
+	logger.Info("server stopped")
 }
