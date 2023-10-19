@@ -6,6 +6,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,6 +23,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 func TestGetHandler(t *testing.T) {
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
 	// Пушим данныые
@@ -52,6 +54,7 @@ func TestGetHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			log.With("Test '%s' executed successfully.", test.Name)
 			// Создаем фейковый запрос
 			req := httptest.NewRequest("GET", test.RequestPath, nil)
 			w := httptest.NewRecorder()
