@@ -1,4 +1,4 @@
-package generatestring
+package generateString
 
 import "math/rand"
 

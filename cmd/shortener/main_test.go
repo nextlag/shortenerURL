@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"flag"
+	handlers2 "github.com/nextlag/shortenerURL/internal/handlers"
 	"github.com/nextlag/shortenerURL/internal/http-server/handlers"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +59,7 @@ func TestGetHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Создаем и вызываем handlers для маршрута
-			handlers.GetHandler(db).ServeHTTP(w, req)
+			handlers2.GetHandler(db).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода

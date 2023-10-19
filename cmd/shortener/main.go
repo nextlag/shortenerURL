@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/http-server/handlers"
+	handlers2 "github.com/nextlag/shortenerURL/internal/handlers"
 	mwLogger "github.com/nextlag/shortenerURL/internal/http-server/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/lib/logger/handlers/slogpretty"
 	"github.com/nextlag/shortenerURL/internal/storage"
@@ -30,8 +30,8 @@ func setupRouter(db storage.Storage, log *slog.Logger) *chi.Mux {
 	mw := mwLogger.New(log)
 
 	// Настройка обработчиков маршрутов для GET и POST запросов
-	router.With(mw).Get("/{id}", handlers.GetHandler(db))
-	router.With(mw).Post("/", handlers.PostHandler(db))
+	router.With(mw).Get("/{id}", handlers2.GetHandler(db))
+	router.With(mw).Post("/", handlers2.PostHandler(db))
 	return router
 }
 
