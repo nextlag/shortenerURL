@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
 	mwLogger "github.com/nextlag/shortenerURL/internal/http-server/middleware/logger"
@@ -70,11 +69,7 @@ func main() {
 	// Настройка маршрутов
 	rout := setupRouter(db, log)
 	router := chi.NewRouter()
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
 	router.Use(mwLogger.New(log))
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.URLFormat)
 
 	// Создание HTTP-сервера с настроенными маршрутами
 	srv := setupServer(rout)
