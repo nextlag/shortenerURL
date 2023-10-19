@@ -3,7 +3,6 @@ package main_test
 import (
 	"flag"
 	"github.com/nextlag/shortenerURL/internal/http-server/handlers"
-	"github.com/nextlag/shortenerURL/internal/http-server/handlers/url/save"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,7 +106,7 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			save.New(db).ServeHTTP(w, req)
+			handlers.New(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer func(Body io.ReadCloser) {

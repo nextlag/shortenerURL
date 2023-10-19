@@ -1,4 +1,4 @@
-package save
+package handlers
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Request struct {
 const aliasLength = 8
 
 // New - обработчик POST-запросов для создания и сохранения URL в storage.
-func New(urlSaver storage.Storage) http.HandlerFunc {
+func PostHandler(urlSaver storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Request
 
