@@ -2,7 +2,8 @@ package main_test
 
 import (
 	"flag"
-	"github.com/nextlag/shortenerURL/internal/handlers"
+	"github.com/nextlag/shortenerURL/internal/http-server/handlers"
+	"github.com/nextlag/shortenerURL/internal/http-server/handlers/url/save"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ func TestGetHandler(t *testing.T) {
 	// Создаем фейковое хранилище
 	db := storage.NewInMemoryStorage()
 	// Пушим данныые
-	err := db.Put("example", "http://example.com")
+	err := db.SaveURL("example", "http://example.com")
 	if err != nil {
 		return
 	}
@@ -57,7 +58,7 @@ func TestGetHandler(t *testing.T) {
 			req := httptest.NewRequest("GET", test.RequestPath, nil)
 			w := httptest.NewRecorder()
 
-			// Создаем и вызываем handler для маршрута
+			// Создаем и вызываем handlers для маршрута
 			handlers.GetHandler(db).ServeHTTP(w, req)
 			resp := w.Result()
 
@@ -106,7 +107,7 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			handlers.PostHandler(db).ServeHTTP(w, req)
+			save.New(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer func(Body io.ReadCloser) {

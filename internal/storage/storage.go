@@ -5,10 +5,9 @@ import (
 	"sync"
 )
 
-// Storage представляет интерфейс для хранилища данных
 type Storage interface {
+	SaveURL(string, string) error
 	Get(string) (string, error)
-	Put(string, string) error
 }
 
 // InMemoryStorage представляет реализацию интерфейса Storage
@@ -36,8 +35,8 @@ func (s *InMemoryStorage) Get(key string) (string, error) {
 	return value, nil
 }
 
-// Put сохраняет значение по ключу
-func (s *InMemoryStorage) Put(key, value string) error {
+// SaveURL сохраняет значение по ключу
+func (s *InMemoryStorage) SaveURL(key, value string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	// Проверка на пустое значение ключа
