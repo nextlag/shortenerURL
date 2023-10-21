@@ -72,7 +72,7 @@ func main() {
 	// Создание HTTP-сервера с настроенными маршрутами
 	srv := setupServer(rout)
 
-	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
+	//logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -81,11 +81,11 @@ func main() {
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			// Если сервер не стартанул вернуть ошибку
-			logger.Error("failed to start server", zap.String("error", err.Error()))
+			//logger.Error("failed to start server", zap.String("error", err.Error()))
 			done <- os.Interrupt
 		}
 	}()
-	logger.Info("server started")
+	//logger.Info("server started")
 	<-done
-	logger.Info("server stopped")
+	//logger.Info("server stopped")
 }
