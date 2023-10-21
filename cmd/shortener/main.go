@@ -40,10 +40,6 @@ func setupServer(router http.Handler) *http.Server {
 	}
 }
 
-//func setupLogger() *slog.Logger {
-//	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-//}
-
 func setupLogger() *zap.Logger {
 	// Настраиваем конфигурацию логгера
 	cfg := zap.NewDevelopmentConfig()
