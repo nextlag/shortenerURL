@@ -46,11 +46,11 @@ func setupServer(router http.Handler) *http.Server {
 
 func setupLogger() *zap.Logger {
 	// Настраиваем конфигурацию логгера
-	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
+	cfg := zap.NewDevelopmentConfig()
+	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
 
 	// Создаем логгер
-	logger, err := config.Build()
+	logger, err := cfg.Build()
 	if err != nil {
 		panic(err)
 	}
@@ -58,21 +58,21 @@ func setupLogger() *zap.Logger {
 }
 
 func main() {
-	log := setupLogger()
+	logger := setupLogger()
 	flag.Parse()
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
 
 	// Настройка маршрутов
-	rout := setupRouter(db, log)
+	rout := setupRouter(db, logger)
 	router := chi.NewRouter()
-	router.Use(mwLogger.New(log))
+	router.Use(mwLogger.New(logger))
 
 	// Создание HTTP-сервера с настроенными маршрутами
 	srv := setupServer(rout)
 
-	log.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
+	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -81,11 +81,11 @@ func main() {
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			// Если сервер не стартанул вернуть ошибку
-			log.Error("failed to start server", zap.String("error", err.Error()))
+			logger.Error("failed to start server", zap.String("error", err.Error()))
 			done <- os.Interrupt
 		}
 	}()
-	log.Info("server started")
+	logger.Info("server started")
 	<-done
-	log.Info("server stopped")
+	logger.Info("server stopped")
 }

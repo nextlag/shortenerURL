@@ -1,27 +1,34 @@
+// Пакет logger предоставляет middleware для логирования HTTP запросов с использованием библиотеки Zap.
+
 package logger
 
 import (
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"time"
 
 	"go.uber.org/zap"
 )
 
+// New создает и возвращает новый middleware для логирования HTTP запросов.
 func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			// Создаем логгер запроса, добавляя информацию о методе, пути, IP-адресе и User-Agent.
 			requestLogger := logger.With(
-				zap.String("component", "middleware/logger"),
+				zap.String("component", "middleware/zaplogger"),
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 				zap.String("remote_addr", r.RemoteAddr),
 				zap.String("user_agent", r.UserAgent()),
 			)
 
-			ww := NewWrapResponseWriter(w)
-			t1 := time.Now()
+			// Создаем WrapResponseWriter для перехвата статуса ответа и количества байтов.
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			t1 := time.Now() // Запускаем таймер для измерения продолжительности запроса.
 
 			defer func() {
+				// После выполнения запроса, логируем информацию о запросе, включая статус ответа, количество байтов и продолжительность.
 				requestLogger.Info("request completed",
 					zap.Int("status", ww.Status()),
 					zap.Int("bytes", ww.BytesWritten()),
@@ -29,47 +36,9 @@ func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 				)
 			}()
 
-			next.ServeHTTP(&ww, r)
+			// Передаем запрос следующему обработчику.
+			next.ServeHTTP(ww, r)
 		}
 		return http.HandlerFunc(fn)
 	}
-}
-
-// NewWrapResponseWriter создает WrapResponseWriter
-func NewWrapResponseWriter(w http.ResponseWriter) WrapResponseWriter {
-	return WrapResponseWriter{
-		ResponseWriter: w,
-		status:         http.StatusOK,
-		written:        0,
-	}
-}
-
-// WrapResponseWriter обеспечивает логирование статуса ответа
-type WrapResponseWriter struct {
-	http.ResponseWriter
-	status  int
-	written int
-}
-
-// WriteHeader сохраняет статус ответа
-func (ww *WrapResponseWriter) WriteHeader(code int) {
-	ww.status = code
-	ww.ResponseWriter.WriteHeader(code)
-}
-
-// Write сохраняет количество байтов ответа
-func (ww *WrapResponseWriter) Write(b []byte) (int, error) {
-	n, err := ww.ResponseWriter.Write(b)
-	ww.written += n
-	return n, err
-}
-
-// Status возвращает статус ответа
-func (ww *WrapResponseWriter) Status() int {
-	return ww.status
-}
-
-// BytesWritten возвращает количество записанных байтов
-func (ww *WrapResponseWriter) BytesWritten() int {
-	return ww.written
 }
