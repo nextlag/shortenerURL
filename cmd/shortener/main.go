@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
-	mwZlogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
 	"log"
@@ -25,7 +25,7 @@ func init() {
 func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	// создаем роутер
 	router := chi.NewRouter()
-	mw := mwZlogger.New(log)
+	mw := mwLogger.New(log)
 	// Настройка обработчиков маршрутов для GET и POST запросов
 	router.With(mw).Get("/{id}", handlers.GetHandler(db))
 	router.With(mw).Post("/", handlers.PostHandler(db))
@@ -40,13 +40,14 @@ func setupServer(router http.Handler) *http.Server {
 	}
 }
 
-//	func setupLogger() *slog.Logger {
-//		return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-//	}
+//func setupLogger() *slog.Logger {
+//	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+//}
+
 func setupLogger() *zap.Logger {
 	// Настраиваем конфигурацию логгера
-	config := zap.NewProductionConfig()
-	config.EncoderConfig.TimeKey = "timestamp"
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
 
 	// Создаем логгер
 	logger, err := config.Build()
@@ -66,7 +67,7 @@ func main() {
 	// Настройка маршрутов
 	rout := setupRouter(db, log)
 	router := chi.NewRouter()
-	router.Use(mwZlogger.New(log))
+	router.Use(mwLogger.New(log))
 
 	// Создание HTTP-сервера с настроенными маршрутами
 	srv := setupServer(rout)
