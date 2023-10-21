@@ -1,6 +1,4 @@
-// Пакет logger предоставляет middleware для логирования HTTP запросов с использованием библиотеки Zap.
-
-package logger
+package zaplogger
 
 import (
 	"github.com/go-chi/chi/v5/middleware"
