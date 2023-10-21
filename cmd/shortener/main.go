@@ -7,7 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
@@ -21,15 +23,14 @@ func init() {
 	}
 }
 
-func setupRouter(db storage.Storage) *chi.Mux {
+func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	// создаем роутер
 	router := chi.NewRouter()
-	//mw := mwLogger.New(log)
-	// Настройка обработчиков маршрутов для GET и POST запросов
-	//router.With(mw).Get("/{id}", handlers.GetHandler(db))
-	//router.With(mw).Post("/", handlers.PostHandler(db))
-	router.Get("/{id}", handlers.GetHandler(db))
-	router.Post("/", handlers.PostHandler(db))
+	mw := mwLogger.New(log)
+	router.With(mw).Get("/{id}", handlers.GetHandler(db))
+	router.With(mw).Post("/", handlers.PostHandler(db))
+	//router.Get("/{id}", handlers.GetHandler(db))
+	//router.Post("/", handlers.PostHandler(db))
 	return router
 }
 
@@ -41,30 +42,30 @@ func setupServer(router http.Handler) *http.Server {
 	}
 }
 
-//func setupLogger() *zap.Logger {
-//	// Настраиваем конфигурацию логгера
-//	cfg := zap.NewDevelopmentConfig()
-//	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
-//
-//	// Создаем логгер
-//	logger, err := cfg.Build()
-//	if err != nil {
-//		panic(err)
-//	}
-//	return logger
-//}
+func setupLogger() *zap.Logger {
+	// Настраиваем конфигурацию логгера
+	cfg := zap.NewDevelopmentConfig()
+	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
+
+	// Создаем логгер
+	logger, err := cfg.Build()
+	if err != nil {
+		panic(err)
+	}
+	return logger
+}
 
 func main() {
-	//logger := setupLogger()
+	logger := setupLogger()
 	flag.Parse()
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
 
 	// Настройка маршрутов
-	rout := setupRouter(db)
-	//router := chi.NewRouter()
-	//router.Use(mwLogger.New(logger))
+	rout := setupRouter(db, logger)
+	router := chi.NewRouter()
+	router.Use(mwLogger.New(logger))
 
 	// Создание HTTP-сервера с настроенными маршрутами
 	srv := setupServer(rout)
