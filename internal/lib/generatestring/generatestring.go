@@ -1,9 +1,9 @@
-package util
+package generatestring
 
 import "math/rand"
 
-// GenerateRandomString генерирует случайную строку заданной длины.
-func GenerateRandomString(length int) string {
+// NewRandomString генерирует случайную строку заданной длины.
+func NewRandomString(length int) string {
 	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
 	for i := 0; i < length; i++ {
