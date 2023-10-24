@@ -59,6 +59,7 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 			render.JSON(w, r, resp.Error("failed to add url"))
 			return
 		}
+		w.WriteHeader(http.StatusCreated)
 		responseOK(w, r, alias)
 	}
 }
