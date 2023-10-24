@@ -24,21 +24,26 @@ func init() {
 }
 
 func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
-	// создаем роутер
 	router := chi.NewRouter()
+	// Добавление middleware для генерации RequestID
+	router.Use(middleware.RequestID)
+
+	// Создание экземпляра middleware.Logger
 	mw := mwLogger.New(log)
-	// Настройка обработчиков маршрутов для GET и POST запросов
+
+	// Настройка маршрутов с использованием middleware
 	router.With(mw).Get("/{id}", httpserver.GetHandler(db))
 	router.With(mw).Post("/api/shorten", httpserver.Shorten(log, db))
 	router.With(mw).Get("/api/shorten/{id}", httpserver.GetHandler(db))
 	router.With(mw).Post("/", httpserver.Save(db))
+
 	return router
 }
 
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    config.Args.Address,
+		Addr:    config.Args.Address, // Получение адреса из настроек
 		Handler: router,
 	}
 }
@@ -53,40 +58,38 @@ func setupLogger() *zap.Logger {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
+	defer logger.Sync() // Отложенное закрытие логгера
 	return logger
 }
 
 func main() {
-	logger := setupLogger()
-	flag.Parse()
+	logger := setupLogger() // Создание и настройка логгера
+	flag.Parse()            // Парсинг флагов командной строки
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
 
-	// Настройка маршрутов
-	rout := setupRouter(db, logger)
-	router := chi.NewRouter()
-	router.Use(middleware.RequestID)
-	router.Use(mwLogger.New(logger))
-
-	// Создание HTTP-сервера с настроенными маршрутами
-	srv := setupServer(rout)
+	// Создание и настройка маршрутов и HTTP-сервера
+	router := setupRouter(db, logger)
+	// middleware для логирования запросов
+	chi.NewRouter().Use(mwLogger.New(setupLogger()))
+	srv := setupServer(router)
 
 	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// Запуск HTTP-сервера
+	// Запуск HTTP-сервера в горутине
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			// Если сервер не стартанул вернуть ошибку
+			// Если сервер не стартовал, логируем ошибку
 			logger.Error("failed to start server", zap.String("error", err.Error()))
 			done <- os.Interrupt
 		}
 	}()
 	logger.Info("server started")
-	<-done
+
+	<-done // Ожидание сигнала завершения
 	logger.Info("server stopped")
 }

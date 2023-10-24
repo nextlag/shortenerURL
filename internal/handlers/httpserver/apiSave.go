@@ -68,13 +68,13 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 				render.JSON(w, r, resp.Error("failed to add url"))
 				return
 			}
-			responseCreated(w, r, alias)
+			responseCreated(w, alias)
 		}
 
 	}
 }
 
-func responseCreated(w http.ResponseWriter, r *http.Request, alias string) {
+func responseCreated(w http.ResponseWriter, alias string) {
 	response := Response{
 		Result: config.Args.URLShort + "/" + alias,
 	}
