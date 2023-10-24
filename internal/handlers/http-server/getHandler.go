@@ -1,4 +1,4 @@
-package handlers
+package http_server
 
 import (
 	"github.com/go-chi/chi/v5"

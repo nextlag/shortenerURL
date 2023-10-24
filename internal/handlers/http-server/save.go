@@ -1,17 +1,17 @@
-package handlers
+package http_server
 
 import (
 	"fmt"
 	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/util"
 	"io"
 	"log"
 	"net/http"
 )
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
-func PostHandler(db storage.Storage) http.HandlerFunc {
+func Save(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Считываем тело запроса (оригинальный URL)
 		body, err := io.ReadAll(r.Body)
@@ -20,7 +20,7 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Генерируем случайную строку
-		shortURL := util.GenerateRandomString(8)
+		shortURL := generatestring.NewRandomString(8)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
 		if err := db.Put(shortURL, string(body)); err != nil {

@@ -12,7 +12,7 @@ import (
 func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// Создаем логгер запроса, добавляя информацию о методе, пути, IP-адресе и User-Agent.
+			// Создаем логгер запроса
 			requestLogger := logger.With(
 				zap.String("component", "middleware/zaplogger"),
 				zap.String("method", r.Method),

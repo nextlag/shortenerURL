@@ -4,8 +4,9 @@ import (
 	"errors"
 	"flag"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/handlers"
+	"github.com/nextlag/shortenerURL/internal/handlers/http-server"
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
@@ -27,8 +28,9 @@ func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	mw := mwLogger.New(log)
 	// Настройка обработчиков маршрутов для GET и POST запросов
-	router.With(mw).Get("/{id}", handlers.GetHandler(db))
-	router.With(mw).Post("/", handlers.PostHandler(db))
+	router.With(mw).Get("/{id}", http_server.GetHandler(db))
+	router.With(mw).Post("/api/shorten", http_server.Shorten(log, db))
+	router.With(mw).Post("/", http_server.Save(db))
 	return router
 }
 
@@ -50,6 +52,7 @@ func setupLogger() *zap.Logger {
 	if err != nil {
 		panic(err)
 	}
+	defer logger.Sync()
 	return logger
 }
 
@@ -63,6 +66,7 @@ func main() {
 	// Настройка маршрутов
 	rout := setupRouter(db, logger)
 	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
 	router.Use(mwLogger.New(logger))
 
 	// Создание HTTP-сервера с настроенными маршрутами
