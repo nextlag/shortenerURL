@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"flag"
-	"github.com/nextlag/shortenerURL/internal/handlers/http-server"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
