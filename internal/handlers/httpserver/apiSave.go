@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -49,7 +50,8 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 
 			log.Info("request body decoded", zap.Any("request", req))
 			if err := validator.New().Struct(req); err != nil {
-				validateErr := err.(validator.ValidationErrors)
+				var validateErr validator.ValidationErrors
+				errors.As(err, &validateErr)
 				log.Error("invalid request")
 				render.JSON(w, r, resp.ValidationError(validateErr))
 				return
@@ -66,8 +68,6 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 				render.JSON(w, r, resp.Error("failed to add url"))
 				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
 			responseCreated(w, r, alias)
 		}
 
@@ -75,7 +75,15 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 }
 
 func responseCreated(w http.ResponseWriter, r *http.Request, alias string) {
-	render.JSON(w, r, Response{
+	response := Response{
 		Result: config.Args.URLShort + "/" + alias,
-	})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Обработка ошибки кодирования JSON
+		http.Error(w, "Failed to encode JSON response", http.StatusInternalServerError)
+	}
 }
