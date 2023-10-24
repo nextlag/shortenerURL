@@ -26,45 +26,54 @@ const aliasLength = 8
 
 func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req Request
-		err := render.DecodeJSON(r.Body, &req)
-		if errors.Is(err, io.EOF) {
-			// Такую ошибку встретим, если получили запрос с пустым телом.
-			log.Error("request body is empty")
-			render.JSON(w, r, resp.Error("empty request"))
+		contentType := r.Header.Get("Content-Type")
+
+		// Проверяем, что Content-Type равен "application/json"
+		if contentType != "application/json" {
+			http.Error(w, "expected Content-Type: application/json", http.StatusBadRequest)
 			return
-		}
-		if err != nil {
-			log.Error("failed to decode request body")
-			render.JSON(w, r, resp.Error("failed to decode request"))
-			return
+		} else {
+			var req Request
+			err := render.DecodeJSON(r.Body, &req)
+			if errors.Is(err, io.EOF) {
+				// Такую ошибку встретим, если получили запрос с пустым телом.
+				log.Error("request body is empty")
+				render.JSON(w, r, resp.Error("empty request"))
+				return
+			}
+			if err != nil {
+				log.Error("failed to decode request body")
+				render.JSON(w, r, resp.Error("failed to decode request"))
+				return
+			}
+
+			log.Info("request body decoded", zap.Any("request", req))
+			if err := validator.New().Struct(req); err != nil {
+				validateErr := err.(validator.ValidationErrors)
+				log.Error("invalid request")
+				render.JSON(w, r, resp.ValidationError(validateErr))
+				return
+			}
+
+			alias := req.Alias
+			if alias == "" {
+				alias = generatestring.NewRandomString(aliasLength)
+			}
+
+			id := db.Put(req.URL, alias)
+			if id != nil {
+				log.Error("failed to add url")
+				render.JSON(w, r, resp.Error("failed to add url"))
+				return
+			}
+			w.WriteHeader(http.StatusCreated)
+			responseCreated(w, r, alias)
 		}
 
-		log.Info("request body decoded", zap.Any("request", req))
-		if err := validator.New().Struct(req); err != nil {
-			validateErr := err.(validator.ValidationErrors)
-			log.Error("invalid request")
-			render.JSON(w, r, resp.ValidationError(validateErr))
-			return
-		}
-
-		alias := req.Alias
-		if alias == "" {
-			alias = generatestring.NewRandomString(aliasLength)
-		}
-
-		id := db.Put(req.URL, alias)
-		if id != nil {
-			log.Error("failed to add url")
-			render.JSON(w, r, resp.Error("failed to add url"))
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		responseOK(w, r, alias)
 	}
 }
 
-func responseOK(w http.ResponseWriter, r *http.Request, alias string) {
+func responseCreated(w http.ResponseWriter, r *http.Request, alias string) {
 	render.JSON(w, r, Response{
 		Result: config.Args.URLShort + "/" + alias,
 	})
