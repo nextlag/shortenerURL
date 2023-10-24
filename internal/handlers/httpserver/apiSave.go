@@ -60,7 +60,7 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 				alias = generatestring.NewRandomString(aliasLength)
 			}
 
-			id := db.Put(req.URL, alias)
+			id := db.Put(alias, req.URL)
 			if id != nil {
 				log.Error("failed to add url")
 				render.JSON(w, r, resp.Error("failed to add url"))

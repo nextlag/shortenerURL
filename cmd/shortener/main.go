@@ -30,6 +30,7 @@ func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	// Настройка обработчиков маршрутов для GET и POST запросов
 	router.With(mw).Get("/{id}", httpserver.GetHandler(db))
 	router.With(mw).Post("/api/shorten", httpserver.Shorten(log, db))
+	router.With(mw).Get("/api/shorten/{id}", httpserver.GetHandler(db))
 	router.With(mw).Post("/", httpserver.Save(db))
 	return router
 }

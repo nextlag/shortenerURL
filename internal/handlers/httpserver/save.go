@@ -10,6 +10,8 @@ import (
 	"net/http"
 )
 
+const aliasLenght = 8
+
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
 func Save(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -20,10 +22,10 @@ func Save(db storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Генерируем случайную строку
-		shortURL := generatestring.NewRandomString(8)
+		alias := generatestring.NewRandomString(aliasLength)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		if err := db.Put(shortURL, string(body)); err != nil {
+		if err := db.Put(alias, string(body)); err != nil {
 			http.Error(w, "internal server error 500", http.StatusInternalServerError)
 			return
 		}
@@ -32,7 +34,7 @@ func Save(db storage.Storage) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 
 		// Отправляем short-URL в теле HTTP-ответа
-		_, err = fmt.Fprintf(w, "%s/%s", config.Args.URLShort, shortURL)
+		_, err = fmt.Fprintf(w, "%s/%s", config.Args.URLShort, alias)
 		if err != nil {
 			log.Printf("Error sending short URL response: %v", err)
 			return
