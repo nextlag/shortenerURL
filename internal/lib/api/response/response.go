@@ -6,27 +6,28 @@ import (
 	"strings"
 )
 
+// Response представляет JSON-ответ с полем для сообщения об ошибке.
 type Response struct {
 	Error string `json:"error,omitempty"`
 }
 
+// Error создает JSON-ответ с заданным сообщением об ошибке.
 func Error(msg string) Response {
 	return Response{
 		Error: msg,
 	}
 }
 
+// ValidationError создает JSON-ответ с сообщениями об ошибках валидации.
 func ValidationError(errs validator.ValidationErrors) Response {
 	var errMsgs []string
 
 	for _, err := range errs {
 		switch err.ActualTag() {
 		case "required":
-			errMsgs = append(errMsgs, fmt.Sprintf("field %s is a required field", err.Field()))
+			errMsgs = append(errMsgs, fmt.Sprintf("поле %s обязательно для заполнения", err.Field()))
 		case "url":
-			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid URL", err.Field()))
-		default:
-			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not valid", err.Field()))
+			errMsgs = append(errMsgs, fmt.Sprintf("поле %s не является допустимым URL", err.Field()))
 		}
 	}
 

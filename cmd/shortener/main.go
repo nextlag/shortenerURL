@@ -25,8 +25,8 @@ func init() {
 
 func setupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
-	// Добавление middleware для генерации RequestID
-	router.Use(middleware.RequestID)
+	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
+	router.Use(middleware.Logger)    // добавляем вывод стандартного логгера
 
 	// Создание экземпляра middleware.Logger
 	mw := mwLogger.New(log)
@@ -72,7 +72,7 @@ func main() {
 	// Создание и настройка маршрутов и HTTP-сервера
 	router := setupRouter(db, logger)
 	// middleware для логирования запросов
-	chi.NewRouter().Use(mwLogger.New(setupLogger()))
+	chi.NewRouter().Use(mwLogger.New(logger))
 	srv := setupServer(router)
 
 	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
