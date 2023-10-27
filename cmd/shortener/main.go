@@ -7,7 +7,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/middleware/mwGzip"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/mwZapLogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
 	"log"
@@ -73,7 +74,9 @@ func main() {
 	router := setupRouter(db, logger)
 	// middleware для логирования запросов
 	chi.NewRouter().Use(mwLogger.New(logger))
-	srv := setupServer(router)
+	mw := mwGzip.New(router.ServeHTTP)
+	srv := setupServer(mw)
+	//srv := setupServer(router)
 
 	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 
