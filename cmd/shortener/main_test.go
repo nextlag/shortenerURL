@@ -3,6 +3,7 @@ package main_test
 import (
 	"flag"
 	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
+	gz "github.com/nextlag/shortenerURL/internal/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -124,6 +125,70 @@ func TestTextPostHandler(t *testing.T) {
 			require.NoError(t, err)
 			// Проверяем, что значение URL в хранилище не пустое
 			assert.NotEmpty(t, storedURL)
+		})
+	}
+}
+
+func TestGzipMiddleware(t *testing.T) {
+	// Структура с параметрами для тестовых случаев.
+	testCases := []struct {
+		name              string
+		acceptEncoding    string
+		expectedBodyEmpty bool
+		expectedHeader    string
+	}{
+		{
+			name:           "Accepts_Gzip_Encoding",
+			acceptEncoding: "gzip",
+			// В этом случае ожидается, что тело ответа будет сжато.
+			expectedBodyEmpty: false,
+			expectedHeader:    "TestHeader",
+		},
+		{
+			name:           "No_Gzip_Encoding",
+			acceptEncoding: "",
+			// В этом случае ожидается, что тело ответа будет пустым.
+			expectedBodyEmpty: true,
+			expectedHeader:    "TestHeader",
+		},
+	}
+
+	// Создаем тестовый HTTP-обработчик для тестирования middleware.
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Custom-Header", "TestHeader")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Создаем экземпляр middleware с тестовым обработчиком.
+	middleware := gz.NewGzip(testHandler)
+
+	// Проходим по всем тестовым случаям.
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Создаем тестовый запрос с указанным заголовком Accept-Encoding.
+			req := httptest.NewRequest("GET", "http://example.com", nil)
+			req.Header.Set("Accept-Encoding", tc.acceptEncoding)
+
+			// Создаем тестовую запись (Recorder) для записи ответа.
+			rr := httptest.NewRecorder()
+
+			// Запускаем middleware.
+			middleware.ServeHTTP(rr, req)
+
+			// Проверяем, что middleware корректно обработал запрос.
+			if rr.Code != http.StatusOK {
+				t.Errorf("Expected status code %d, but got %d", http.StatusOK, rr.Code)
+			}
+
+			// Проверяем, что middleware вернул ожидаемое тело ответа.
+			if (len(rr.Body.Bytes()) == 0) != tc.expectedBodyEmpty {
+				t.Errorf("Expected empty response body: %v, but got: %v", tc.expectedBodyEmpty, len(rr.Body.Bytes()) == 0)
+			}
+
+			// Проверяем, что middleware добавил заголовок X-Custom-Header.
+			if rr.Header().Get("X-Custom-Header") != tc.expectedHeader {
+				t.Errorf("Expected X-Custom-Header to be '%s', but got %s", tc.expectedHeader, rr.Header().Get("X-Custom-Header"))
+			}
 		})
 	}
 }
