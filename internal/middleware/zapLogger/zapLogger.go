@@ -1,4 +1,4 @@
-package mwZapLogger
+package zapLogger
 
 import (
 	"github.com/go-chi/chi/v5/middleware"
@@ -8,8 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// New создает и возвращает новый middleware для логирования HTTP запросов.
-func New(logger *zap.Logger) func(next http.Handler) http.Handler {
+// NewLogger создает и возвращает новый middleware для логирования HTTP запросов.
+func NewLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Создаем логгер запроса
