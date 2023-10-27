@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zapLogger"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
 )

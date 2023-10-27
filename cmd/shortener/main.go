@@ -7,7 +7,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	lg "github.com/nextlag/shortenerURL/internal/logger"
 	mwGzip "github.com/nextlag/shortenerURL/internal/middleware/gzip"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zapLogger"
+	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/rout"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
