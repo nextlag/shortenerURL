@@ -38,13 +38,13 @@ func TestGetHandler(t *testing.T) {
 		ExpectedLocation string
 	}{
 		{
-			Name:             "Valid ID",
+			Name:             "Valid Uuid",
 			RequestPath:      "/example",
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedLocation: "http://example.com",
 		},
 		{
-			Name:             "Invalid ID",
+			Name:             "Invalid Uuid",
 			RequestPath:      "/nonexistent",
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedLocation: "",

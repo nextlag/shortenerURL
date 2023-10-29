@@ -10,8 +10,6 @@ import (
 	"net/http"
 )
 
-const aliasLenght = 8
-
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
 func Save(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +20,12 @@ func Save(db storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Генерируем случайную строку
-		alias := generatestring.NewRandomString(aliasLength)
+		alias := generatestring.NewRandomString(8)
+		// Вызываем метод Save для чтения мапы и записи их в файл
+		err = db.Save(config.Args.FileStorage, alias, string(body))
+		if err != nil {
+			return
+		}
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
 		if err := db.Put(alias, string(body)); err != nil {
