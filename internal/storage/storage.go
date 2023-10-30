@@ -52,12 +52,12 @@ func (s *InMemoryStorage) Put(key, value string) error {
 		return fmt.Errorf("key and value cannot be empty")
 	}
 
-	// Проверка уникальности ключа и значения
-	for existingKey, existingValue := range s.Data {
-		if existingKey == key || existingValue == value {
-			return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
-		}
-	}
+	//// Проверка уникальности ключа и значения
+	//for existingKey, existingValue := range s.Data {
+	//	if existingKey == key || existingValue == value {
+	//		return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
+	//	}
+	//}
 	s.Data[key] = value
 	return nil
 }
