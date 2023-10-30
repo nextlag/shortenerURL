@@ -14,7 +14,7 @@ func TestSettings(t *testing.T) {
 		URL:   "http://yandex.ru",
 		Alias: "12345",
 	}
-	if err := storage.NewInMemoryStorage().Save(fname, data.Alias, data.URL); err != nil {
+	if err := storage.Save(fname, data.Alias, data.URL); err != nil {
 		t.Error(err)
 	}
 }
