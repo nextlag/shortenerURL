@@ -1,7 +1,6 @@
 package gzip
 
 import (
-	"github.com/nextlag/shortenerURL/internal/lib/gzip"
 	"net/http"
 	"strings"
 )
@@ -18,7 +17,7 @@ func NewGzip(h http.HandlerFunc) http.HandlerFunc {
 
 		// Если поддержка gzip обнаружена, создаем новый gzip.Writer (cw) и устанавливаем ow на него.
 		if supportGzip {
-			cw := gzip.NewCompressWriter(w)
+			cw := NewCompressWriter(w)
 			ow = cw
 			defer cw.Close() // Отложенное закрытие gzip.Writer после завершения обработки.
 		}
@@ -31,7 +30,7 @@ func NewGzip(h http.HandlerFunc) http.HandlerFunc {
 
 		// Если контент был отправлен с использованием gzip, создаем новый gzip.Reader (cr) и устанавливаем r.Body на него.
 		if sendGzip {
-			cr, err := gzip.NewCompressReader(r.Body)
+			cr, err := NewCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
