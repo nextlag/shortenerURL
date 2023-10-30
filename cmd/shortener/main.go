@@ -38,7 +38,12 @@ func main() {
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
-	db.Load(config.Args.FileStorage)
+
+	//  Получаем данные из файла в мапу
+	err := db.Load(config.Args.FileStorage)
+	if err != nil {
+		log.Fatal("failed to load data from storage", err)
+	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
 	router := rout.SetupRouter(db, logger)

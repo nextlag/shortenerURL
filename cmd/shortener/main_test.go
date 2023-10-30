@@ -110,20 +110,17 @@ func TestTextPostHandler(t *testing.T) {
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
-
 			// Проверяем статус
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
-
-			// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
+			// Извлекаем сокращенную версию Url из тела HTTP-ответа, удаляя из неё префикс ожидаемого Url.
 			shortURL := strings.TrimPrefix(w.Body.String(), test.expectedURL)
 			// Проверяем длину shortURL
 			assert.Equal(t, test.expectedShortURLLength, len(shortURL))
-
-			// Получаем сокращенный URL из хранилища
+			// Получаем сокращенный Url из хранилища
 			storedURL, err := db.Get(shortURL)
-			// Проверяем, что нет ошибки при получении URL из хранилища
+			// Проверяем, что нет ошибки при получении Url из хранилища
 			require.NoError(t, err)
-			// Проверяем, что значение URL в хранилище не пустое
+			// Проверяем, что значение Url в хранилище не пустое
 			assert.NotEmpty(t, storedURL)
 		})
 	}

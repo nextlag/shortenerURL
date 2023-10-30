@@ -17,7 +17,7 @@ import (
 
 // Request представляет структуру входящего JSON-запроса.
 type Request struct {
-	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
+	Url   string `json:"url" validate:"required,url"` // Url, который нужно сократить, должен быть валидным Url.
 	Alias string `json:"alias,omitempty"`             // Alias, Пользовательский псевдоним для короткой ссылки (необязательный).
 }
 
@@ -29,7 +29,7 @@ type Response struct {
 // aliasLength - длина по умолчанию для генерируемых псевдонимов.
 const aliasLength = 8
 
-// Shorten - это обработчик HTTP-запросов для сокращения URL.
+// Shorten - это обработчик HTTP-запросов для сокращения Url.
 func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Request
@@ -66,17 +66,17 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 		if alias == "" {
 			alias = generatestring.NewRandomString(aliasLength)
 		}
-		err = db.Save(config.Args.FileStorage, alias, req.URL)
+		err = db.Save(config.Args.FileStorage, alias, req.Url)
 		if err != nil {
 			return
 		}
 
-		// Добавление URL в хранилище и получение идентификатора (id).
-		id := db.Put(alias, req.URL)
+		// Добавление Url в хранилище и получение идентификатора (id).
+		id := db.Put(alias, req.Url)
 
-		// Обработка ошибки при добавлении URL в хранилище.
+		// Обработка ошибки при добавлении Url в хранилище.
 		if id != nil {
-			er := fmt.Sprintf("failed to add URL: %s", id)
+			er := fmt.Sprintf("failed to add Url: %s", id)
 			render.JSON(w, r, resp.Error(er))
 			return
 		}
