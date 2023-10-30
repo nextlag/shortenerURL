@@ -63,6 +63,9 @@ func (s *InMemoryStorage) Put(key, value string) error {
 }
 
 func (s *InMemoryStorage) Save(file string, alias string, originalURL string) error {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
 	Producer, err := storagefile.NewProducer(file)
 	if err != nil {
 		log.Fatal(err)
@@ -81,6 +84,9 @@ func (s *InMemoryStorage) Save(file string, alias string, originalURL string) er
 }
 
 func (s *InMemoryStorage) Load(filename string) error {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
 	Consumer, err := storagefile.NewConsumer(filename)
 	if err != nil {
 		return err
