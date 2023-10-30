@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"encoding/json"
 	"flag"
 	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
 	gz "github.com/nextlag/shortenerURL/internal/middleware/gzip"
@@ -194,17 +195,20 @@ func TestGzipMiddleware(t *testing.T) {
 }
 func TestSave(t *testing.T) {
 	t.Parallel()
+
 	// Создаем временный файл для тестирования.
 	tempFile, err := os.CreateTemp("", "testfilestorage")
 	if err != nil {
 		t.Fatalf("Failed to create a temporary file: %v", err)
 	}
 	defer os.Remove(tempFile.Name()) // Удалить временный файл после завершения теста.
+
 	// Создаем экземпляр InMemoryStorage и передаем ему созданный временный файл.
 	db := storage.NewInMemoryStorage()
+
 	// Добавляем данные в хранилище.
-	alias := "custom-alias"
-	url := "http://example.com"
+	alias := "2d264"
+	url := "https://mail.ru"
 	err = db.Save(tempFile.Name(), alias, url)
 
 	assert.Nil(t, err)
@@ -214,12 +218,17 @@ func TestSave(t *testing.T) {
 	assert.Nil(t, err)
 	defer file.Close()
 
-	// Создаем буфер для чтения данных из файла.
-	dataInFile := make([]byte, 1024)
+	// Читаем данные из файла.
+	var dataInFile struct {
+		ShortURL    string `json:"short_url"`
+		OriginalURL string `json:"original_url"`
+	}
 
-	n, err := file.Read(dataInFile)
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&dataInFile)
 	assert.Nil(t, err)
 
-	// Создаем срез данных, чтобы убрать нулевые байты (если они есть).
-	dataInFile = dataInFile[:n]
+	// Проверяем, что данные в файле соответствуют ожидаемым данным.
+	assert.Equal(t, "2d264", dataInFile.ShortURL)
+	assert.Equal(t, "https://mail.ru", dataInFile.OriginalURL)
 }
