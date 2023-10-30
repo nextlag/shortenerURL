@@ -51,6 +51,12 @@ func (s *InMemoryStorage) Put(key, value string) error {
 	if len(key) == 0 {
 		return fmt.Errorf("key '%s' cannot be empty", key)
 	}
+	// Проверка уникальности ключа и значения
+	for existingKey, existingValue := range s.Data {
+		if existingKey == key || existingValue == value {
+			return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
+		}
+	}
 	s.Data[key] = value
 	err := Save(config.Args.FileStorage, key, value)
 	if err != nil {

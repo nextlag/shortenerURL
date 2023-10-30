@@ -67,11 +67,10 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 			alias = generatestring.NewRandomString(aliasLength)
 		}
 		// Добавление URL в хранилище и получение идентификатора (id).
-		id := db.Put(alias, req.URL)
-
+		err = db.Put(alias, req.URL)
 		// Обработка ошибки при добавлении URL в хранилище.
-		if id != nil {
-			er := fmt.Sprintf("failed to add URL: %s", id)
+		if err != nil {
+			er := fmt.Sprintf("failed to add URL: %s", err)
 			render.JSON(w, r, resp.Error(er))
 			return
 		}
