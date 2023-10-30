@@ -38,7 +38,7 @@ func main() {
 
 	// Создание хранилища данных в памяти
 	db := storage.NewInMemoryStorage()
-	db.Load("file.json")
+	db.Load("tmp/file.json")
 
 	// Создание и настройка маршрутов и HTTP-сервера
 	router := rout.SetupRouter(db, logger)
