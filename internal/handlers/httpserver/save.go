@@ -21,11 +21,11 @@ func Save(db storage.Storage) http.HandlerFunc {
 		}
 		// Генерируем случайную строку
 		alias := generatestring.NewRandomString(8)
-		// Вызываем метод Save для чтения мапы и записи их в файл
-		err = db.Save(config.Args.FileStorage, alias, string(body))
-		if err != nil {
-			return
-		}
+		//// Вызываем метод Save для чтения мапы и записи их в файл
+		//err = db.Save(config.Args.FileStorage, alias, string(body))
+		//if err != nil {
+		//	return
+		//}
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
 		if err := db.Put(alias, string(body)); err != nil {
