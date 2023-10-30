@@ -6,9 +6,9 @@ import (
 )
 
 type Event struct {
-	UUID     string `json:"uuid"`
-	ShortUrl string `json:"short_url"`
-	URL      string `json:"original_url"`
+	UUID  string `json:"uuid"`
+	Alias string `json:"short_url"`
+	URL   string `json:"original_url"`
 }
 
 type Producer struct {
