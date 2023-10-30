@@ -1,13 +1,15 @@
 package httpserver
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/nextlag/shortenerURL/internal/storage"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/nextlag/shortenerURL/internal/app"
 )
 
 // GetHandler - обработчик GET-запросов для перенаправления на исходный URL. Принимает storage (db) для поиска сокращенных URL.
-func GetHandler(db storage.Storage) http.HandlerFunc {
+func GetHandler(db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Извлекаем параметр "id" из URL, который представляет собой сокращенную версию URL
 		id := chi.URLParam(r, "id")

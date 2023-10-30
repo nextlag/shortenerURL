@@ -2,18 +2,19 @@ package httpserver
 
 import (
 	"fmt"
-	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
-	"github.com/nextlag/shortenerURL/internal/storage"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/nextlag/shortenerURL/internal/app"
+	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 )
 
 const aliasLenght = 8
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
-func Save(db storage.Storage) http.HandlerFunc {
+func Save(db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Считываем тело запроса (оригинальный URL)
 		body, err := io.ReadAll(r.Body)
@@ -26,7 +27,8 @@ func Save(db storage.Storage) http.HandlerFunc {
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
 		if err := db.Put(alias, string(body)); err != nil {
-			http.Error(w, "internal server error 500", http.StatusInternalServerError)
+			er := fmt.Sprintf("failed to add URL: %s", err)
+			http.Error(w, er, http.StatusInternalServerError)
 			return
 		}
 

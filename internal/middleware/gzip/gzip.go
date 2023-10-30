@@ -1,9 +1,10 @@
 package gzip
 
 import (
-	"github.com/nextlag/shortenerURL/internal/lib/gzip"
 	"net/http"
 	"strings"
+
+	"github.com/nextlag/shortenerURL/internal/lib/gzip"
 )
 
 func NewGzip(h http.HandlerFunc) http.HandlerFunc {

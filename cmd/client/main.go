@@ -3,13 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/nextlag/shortenerURL/internal/config"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/nextlag/shortenerURL/internal/config"
 )
 
 func init() {
