@@ -94,6 +94,6 @@ func (s *InMemoryStorage) Load(filename string) error {
 		}
 		s.Data[item.Alias] = item.URL
 	}
-	fmt.Printf("Data %s\n", s.Data)
+	//fmt.Printf("Data %s\n", s.Data)
 	return nil
 }
