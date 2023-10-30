@@ -70,9 +70,9 @@ func (s *InMemoryStorage) Save(file string, alias string, originalURL string) er
 	defer Producer.Close()
 
 	event := &storagefile.Event{
-		Uuid:        generatestring.GenerateUUID(),
-		ShortUrl:    alias,
-		OriginalUrl: originalURL,
+		UUID:     generatestring.GenerateUUID(),
+		ShortUrl: alias,
+		URL:      originalURL,
 	}
 	if err := Producer.WriteEvent(event); err != nil {
 		log.Fatal(err)
@@ -96,7 +96,7 @@ func (s *InMemoryStorage) Load(filename string) error {
 			return err
 		}
 		s.Mutex.Lock()
-		s.Data[item.ShortUrl] = item.OriginalUrl
+		s.Data[item.ShortUrl] = item.URL
 		s.Mutex.Unlock()
 	}
 	fmt.Printf("Data %s\n", s.Data)
