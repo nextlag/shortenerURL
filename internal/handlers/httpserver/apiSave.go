@@ -68,13 +68,18 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 		}
 
 		// Добавление URL в хранилище и получение идентификатора (id).
-		id := db.Put(alias, req.URL)
+		err = db.Put(alias, req.URL)
 
 		// Обработка ошибки при добавлении URL в хранилище.
-		if id != nil {
+		if err != nil {
 			log.Error("failed to add URL")
 			render.JSON(w, r, resp.Error("failed to add URL"))
 			return
+		} else {
+			err = db.Save(config.Args.FileStorage, alias, req.URL)
+			if err != nil {
+				return
+			}
 		}
 
 		// Отправка ответа клиенту с сокращенной ссылкой.
