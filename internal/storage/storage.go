@@ -8,14 +8,18 @@ import (
 	"sync"
 )
 
-// Storage представляет интерфейс для хранилища данных
-type Storage interface {
-	Get(string) (string, error)
-	Put(string, string) error
-	Save(string, string, string) error
-}
+// DataStorage представляет интерфейс для хранилища данных
+type (
+	DataStorage interface {
+		Get(string) (string, error)
+		Put(string, string) error
+	}
+	FileStorage interface {
+		Save(string, string, string) error
+	}
+)
 
-// InMemoryStorage представляет реализацию интерфейса Storage
+// InMemoryStorage представляет реализацию интерфейса DataStorage
 type InMemoryStorage struct {
 	data  map[string]string
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным

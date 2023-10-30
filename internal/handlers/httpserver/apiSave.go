@@ -30,7 +30,7 @@ type Response struct {
 const aliasLength = 8
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
-func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
+func Shorten(log *zap.Logger, db storage.DataStorage, file storage.FileStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Request
 		// декодирование JSON-запроса из тела HTTP-запроса в структуру Request.
@@ -75,13 +75,13 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 			log.Error("failed to add URL")
 			render.JSON(w, r, resp.Error("failed to add URL"))
 			return
-			//} else {
-			//	err = db.Save(config.Args.FileStorage, alias, req.URL)
-			//	if err != nil {
-			//		return
-			//	}
-			//}
+		} else {
+			err = file.Save(config.Args.FileStorage, alias, req.URL)
+			if err != nil {
+				return
+			}
 		}
+
 		// Отправка ответа клиенту с сокращенной ссылкой.
 		responseCreated(w, alias)
 	}
