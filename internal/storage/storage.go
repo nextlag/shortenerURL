@@ -2,6 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
+	"github.com/nextlag/shortenerURL/internal/lib/storagefile"
+	"log"
 	"sync"
 )
 
@@ -9,6 +12,7 @@ import (
 type Storage interface {
 	Get(string) (string, error)
 	Put(string, string) error
+	Save(string, string, string) error
 }
 
 // InMemoryStorage представляет реализацию интерфейса Storage
@@ -45,5 +49,23 @@ func (s *InMemoryStorage) Put(key, value string) error {
 		return fmt.Errorf("key '%s' cannot be empty", key)
 	}
 	s.data[key] = value
+	return nil
+}
+
+func (s *InMemoryStorage) Save(file string, alias string, originalURL string) error {
+	Producer, err := storagefile.NewProducer(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer Producer.Close()
+
+	event := &storagefile.Event{
+		UUID:  generatestring.GenerateUUID(),
+		Alias: alias,
+		URL:   originalURL,
+	}
+	if err := Producer.WriteEvent(event); err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
