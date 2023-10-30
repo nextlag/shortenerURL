@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 	"github.com/nextlag/shortenerURL/internal/lib/storagefile"
 	"io"
@@ -51,7 +52,7 @@ func (s *InMemoryStorage) Put(key, value string) error {
 		return fmt.Errorf("key '%s' cannot be empty", key)
 	}
 	s.Data[key] = value
-	err := Save("file.json", key, value)
+	err := Save(config.Args.FileStorage, key, value)
 	if err != nil {
 		return err
 	}
