@@ -3,51 +3,54 @@ package main
 import (
 	"errors"
 	"flag"
-	"github.com/go-chi/chi/v5"
-	"github.com/nextlag/shortenerURL/internal/config"
-	lg "github.com/nextlag/shortenerURL/internal/logger"
-	mwGzip "github.com/nextlag/shortenerURL/internal/middleware/gzip"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
-	"github.com/nextlag/shortenerURL/internal/rout"
-	"github.com/nextlag/shortenerURL/internal/storage"
-	"go.uber.org/zap"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-)
 
-func init() {
-	if err := config.InitializeArgs(); err != nil {
-		log.Fatal(err)
-	}
-}
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	mwGzip "github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
+	mwLogger "github.com/nextlag/shortenerURL/internal/transport/http/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/transport/http/router"
+)
 
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    config.Args.Address, // Получение адреса из настроек
+		Addr:    app.New().Cfg.Address, // Получение адреса из настроек
 		Handler: router,
 	}
 }
 
 func main() {
-	logger := lg.SetupLogger() // Создание и настройка логгера
-	flag.Parse()               // Парсинг флагов командной строки
+	if err := config.InitializeArgs(); err != nil {
+		log.Fatal(err)
+	}
+
+	logger := app.New().Log // Создание и настройка логгера
+	flag.Parse()            // Парсинг флагов командной строки
 
 	// Создание хранилища данных в памяти
-	db := storage.NewInMemoryStorage()
+	db := app.New().Stor
+	err := db.Load(app.New().Cfg.FileStorage)
+	if err != nil {
+		_ = fmt.Errorf("failed to load data from file: %v", err)
+	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	router := rout.SetupRouter(db, logger)
+	rout := router.SetupRouter(db, logger)
 	// middleware для логирования запросов
 	chi.NewRouter().Use(mwLogger.New(logger))
-	mw := mwGzip.NewGzip(router.ServeHTTP)
+	mw := mwGzip.NewGzip(rout.ServeHTTP)
 	srv := setupServer(mw)
-	//srv := setupServer(rout)
 
-	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
+	logger.Info("server starting", zap.String("address", app.New().Cfg.Address), zap.String("service", app.New().Cfg.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

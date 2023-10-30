@@ -1,11 +1,8 @@
-### Post save
-POST http://localhost:8080/
+### POST save
+POST http://localhost:8080/123df23
 Host: localhost:8080
-Content-Type: application/json
+Content-Type: text/plain
 
-{
-  "date": "https://yandex.com/"
-}
 
 ### POST apiSave
 POST http://localhost:8080/api/shorten

@@ -2,8 +2,9 @@ package response
 
 import (
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // Response представляет JSON-ответ с полем для сообщения об ошибке.
