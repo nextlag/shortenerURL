@@ -10,20 +10,19 @@ import (
 	"net/http"
 )
 
-// PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
 func Save(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Считываем тело запроса (оригинальный URL)
-		url, err := io.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "bad request 400", http.StatusBadRequest)
 			return
 		}
 		// Генерируем случайную строку
-		alias := generatestring.NewRandomString(8)
+		alias := generatestring.NewRandomString(aliasLength)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		if err := db.Put(alias, string(url)); err != nil {
+		if err := db.Put(alias, string(body)); err != nil {
 			http.Error(w, "internal server error 500", http.StatusInternalServerError)
 			return
 		}
