@@ -8,7 +8,7 @@ import (
 )
 
 func TestSettings(t *testing.T) {
-	fname := `file.json`
+	fname := "file_test.json"
 	defer os.Remove(fname)
 	data := storagefile.Event{
 		URL:   "http://yandex.ru",
