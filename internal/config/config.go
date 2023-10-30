@@ -22,6 +22,7 @@ func InitializeArgs() error {
 	flag.StringVar(&Args.Address, "a", Args.Address, "Address HTTP-server")
 	flag.StringVar(&Args.URLShort, "b", Args.URLShort, "Base URL")
 	flag.StringVar(&Args.FileStorage, "f", "short-url-db.json", "file to save links")
+	flag.Parse()
 
 	if fileStorage := os.Getenv("FILE_STORAGE_PATH"); fileStorage != "" {
 		Args.FileStorage = fileStorage
