@@ -95,9 +95,7 @@ func (s *InMemoryStorage) Load(filename string) error {
 			}
 			return err
 		}
-		s.Mutex.Lock()
 		s.Data[item.Alias] = item.URL
-		s.Mutex.Unlock()
 	}
 	fmt.Printf("Data %s\n", s.Data)
 	return nil
