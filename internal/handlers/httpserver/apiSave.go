@@ -17,7 +17,7 @@ import (
 
 // Request представляет структуру входящего JSON-запроса.
 type Request struct {
-	Url   string `json:"url" validate:"required,url"` // Url, который нужно сократить, должен быть валидным Url.
+	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 	Alias string `json:"alias,omitempty"`             // Alias, Пользовательский псевдоним для короткой ссылки (необязательный).
 }
 
@@ -68,13 +68,13 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 		}
 
 		// Добавление URL в хранилище
-		err = db.Put(alias, req.Url)
+		err = db.Put(alias, req.URL)
 		if err != nil {
 			er := fmt.Sprintf("failed to add URL: %s", err)
 			render.JSON(w, r, resp.Error(er))
 			return
 		} else {
-			err := db.Save(config.Args.FileStorage, alias, req.Url)
+			err := db.Save(config.Args.FileStorage, alias, req.URL)
 			if err != nil {
 				er := fmt.Sprintf("failed to add URL: %s", err)
 				render.JSON(w, r, resp.Error(er))
