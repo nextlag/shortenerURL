@@ -2,8 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 	"github.com/nextlag/shortenerURL/internal/lib/storagefile"
+	"io"
 	"log"
 	"sync"
 )
@@ -18,23 +20,23 @@ type (
 
 // InMemoryStorage представляет реализацию интерфейса Storage
 type InMemoryStorage struct {
-	data  map[string]string
-	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
+	Data  map[string]string
+	Mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
 // NewInMemoryStorage - конструктор для создания нового экземпляра InMemoryStorage
 func NewInMemoryStorage() *InMemoryStorage {
 	return &InMemoryStorage{
-		data: make(map[string]string),
+		Data: make(map[string]string),
 	}
 }
 
 // Get возвращает значение по ключу
 func (s *InMemoryStorage) Get(key string) (string, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
 
-	value, ok := s.data[key]
+	value, ok := s.Data[key]
 	if !ok {
 		return "", fmt.Errorf("key '%s' not found", key)
 	}
@@ -43,14 +45,14 @@ func (s *InMemoryStorage) Get(key string) (string, error) {
 
 // Put сохраняет значение по ключу
 func (s *InMemoryStorage) Put(key, value string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
 	// Проверка на пустое значение ключа
 	if len(key) == 0 {
 		return fmt.Errorf("key '%s' cannot be empty", key)
 	}
-	s.data[key] = value
-	err := Save("file.json", key, value)
+	s.Data[key] = value
+	err := Save(config.Args.FileStorage, key, value)
 	if err != nil {
 		return err
 	}
@@ -72,5 +74,26 @@ func Save(file string, alias string, originalURL string) error {
 	if err := Producer.WriteEvent(event); err != nil {
 		log.Fatal(err)
 	}
+	return nil
+}
+
+func (s *InMemoryStorage) Load(filename string) error {
+	Consumer, err := storagefile.NewConsumer(filename)
+	if err != nil {
+		return err
+	}
+	defer Consumer.Close()
+
+	for {
+		item, err := Consumer.ReadEvent()
+		if err != nil {
+			if err == io.EOF {
+				break // Достигнут конец файла
+			}
+			return err
+		}
+		s.Data[item.Alias] = item.URL
+	}
+	fmt.Printf("Data %s\n", s.Data)
 	return nil
 }

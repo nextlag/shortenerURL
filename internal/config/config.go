@@ -9,7 +9,7 @@ import (
 type ArgsHTTP struct {
 	Address     string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	URLShort    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `env:"BASE_URL" envDefault:"tmp/file.json"`
+	FileStorage string `env:"BASE_URL" envDefault:"file.json"`
 }
 
 // Args - переменная с конфигурацией
