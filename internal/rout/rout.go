@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetupRouter(db storage.DataStorage, log *zap.Logger) *chi.Mux {
+func SetupRouter(db storage.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
 	router.Use(middleware.Logger)    // добавляем вывод стандартного логгера

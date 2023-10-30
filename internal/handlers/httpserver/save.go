@@ -13,7 +13,7 @@ import (
 const aliasLenght = 8
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
-func Save(db storage.DataStorage) http.HandlerFunc {
+func Save(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Считываем тело запроса (оригинальный URL)
 		body, err := io.ReadAll(r.Body)
