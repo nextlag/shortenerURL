@@ -19,7 +19,7 @@ var Args ArgsHTTP
 func InitializeArgs() error {
 	// Определение флагов командной строки для настройки конфигурации.
 	flag.StringVar(&Args.Address, "a", Args.Address, "Address HTTP-server")
-	flag.StringVar(&Args.URLShort, "b", Args.URLShort, "Base Url")
+	flag.StringVar(&Args.URLShort, "b", Args.URLShort, "Base URL")
 	flag.StringVar(&Args.FileStorage, "f", Args.FileStorage, "Storage in file.json")
 
 	// Считывание значений флагов командной строки и переменных окружения в структуру Args.

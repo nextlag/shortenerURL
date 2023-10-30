@@ -55,7 +55,7 @@ func (s *InMemoryStorage) Put(key, value string) error {
 	// Проверка уникальности ключа и значения
 	for existingKey, existingValue := range s.Data {
 		if existingKey == key || existingValue == value {
-			return fmt.Errorf("alias '%s' or Url '%s' already exists", key, value)
+			return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
 		}
 	}
 	s.Data[key] = value
@@ -70,9 +70,9 @@ func (s *InMemoryStorage) Save(file string, alias string, url string) error {
 	defer Producer.Close()
 
 	event := &storagefile.Event{
-		Uuid:  generatestring.GenerateUUID(),
+		UUID:  generatestring.GenerateUUID(),
 		Alias: alias,
-		Url:   url,
+		URL:   url,
 	}
 	if err := Producer.WriteEvent(event); err != nil {
 		log.Fatal(err)
@@ -96,7 +96,7 @@ func (s *InMemoryStorage) Load(filename string) error {
 			return err
 		}
 		s.Mutex.Lock()
-		s.Data[item.Alias] = item.Url
+		s.Data[item.Alias] = item.URL
 		s.Mutex.Unlock()
 	}
 	fmt.Printf("Data %s\n", s.Data)

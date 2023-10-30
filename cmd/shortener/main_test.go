@@ -38,13 +38,13 @@ func TestGetHandler(t *testing.T) {
 		ExpectedLocation string
 	}{
 		{
-			Name:             "Valid Uuid",
+			Name:             "Valid UUID",
 			RequestPath:      "/example",
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedLocation: "http://example.com",
 		},
 		{
-			Name:             "Invalid Uuid",
+			Name:             "Invalid UUID",
 			RequestPath:      "/nonexistent",
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedLocation: "",
@@ -112,15 +112,15 @@ func TestTextPostHandler(t *testing.T) {
 			defer resp.Body.Close()
 			// Проверяем статус
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
-			// Извлекаем сокращенную версию Url из тела HTTP-ответа, удаляя из неё префикс ожидаемого Url.
+			// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
 			shortURL := strings.TrimPrefix(w.Body.String(), test.expectedURL)
 			// Проверяем длину shortURL
 			assert.Equal(t, test.expectedShortURLLength, len(shortURL))
-			// Получаем сокращенный Url из хранилища
+			// Получаем сокращенный URL из хранилища
 			storedURL, err := db.Get(shortURL)
-			// Проверяем, что нет ошибки при получении Url из хранилища
+			// Проверяем, что нет ошибки при получении URL из хранилища
 			require.NoError(t, err)
-			// Проверяем, что значение Url в хранилище не пустое
+			// Проверяем, что значение URL в хранилище не пустое
 			assert.NotEmpty(t, storedURL)
 		})
 	}

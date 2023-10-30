@@ -29,7 +29,7 @@ type Response struct {
 // aliasLength - длина по умолчанию для генерируемых псевдонимов.
 const aliasLength = 8
 
-// Shorten - это обработчик HTTP-запросов для сокращения Url.
+// Shorten - это обработчик HTTP-запросов для сокращения URL.
 func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Request
@@ -66,19 +66,19 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 		if alias == "" {
 			alias = generatestring.NewRandomString(aliasLength)
 		}
-		err = db.Save(config.Args.FileStorage, alias, req.Url)
+
+		// Добавление URL в хранилище
+		err = db.Put(alias, req.Url)
 		if err != nil {
-			return
-		}
-
-		// Добавление Url в хранилище и получение идентификатора (id).
-		id := db.Put(alias, req.Url)
-
-		// Обработка ошибки при добавлении Url в хранилище.
-		if id != nil {
-			er := fmt.Sprintf("failed to add Url: %s", id)
+			er := fmt.Sprintf("failed to add URL: %s", err)
 			render.JSON(w, r, resp.Error(er))
 			return
+		} else {
+			err := db.Save(config.Args.FileStorage, alias, req.Url)
+			if err != nil {
+				er := fmt.Sprintf("failed to add URL: %s", err)
+				render.JSON(w, r, resp.Error(er))
+			}
 		}
 		// Отправка ответа клиенту с сокращенной ссылкой.
 		responseCreated(w, alias)
