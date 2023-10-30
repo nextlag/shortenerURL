@@ -192,3 +192,34 @@ func TestGzipMiddleware(t *testing.T) {
 		})
 	}
 }
+func TestSave(t *testing.T) {
+	t.Parallel()
+	// Создаем временный файл для тестирования.
+	tempFile, err := os.CreateTemp("", "testfilestorage")
+	if err != nil {
+		t.Fatalf("Failed to create a temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name()) // Удалить временный файл после завершения теста.
+	// Создаем экземпляр InMemoryStorage и передаем ему созданный временный файл.
+	db := storage.NewInMemoryStorage()
+	// Добавляем данные в хранилище.
+	alias := "custom-alias"
+	url := "http://example.com"
+	err = db.Save(tempFile.Name(), alias, url)
+
+	assert.Nil(t, err)
+
+	// Открываем файл для чтения.
+	file, err := os.Open(tempFile.Name())
+	assert.Nil(t, err)
+	defer file.Close()
+
+	// Создаем буфер для чтения данных из файла.
+	dataInFile := make([]byte, 1024)
+
+	n, err := file.Read(dataInFile)
+	assert.Nil(t, err)
+
+	// Создаем срез данных, чтобы убрать нулевые байты (если они есть).
+	dataInFile = dataInFile[:n]
+}
