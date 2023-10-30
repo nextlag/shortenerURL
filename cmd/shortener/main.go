@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/nextlag/shortenerURL/internal/config"
-	lg "github.com/nextlag/shortenerURL/internal/logger"
+	"github.com/nextlag/shortenerURL/internal/lg"
 	mwGzip "github.com/nextlag/shortenerURL/internal/middleware/gzip"
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/rout"
@@ -33,11 +34,15 @@ func setupServer(router http.Handler) *http.Server {
 }
 
 func main() {
-	logger := lg.SetupLogger() // Создание и настройка логгера
-	flag.Parse()               // Парсинг флагов командной строки
+	logger := lg.New() // Создание и настройка логгера
+	flag.Parse()       // Парсинг флагов командной строки
 
 	// Создание хранилища данных в памяти
-	db := storage.NewInMemoryStorage()
+	db := storage.New()
+	err := db.Load(config.Args.FileStorage)
+	if err != nil {
+		_ = fmt.Errorf("failed to load data from file: %v", err)
+	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
 	router := rout.SetupRouter(db, logger)
@@ -45,7 +50,6 @@ func main() {
 	chi.NewRouter().Use(mwLogger.New(logger))
 	mw := mwGzip.NewGzip(router.ServeHTTP)
 	srv := setupServer(mw)
-	//srv := setupServer(rout)
 
 	logger.Info("server starting", zap.String("address", config.Args.Address), zap.String("url", config.Args.URLShort))
 

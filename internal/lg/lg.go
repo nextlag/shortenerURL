@@ -1,10 +1,10 @@
-package logger
+package lg
 
 import (
 	"go.uber.org/zap"
 )
 
-func SetupLogger() *zap.Logger {
+func New() *zap.Logger {
 	// Настраиваем конфигурацию логгера
 	cfg := zap.NewDevelopmentConfig()
 	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования

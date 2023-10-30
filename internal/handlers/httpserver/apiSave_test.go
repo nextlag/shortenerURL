@@ -1,7 +1,8 @@
-package httpserver
+package httpserver_test
 
 import (
 	"encoding/json"
+	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,7 @@ func TestShorten(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
-			db := storage.NewInMemoryStorage()
+			db := storage.New()
 			log := zap.NewNop()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
@@ -47,7 +48,7 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			Shorten(log, db).ServeHTTP(w, req)
+			httpserver.Shorten(log, db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()

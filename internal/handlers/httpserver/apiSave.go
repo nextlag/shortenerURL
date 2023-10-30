@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/nextlag/shortenerURL/internal/config"
 	resp "github.com/nextlag/shortenerURL/internal/lib/api/response"
+	"github.com/nextlag/shortenerURL/internal/lib/api/storagefile"
 	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
 	"github.com/nextlag/shortenerURL/internal/storage"
 	"go.uber.org/zap"
@@ -15,24 +16,18 @@ import (
 	"net/http"
 )
 
-// Request представляет структуру входящего JSON-запроса.
-type Request struct {
-	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
-	Alias string `json:"alias,omitempty"`             // Alias, Пользовательский псевдоним для короткой ссылки (необязательный).
-}
-
 // Response представляет структуру ответа, отправляемого клиенту.
 type Response struct {
 	Result string `json:"result"` // Результат - сокращенная ссылка.
 }
 
-// aliasLength - длина по умолчанию для генерируемых псевдонимов.
+// aliasLength - длина по умолчанию для генерируемых алиасов.
 const aliasLength = 8
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
 func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req Request
+		var req storagefile.Request
 		// декодирование JSON-запроса из тела HTTP-запроса в структуру Request.
 		err := render.DecodeJSON(r.Body, &req)
 
@@ -50,8 +45,6 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		log.Info("request body decoded", zap.Any("request", req))
-
 		// Валидация входных данных с использованием библиотеки валидатора.
 		if err := validator.New().Struct(req); err != nil {
 			var validateErr validator.ValidationErrors
@@ -66,17 +59,14 @@ func Shorten(log *zap.Logger, db storage.Storage) http.HandlerFunc {
 		if alias == "" {
 			alias = generatestring.NewRandomString(aliasLength)
 		}
-
 		// Добавление URL в хранилище и получение идентификатора (id).
-		id := db.Put(alias, req.URL)
-
+		err = db.Put(alias, req.URL)
 		// Обработка ошибки при добавлении URL в хранилище.
-		if id != nil {
-			log.Error("failed to add URL")
-			render.JSON(w, r, resp.Error("failed to add URL"))
+		if err != nil {
+			er := fmt.Sprintf("failed to add URL: %s", err)
+			render.JSON(w, r, resp.Error(er))
 			return
 		}
-
 		// Отправка ответа клиенту с сокращенной ссылкой.
 		responseCreated(w, alias)
 	}
