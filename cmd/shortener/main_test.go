@@ -210,7 +210,7 @@ func TestShorten(t *testing.T) {
 	}{
 		{
 			name:         "ValidRequest",
-			body:         `{"service": "https://example.com", "alias": "example"}`,
+			body:         `{"url": "https://example.com", "alias": "example"}`,
 			expectedJSON: `{"result":"http://localhost:8080/example"}`,
 		},
 		{
@@ -220,7 +220,7 @@ func TestShorten(t *testing.T) {
 		},
 		{
 			name:         "Empty Request Body2",
-			body:         `{"service": "example.com"}`,
+			body:         `{"url": "example.com"}`,
 			expectedJSON: `{"error":"поле URL не является допустимым URL"}`,
 		},
 	}
