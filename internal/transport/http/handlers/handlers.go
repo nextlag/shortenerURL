@@ -9,16 +9,16 @@ import (
 )
 
 type Handlers struct {
-	Get        http.HandlerFunc
-	ApiShorten http.HandlerFunc
-	Save       http.HandlerFunc
+	Get     http.HandlerFunc
+	Shorten http.HandlerFunc
+	Save    http.HandlerFunc
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
 func New(log *zap.Logger, db app.Storage) *Handlers {
 	return &Handlers{
-		Get:        GetHandler(db),
-		ApiShorten: Shorten(log, db),
-		Save:       Save(db),
+		Get:     GetHandler(db),
+		Shorten: Shorten(log, db),
+		Save:    Save(db),
 	}
 }
