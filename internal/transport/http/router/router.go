@@ -1,13 +1,13 @@
-package rout
+package router
 
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/app"
-	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/transport/http/handlers"
+	mwLogger "github.com/nextlag/shortenerURL/internal/transport/http/middleware/zaplogger"
 )
 
 func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
@@ -18,10 +18,11 @@ func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	// Создание экземпляра middleware.Logger
 	mw := mwLogger.New(log)
 
+	h := handlers.New(log, db)
 	// Настройка маршрутов с использованием middleware
-	router.With(mw).Get("/{id}", httpserver.GetHandler(db))
-	router.With(mw).Post("/api/shorten", httpserver.Shorten(log, db))
-	router.With(mw).Post("/", httpserver.Save(db))
+	router.With(mw).Get("/{id}", h.Get)
+	router.With(mw).Post("/api/shorten", h.ApiShorten)
+	router.With(mw).Post("/", h.Save)
 
 	return router
 }

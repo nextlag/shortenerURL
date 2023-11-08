@@ -27,7 +27,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 		switch err.ActualTag() {
 		case "required":
 			errMsgs = append(errMsgs, fmt.Sprintf("поле %s обязательно для заполнения", err.Field()))
-		case "url":
+		case "service":
 			errMsgs = append(errMsgs, fmt.Sprintf("поле %s не является допустимым URL", err.Field()))
 		}
 	}

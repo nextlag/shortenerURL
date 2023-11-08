@@ -13,11 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/app"
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/core/rout"
-	mwGzip "github.com/nextlag/shortenerURL/internal/middleware/gzip"
-	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	mwGzip "github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
+	mwLogger "github.com/nextlag/shortenerURL/internal/transport/http/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/transport/http/router"
 )
 
 func setupServer(router http.Handler) *http.Server {
@@ -44,13 +44,13 @@ func main() {
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	router := rout.SetupRouter(db, logger)
+	rout := router.SetupRouter(db, logger)
 	// middleware для логирования запросов
 	chi.NewRouter().Use(mwLogger.New(logger))
-	mw := mwGzip.NewGzip(router.ServeHTTP)
+	mw := mwGzip.NewGzip(rout.ServeHTTP)
 	srv := setupServer(mw)
 
-	logger.Info("server starting", zap.String("address", app.New().Cfg.Address), zap.String("url", app.New().Cfg.URLShort))
+	logger.Info("server starting", zap.String("address", app.New().Cfg.Address), zap.String("service", app.New().Cfg.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

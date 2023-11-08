@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nextlag/shortenerURL/internal/lib/filestorage"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 )
 
 func TestSettings(t *testing.T) {

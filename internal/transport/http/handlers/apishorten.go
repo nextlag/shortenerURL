@@ -1,4 +1,4 @@
-package httpserver
+package handlers
 
 import (
 	"encoding/json"
@@ -11,11 +11,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/app"
 	"github.com/nextlag/shortenerURL/internal/config"
-	resp "github.com/nextlag/shortenerURL/internal/lib/api/response"
-	"github.com/nextlag/shortenerURL/internal/lib/filestorage"
-	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
+	resp "github.com/nextlag/shortenerURL/internal/transport/http/response"
+	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 // Response представляет структуру ответа, отправляемого клиенту.

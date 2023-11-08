@@ -6,9 +6,9 @@ import (
 )
 
 type Request struct {
-	UUID  string `json:"uuid"`                        // UUID, генерация uuid
-	Alias string `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
-	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
+	UUID  string `json:"uuid"`                                // UUID, генерация uuid
+	Alias string `json:"alias,omitempty"`                     // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
+	URL   string `json:"service" validate:"required,service"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
 func New(uuid, alias, url string) *Request {

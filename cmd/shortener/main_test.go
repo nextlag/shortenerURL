@@ -15,9 +15,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/handlers/httpserver"
-	gz "github.com/nextlag/shortenerURL/internal/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/nextlag/shortenerURL/internal/transport/http/handlers"
+	gz "github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
 )
 
 func TestMain(m *testing.M) {
@@ -68,7 +68,7 @@ func TestGetHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Создаем и вызываем handler для маршрута
-			httpserver.GetHandler(db).ServeHTTP(w, req)
+			handlers.GetHandler(db).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода
@@ -116,7 +116,7 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			httpserver.Save(db).ServeHTTP(w, req)
+			handlers.Save(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
@@ -210,7 +210,7 @@ func TestShorten(t *testing.T) {
 	}{
 		{
 			name:         "ValidRequest",
-			body:         `{"url": "https://example.com", "alias": "example"}`,
+			body:         `{"service": "https://example.com", "alias": "example"}`,
 			expectedJSON: `{"result":"http://localhost:8080/example"}`,
 		},
 		{
@@ -220,7 +220,7 @@ func TestShorten(t *testing.T) {
 		},
 		{
 			name:         "Empty Request Body2",
-			body:         `{"url": "example.com"}`,
+			body:         `{"service": "example.com"}`,
 			expectedJSON: `{"error":"поле URL не является допустимым URL"}`,
 		},
 	}
@@ -238,7 +238,7 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			httpserver.Shorten(log, db).ServeHTTP(w, req)
+			handlers.Shorten(log, db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()

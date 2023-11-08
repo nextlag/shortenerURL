@@ -1,4 +1,4 @@
-package httpserver
+package handlers
 
 import (
 	"fmt"
@@ -6,12 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nextlag/shortenerURL/internal/app"
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
-
-const aliasLenght = 8
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
 func Save(db app.Storage) http.HandlerFunc {

@@ -9,9 +9,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/core/lg"
-	"github.com/nextlag/shortenerURL/internal/lib/filestorage"
-	"github.com/nextlag/shortenerURL/internal/lib/generatestring"
+	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
+	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
+	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // Data представляет реализацию интерфейса Storage

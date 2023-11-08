@@ -1,11 +1,11 @@
-package httpserver
+package handlers
 
 import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/nextlag/shortenerURL/internal/app"
+	"github.com/nextlag/shortenerURL/internal/service/app"
 )
 
 // GetHandler - обработчик GET-запросов для перенаправления на исходный URL. Принимает storage (db) для поиска сокращенных URL.
