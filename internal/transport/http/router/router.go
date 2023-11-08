@@ -21,7 +21,7 @@ func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	h := handlers.New(log, db)
 	// Настройка маршрутов с использованием middleware
 	router.With(mw).Get("/{id}", h.Get)
-	router.With(mw).Post("/api/shorten", h.ApiShorten)
+	router.With(mw).Post("/api/shorten", h.Shorten)
 	router.With(mw).Post("/", h.Save)
 
 	return router
