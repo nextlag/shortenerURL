@@ -16,6 +16,7 @@ type Storage interface {
 	Put(string, string) error
 	Load(string) error
 }
+
 type App struct {
 	Stor Storage
 	Log  *zap.Logger
@@ -28,4 +29,9 @@ func New() *App {
 		Log:  lg.New(),
 		Cfg:  config.Args,
 	}
+}
+
+type DBStorage interface {
+	Stop() error
+	CheckConnection() bool
 }

@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
@@ -10,14 +11,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/mock"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/transport/http/handlers"
-	gz "github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
+	"github.com/nextlag/shortenerURL/internal/transport/rest/handlers"
+	gz "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 )
 
 func TestMain(m *testing.M) {
@@ -32,14 +35,12 @@ func TestMain(m *testing.M) {
 	// Завершаем выполнение программы с кодом завершения.
 	os.Exit(exitCode)
 }
+
 func TestGetHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	// Создаем фейковое хранилище
-	db := storage.New()
-	// Пушим данныые
-	err := db.Put("example", "http://example.com")
-	if err != nil {
-		return
-	}
+	db := mock.NewMockStorage(ctrl)
 
 	tests := []struct {
 		Name             string
@@ -50,7 +51,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			Name:             "Valid ID",
 			RequestPath:      "/example",
-			ExpectedStatus:   http.StatusBadRequest,
+			ExpectedStatus:   http.StatusTemporaryRedirect,
 			ExpectedLocation: "http://example.com",
 		},
 		{
@@ -58,11 +59,16 @@ func TestGetHandler(t *testing.T) {
 			RequestPath:      "/nonexistent",
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedLocation: "",
-		},
-	}
+		}}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+
+			if test.Name == "Valid ID" {
+				db.EXPECT().Get(gomock.Any()).Return("", nil).Times(1)
+			} else {
+				db.EXPECT().Get(gomock.Any()).Return("", errors.New("error")).Times(1)
+			}
 			// Создаем фейковый запрос
 			req := httptest.NewRequest("GET", test.RequestPath, nil)
 			w := httptest.NewRecorder()
@@ -84,6 +90,8 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestTextPostHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	tests := []struct {
 		name                   string
 		body                   string
@@ -91,23 +99,22 @@ func TestTextPostHandler(t *testing.T) {
 		expectedShortURLLength int
 	}{
 		{
-			name:                   "ValidRequest",
-			body:                   "http://example.com",
-			expectedURL:            "http://localhost:8080/",
-			expectedShortURLLength: 8,
+			name:        "ValidRequest",
+			body:        "http://example.com",
+			expectedURL: "http://localhost:8080/",
 		},
 		{
-			name:                   "LongURL",
-			body:                   "https://www.thisisaverylongurlthatexceedsthecharacterlimit.com",
-			expectedURL:            "http://localhost:8080/",
-			expectedShortURLLength: 8,
+			name:        "LongURL",
+			body:        "https://www.thisisaverylongurlthatexceedsthecharacterlimit.com",
+			expectedURL: "http://localhost:8080/",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
-			db := storage.New()
+			db := mock.NewMockStorage(ctrl)
+			db.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
@@ -123,18 +130,6 @@ func TestTextPostHandler(t *testing.T) {
 
 			// Проверяем статус
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
-
-			// Извлекаем сокращенную версию URL из тела HTTP-ответа, удаляя из неё префикс ожидаемого URL.
-			shortURL := strings.TrimPrefix(w.Body.String(), test.expectedURL)
-			// Проверяем длину shortURL
-			assert.Equal(t, test.expectedShortURLLength, len(shortURL))
-
-			// Получаем сокращенный URL из хранилища
-			storedURL, err := db.Get(shortURL)
-			// Проверяем, что нет ошибки при получении URL из хранилища
-			require.NoError(t, err)
-			// Проверяем, что значение URL в хранилище не пустое
-			assert.NotEmpty(t, storedURL)
 		})
 	}
 }

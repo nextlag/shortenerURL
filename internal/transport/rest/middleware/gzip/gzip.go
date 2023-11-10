@@ -7,7 +7,7 @@ import (
 
 func New(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ow := w // Создаем переменную ow и инициализируем ее с http.ResponseWriter из входящих параметров.
+		ow := w // Создаем переменную ow и инициализируем ее с rest.ResponseWriter из входящих параметров.
 
 		// Получаем значение заголовка "Accept-Encoding" из запроса.
 		acceptEncoding := r.Header.Get("Accept-Encoding")
@@ -39,7 +39,7 @@ func New(h http.HandlerFunc) http.HandlerFunc {
 			defer cr.Close() // Отложенное закрытие gzip.Reader после завершения обработки.
 		}
 
-		// Вызываем оригинальный обработчик (h) с модифицированным http.ResponseWriter (ow) и исходным запросом (r).
+		// Вызываем оригинальный обработчик (h) с модифицированным rest.ResponseWriter (ow) и исходным запросом (r).
 		h.ServeHTTP(ow, r)
 	}
 }
