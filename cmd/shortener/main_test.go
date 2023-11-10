@@ -206,7 +206,7 @@ func TestShorten(t *testing.T) {
 		{
 			name:         "ValidRequest",
 			body:         `{"url": "https://example.com", "alias": "example"}`,
-			expectedJSON: `{"result":"rest://localhost:8080/example"}`,
+			expectedJSON: `{"result":"http://localhost:8080/example"}`,
 		},
 		{
 			name:         "Empty Request Body1",
