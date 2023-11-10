@@ -37,7 +37,7 @@ func (p *PSQLConfig) ConnectDB() string {
 // ArgsHTTP структура для хранения конфигурации HTTP-сервера.
 type ArgsHTTP struct {
 	Address     string `env:"SERVER_ADDRESS" envDefault:":8080"`
-	URLShort    string `env:"BASE_URL" envDefault:"rest://localhost:8080"`
+	URLShort    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `env:"FILE_STORAGE_PATH" envDefault:"/tmp/data.json"`
 	Psql        string `env:"DATABASE_DSN"`
 }
