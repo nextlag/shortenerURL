@@ -8,7 +8,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/service/app"
 )
 
-// GetHandler - обработчик GET-запросов для перенаправления на исходный URL. Принимает storage (db) для поиска сокращенных URL.
+// GetHandler - обработчик GET-запросов для перенаправления на исходный URL. Принимает storage (database) для поиска сокращенных URL.
 func GetHandler(db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Извлекаем параметр "id" из URL, который представляет собой сокращенную версию URL

@@ -6,8 +6,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/transport/http/handlers"
-	mwLogger "github.com/nextlag/shortenerURL/internal/transport/http/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/transport/rest/handlers"
+	mwLogger "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/zaplogger"
 )
 
 func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
@@ -17,11 +17,11 @@ func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 
 	// Создание экземпляра middleware.Logger
 	mw := mwLogger.New(log)
-
 	h := handlers.New(log, db)
 	// Настройка маршрутов с использованием middleware
 	router.With(mw).Get("/{id}", h.Get)
 	router.With(mw).Post("/api/shorten", h.Shorten)
+	router.With(mw).Get("/ping", h.Ping)
 	router.With(mw).Post("/", h.Save)
 
 	return router

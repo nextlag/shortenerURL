@@ -14,7 +14,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
-	resp "github.com/nextlag/shortenerURL/internal/transport/http/response"
+	resp "github.com/nextlag/shortenerURL/internal/transport/rest/response"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
