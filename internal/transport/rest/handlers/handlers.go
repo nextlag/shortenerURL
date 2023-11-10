@@ -18,13 +18,15 @@ type Handlers struct {
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
-func New(log *zap.Logger, db app.Storage, dbStorage *dbstorage.DBStorage) *Handlers {
-	dbStorage, _ = dbstorage.New(config.Args.Psql)
-	pingHandler := NewHealCheck(dbStorage)
+func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
+	if db == nil {
+		db, _ = dbstorage.New(config.Args.Psql)
+	}
+	pingHandler := NewHealCheck(db)
 	return &Handlers{
-		Get:     GetHandler(db),
-		Shorten: Shorten(log, db),
-		Save:    Save(db),
+		Get:     GetHandler(stor),
+		Shorten: Shorten(log, stor),
+		Save:    Save(stor),
 		Ping:    pingHandler.healCheck,
 	}
 }

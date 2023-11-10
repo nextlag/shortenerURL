@@ -16,8 +16,8 @@ type DBStorage struct {
 	db *sql.DB
 }
 
-func New(dataSourceName string) (*DBStorage, error) {
-	db, err := sql.Open("pgx", dataSourceName)
+func New(dbConfig string) (*DBStorage, error) {
+	db, err := sql.Open("pgx", dbConfig)
 	if err != nil {
 		return nil, fmt.Errorf("db conntection err=%w", err)
 	}
