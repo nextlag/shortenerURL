@@ -30,3 +30,8 @@ func New() *App {
 		Cfg:  config.Args,
 	}
 }
+
+type DBStorage interface {
+	Stop() error
+	CheckConnection() bool
+}

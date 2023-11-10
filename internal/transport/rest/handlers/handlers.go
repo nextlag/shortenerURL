@@ -18,8 +18,7 @@ type Handlers struct {
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
-func New(log *zap.Logger, db app.Storage) *Handlers {
-	var dbStorage *dbstorage.DBStorage
+func New(log *zap.Logger, db app.Storage, dbStorage *dbstorage.DBStorage) *Handlers {
 	dbStorage, _ = dbstorage.New(config.Args.Psql)
 	pingHandler := NewHealCheck(dbStorage)
 	return &Handlers{
