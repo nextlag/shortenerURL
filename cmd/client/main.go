@@ -3,13 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/nextlag/shortenerURL/internal/config"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/nextlag/shortenerURL/internal/config"
 )
 
 func init() {
@@ -33,7 +34,7 @@ func main() {
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
-	data.Set("url", long)
+	data.Set("service", long)
 	// добавляем HTTP-клиент
 	client := &http.Client{}
 	// пишем запрос

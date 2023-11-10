@@ -1,87 +1,70 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
-	"github.com/go-chi/chi/v5"
-	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/handlers"
-	"github.com/nextlag/shortenerURL/internal/storage"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
+
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
+	mwLogger "github.com/nextlag/shortenerURL/internal/transport/http/middleware/zaplogger"
+	"github.com/nextlag/shortenerURL/internal/transport/http/router"
 )
-
-func init() {
-	if err := config.InitializeArgs(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func setupRouter(db storage.Storage) *chi.Mux {
-	// Создание роутера
-	router := chi.NewRouter()
-
-	// Настройка обработчиков маршрутов для GET и POST запросов
-	router.Get("/{id}", handlers.GetHandler(db))
-	router.Post("/", handlers.PostHandler(db))
-	return router
-}
 
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    config.Args.Address,
+		Addr:    app.New().Cfg.Address, // Получение адреса из настроек
 		Handler: router,
 	}
 }
 
-func handleShutdown(srv *http.Server, idleConnsClosed chan struct{}) {
-	// Создание канала для ожидания сигнала завершения операции
-	sigint := make(chan os.Signal, 1)
-
-	// Регистрация обработчика сигнала завершения (Ctrl+C)
-	signal.Notify(sigint, os.Interrupt)
-
-	// Ожидание сигнала завершения
-	<-sigint
-
-	// Завершение работы HTTP-сервера с использованием контекста
-	if err := srv.Shutdown(context.Background()); err != nil {
-		log.Printf("HTTP server Shutdown: %v", err)
+func main() {
+	if err := config.InitializeArgs(); err != nil {
+		log.Fatal(err)
 	}
 
-	// Закрытие канала, чтобы разблокировать ожидание завершения программы
-	close(idleConnsClosed)
-}
-func main() {
-	flag.Parse()
+	logger := app.New().Log // Создание и настройка логгера
+	flag.Parse()            // Парсинг флагов командной строки
 
 	// Создание хранилища данных в памяти
-	db := storage.NewInMemoryStorage()
-
-	// Настройка маршрутов
-	router := setupRouter(db)
-
-	// Создание HTTP-сервера с настроенными маршрутами
-	srv := setupServer(router)
-
-	// Создание канала для ожидания сигнала завершения
-	idleConnsClosed := make(chan struct{})
-
-	// Запуск обработчика завершения в отдельной горутине
-	go handleShutdown(srv, idleConnsClosed)
-
-	// Вывод сообщения о старте сервера
-	log.Printf("Server address: %s || Base URL: %s", config.Args.Address, config.Args.URLShort)
-
-	// Запуск HTTP-сервера и сравнение err с http.ErrServerClosed
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		// Если сервер вернул ошибку, вывести сообщение об ошибке и завершить программу
-		log.Fatal(http.ListenAndServe(config.Args.Address, router))
+	db := app.New().Stor
+	err := db.Load(app.New().Cfg.FileStorage)
+	if err != nil {
+		_ = fmt.Errorf("failed to load data from file: %v", err)
 	}
-	// Ожидание завершения всех соединений перед завершением программы
-	<-idleConnsClosed
+
+	// Создание и настройка маршрутов и HTTP-сервера
+	rout := router.SetupRouter(db, logger)
+	// middleware для логирования запросов
+	chi.NewRouter().Use(mwLogger.New(logger))
+	mw := gzip.New(rout.ServeHTTP)
+	srv := setupServer(mw)
+
+	logger.Info("server starting", zap.String("address", app.New().Cfg.Address), zap.String("service", app.New().Cfg.URLShort))
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Запуск HTTP-сервера в горутине
+	go func() {
+		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			// Если сервер не стартовал, логируем ошибку
+			logger.Error("failed to start server", zap.String("error", err.Error()))
+			done <- os.Interrupt
+		}
+	}()
+	logger.Info("server started")
+
+	<-done // Ожидание сигнала завершения
+	logger.Info("server stopped")
 }

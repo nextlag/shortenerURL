@@ -1,0 +1,19 @@
+### POST save
+POST http://localhost:8080/123df23
+Host: localhost:8080
+Content-Type: text/plain
+
+
+### POST apiSave
+POST http://localhost:8080/api/shorten
+Host: localhost:8080
+Content-Type: application/json
+
+{
+  "url": "https://practicum.yandex.com/",
+  "alias": "123df23"
+}
+
+### Get
+# @no-redirect
+GET http://localhost:8080/123df23

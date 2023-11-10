@@ -2,16 +2,17 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/util"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
-func PostHandler(db storage.Storage) http.HandlerFunc {
+func Save(db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Считываем тело запроса (оригинальный URL)
 		body, err := io.ReadAll(r.Body)
@@ -20,11 +21,12 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Генерируем случайную строку
-		shortURL := util.GenerateRandomString(8)
+		alias := generatestring.NewRandomString(aliasLength)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		if err := db.Put(shortURL, string(body)); err != nil {
-			http.Error(w, "internal server error 500", http.StatusInternalServerError)
+		if err := db.Put(alias, string(body)); err != nil {
+			er := fmt.Sprintf("failed to add URL: %s", err)
+			http.Error(w, er, http.StatusInternalServerError)
 			return
 		}
 
@@ -32,7 +34,7 @@ func PostHandler(db storage.Storage) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 
 		// Отправляем short-URL в теле HTTP-ответа
-		_, err = fmt.Fprintf(w, "%s/%s", config.Args.URLShort, shortURL)
+		_, err = fmt.Fprintf(w, "%s/%s", config.Args.URLShort, alias)
 		if err != nil {
 			log.Printf("Error sending short URL response: %v", err)
 			return

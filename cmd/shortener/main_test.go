@@ -1,20 +1,30 @@
 package main_test
 
 import (
+	"encoding/json"
 	"flag"
-	"github.com/nextlag/shortenerURL/internal/handlers"
-	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/nextlag/shortenerURL/internal/transport/http/handlers"
+	gz "github.com/nextlag/shortenerURL/internal/transport/http/middleware/gzip"
 )
 
 func TestMain(m *testing.M) {
+	if err := config.InitializeArgs(); err != nil {
+		log.Fatal(err)
+	}
+
 	flag.Parse()
 	exitCode := m.Run()
 	// Закрываем все оставшиеся тела ответов
@@ -24,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 func TestGetHandler(t *testing.T) {
 	// Создаем фейковое хранилище
-	db := storage.NewInMemoryStorage()
+	db := storage.New()
 	// Пушим данныые
 	err := db.Put("example", "http://example.com")
 	if err != nil {
@@ -97,7 +107,7 @@ func TestTextPostHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
-			db := storage.NewInMemoryStorage()
+			db := storage.New()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
@@ -106,15 +116,10 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			handlers.PostHandler(db).ServeHTTP(w, req)
+			handlers.Save(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
-				if err != nil {
-					return
-				}
-			}(resp.Body)
+			defer resp.Body.Close()
 
 			// Проверяем статус
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
@@ -130,6 +135,126 @@ func TestTextPostHandler(t *testing.T) {
 			require.NoError(t, err)
 			// Проверяем, что значение URL в хранилище не пустое
 			assert.NotEmpty(t, storedURL)
+		})
+	}
+}
+
+func TestGzipMiddleware(t *testing.T) {
+	// Структура с параметрами для тестовых случаев.
+	testCases := []struct {
+		name              string
+		acceptEncoding    string
+		expectedBodyEmpty bool
+		expectedHeader    string
+	}{
+		{
+			name:           "Accepts_Gzip_Encoding",
+			acceptEncoding: "gzip",
+			// В этом случае ожидается, что тело ответа будет сжато.
+			expectedBodyEmpty: false,
+			expectedHeader:    "TestHeader",
+		},
+		{
+			name:           "No_Gzip_Encoding",
+			acceptEncoding: "",
+			// В этом случае ожидается, что тело ответа будет пустым.
+			expectedBodyEmpty: true,
+			expectedHeader:    "TestHeader",
+		},
+	}
+
+	// Создаем тестовый HTTP-обработчик для тестирования middleware.
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Custom-Header", "TestHeader")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Создаем экземпляр middleware с тестовым обработчиком.
+	middleware := gz.New(testHandler)
+
+	// Проходим по всем тестовым случаям.
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Создаем тестовый запрос с указанным заголовком Accept-Encoding.
+			req := httptest.NewRequest("GET", "http://example.com", nil)
+			req.Header.Set("Accept-Encoding", tc.acceptEncoding)
+
+			// Создаем тестовую запись (Recorder) для записи ответа.
+			rr := httptest.NewRecorder()
+
+			// Запускаем middleware.
+			middleware.ServeHTTP(rr, req)
+
+			// Проверяем, что middleware корректно обработал запрос.
+			if rr.Code != http.StatusOK {
+				t.Errorf("Expected status code %d, but got %d", http.StatusOK, rr.Code)
+			}
+
+			// Проверяем, что middleware вернул ожидаемое тело ответа.
+			if (len(rr.Body.Bytes()) == 0) != tc.expectedBodyEmpty {
+				t.Errorf("Expected empty response body: %v, but got: %v", tc.expectedBodyEmpty, len(rr.Body.Bytes()) == 0)
+			}
+
+			// Проверяем, что middleware добавил заголовок X-Custom-Header.
+			if rr.Header().Get("X-Custom-Header") != tc.expectedHeader {
+				t.Errorf("Expected X-Custom-Header to be '%s', but got %s", tc.expectedHeader, rr.Header().Get("X-Custom-Header"))
+			}
+		})
+	}
+}
+func TestShorten(t *testing.T) {
+	tests := []struct {
+		name         string
+		body         string
+		expectedJSON string
+	}{
+		{
+			name:         "ValidRequest",
+			body:         `{"url": "https://example.com", "alias": "example"}`,
+			expectedJSON: `{"result":"http://localhost:8080/example"}`,
+		},
+		{
+			name:         "Empty Request Body1",
+			body:         `{}`,
+			expectedJSON: `{"error":"поле URL обязательно для заполнения"}`,
+		},
+		{
+			name:         "Empty Request Body2",
+			body:         `{"url": "example.com"}`,
+			expectedJSON: `{"error":"поле URL не является допустимым URL"}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Создаем фейковое хранилище
+			db := storage.New()
+			log := zap.NewNop()
+			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
+			reqBody := strings.NewReader(test.body)
+			// Создаем новый POST запрос
+			req := httptest.NewRequest("POST", "/api/shorten", reqBody)
+			req.Header.Set("Content-Type", "application/json")
+			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
+			w := httptest.NewRecorder()
+			// Вызываем обработчик для HTTP POST запроса
+			handlers.Shorten(log, db).ServeHTTP(w, req)
+			// Получаем результат (HTTP-ответ) после выполнения запроса.
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			// Чтобы сравнить JSON, сначала декодируем его из ответа сервера.
+			var responseJSON map[string]interface{}
+			err := json.NewDecoder(resp.Body).Decode(&responseJSON)
+			require.NoError(t, err)
+
+			// Затем парсим ожидаемый JSON-ответ для сравнения.
+			var expectedJSON map[string]interface{}
+			err = json.NewDecoder(strings.NewReader(test.expectedJSON)).Decode(&expectedJSON)
+			require.NoError(t, err)
+
+			// Проверка, что полученный JSON совпадает с ожидаемым.
+			assert.Equal(t, expectedJSON, responseJSON)
 		})
 	}
 }
