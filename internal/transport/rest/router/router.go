@@ -13,16 +13,15 @@ import (
 func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
-	// router.Use(middleware.Logger)    // добавляем вывод стандартного логгера
+	router.Use(mwLogger.New(log))    // добавляем middleware.Logger
 
-	// Создание экземпляра middleware.Logger
-	mw := mwLogger.New(log)
 	h := handlers.New(log, db)
+
 	// Настройка маршрутов с использованием middleware
-	router.With(mw).Get("/{id}", h.Get)
-	router.With(mw).Post("/api/shorten", h.Shorten)
-	router.With(mw).Get("/ping", h.Ping)
-	router.With(mw).Post("/", h.Save)
+	router.With(mwLogger.New(log)).Get("/{id}", h.Get)
+	router.With(mwLogger.New(log)).Post("/api/shorten", h.Shorten)
+	router.With(mwLogger.New(log)).Get("/ping", h.Ping)
+	router.With(mwLogger.New(log)).Post("/", h.Save)
 
 	return router
 }

@@ -40,7 +40,7 @@ func (s *DBStorage) CheckConnection() bool {
 	err := s.db.PingContext(ctx)
 
 	if err != nil {
-		log.Printf("print db err=%w", err)
+		log.Printf("print db err=%v", err)
 	}
 
 	return err == nil
