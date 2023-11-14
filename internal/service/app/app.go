@@ -1,6 +1,8 @@
 package app
 
 import (
+	"flag"
+
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -20,18 +22,20 @@ type Storage interface {
 type App struct {
 	Stor Storage
 	Log  *zap.Logger
-	Cfg  config.ArgsHTTP
+	Cfg  config.ConfigHTTP
 }
 
 func New() *App {
+	flag.Parse()
 	return &App{
 		Stor: storage.New(),
 		Log:  lg.New(),
-		Cfg:  config.Args,
+		Cfg:  config.Config,
 	}
 }
 
 type DBStorage interface {
 	Stop() error
 	CheckConnection() bool
+	CreateTable() error
 }
