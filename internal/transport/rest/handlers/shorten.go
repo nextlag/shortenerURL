@@ -77,7 +77,7 @@ func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 // responseCreated отправляет успешный ответ с сокращенной ссылкой в JSON-формате.
 func responseCreated(w http.ResponseWriter, alias string) {
 	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Args.URLShort, alias),
+		Result: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

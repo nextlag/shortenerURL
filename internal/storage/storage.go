@@ -5,10 +5,12 @@ import (
 	"io"
 	"log"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
@@ -27,38 +29,77 @@ func New() *Data {
 	}
 }
 
-// Get возвращает значение по ключу
-func (s *Data) Get(key string) (string, error) {
+func (s *Data) Get(alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	logger := lg.New()
 
-	value, ok := s.data[key]
-	if !ok {
-		return "", fmt.Errorf("key '%s' not found", key)
+	if config.Config.DSN != "" {
+		// Получение из базы данных
+		db, err := dbstorage.New(config.Config.DSN)
+		if err != nil {
+			return "", fmt.Errorf("failed to connect to database: %w", err)
+		}
+		defer db.Stop()
+
+		url, err := db.Get(alias)
+		if err != nil {
+			logger.Error("failed to get data from DB", zap.Error(err))
+			return "", err
+		}
+		return url.URL, nil
 	}
-	return value, nil
+
+	// Получение из файла или памяти
+	url, ok := s.data[alias]
+	if !ok {
+		return "", fmt.Errorf("key '%s' not found", alias)
+	}
+	return url, nil
 }
 
 // Put сохраняет значение по ключу
-func (s *Data) Put(key, value string) error {
+func (s *Data) Put(alias, url string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	// Проверка на пустое значение ключа
-	if len(key) == 0 {
-		return fmt.Errorf("key '%s' cannot be empty", key)
+
+	if config.Config.DSN != "" {
+		// Сохранение в базу данных
+		db, err := dbstorage.New(config.Config.DSN)
+		if err != nil {
+			return fmt.Errorf("failed to connect to database: %w", err)
+		}
+		defer db.Stop()
+
+		shortURL := &dbstorage.ShortURL{
+			URL:       url,
+			Alias:     alias,
+			CreatedAt: time.Now(),
+		}
+
+		_, err = db.Insert(shortURL)
+		if err != nil {
+			return fmt.Errorf("failed to insert short URL into database: %w", err)
+		}
+		return nil
 	}
 
+	// Проверка на пустое значение ключа
+	if len(alias) == 0 {
+		return fmt.Errorf("key '%s' cannot be empty", alias)
+	}
 	// Проверка уникальности данных
 	for existingKey, existingValue := range s.data {
-		if existingKey == key || existingValue == value {
-			return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
+		if existingKey == alias || existingValue == url {
+			return fmt.Errorf("alias '%s' or URL '%s' already exists", alias, url)
 		}
 	}
-
-	s.data[key] = value
-	err := Save(config.Args.FileStorage, key, value)
-	if err != nil {
-		return err
+	s.data[alias] = url
+	if config.Config.FileStorage != "" {
+		err := Save(config.Config.FileStorage, alias, url)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
