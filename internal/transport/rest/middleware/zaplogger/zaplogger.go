@@ -22,7 +22,7 @@ func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 				zap.String("remote_addr", r.RemoteAddr),
 				zap.String("user_agent", r.UserAgent()),
 				zap.String("request_id", middleware.GetReqID(r.Context())),
-				zap.String("data_storage_location", config.Args.FileStorage),
+				zap.String("data_storage_location", config.Config.FileStorage),
 			)
 
 			contentType := r.Header.Get("Content-Type")

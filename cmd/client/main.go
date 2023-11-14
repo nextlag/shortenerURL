@@ -14,13 +14,13 @@ import (
 )
 
 func init() {
-	if err := config.InitializeArgs(); err != nil {
+	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
-	endpoint := config.Args.URLShort
+	endpoint := config.Config.URLShort
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли

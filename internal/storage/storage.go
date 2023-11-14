@@ -56,7 +56,7 @@ func (s *Data) Put(key, value string) error {
 	}
 
 	s.data[key] = value
-	err := Save(config.Args.FileStorage, key, value)
+	err := Save(config.Config.FileStorage, key, value)
 	if err != nil {
 		return err
 	}

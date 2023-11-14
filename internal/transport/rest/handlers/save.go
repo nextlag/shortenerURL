@@ -34,7 +34,7 @@ func Save(db app.Storage) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 
 		// Отправляем short-URL в теле HTTP-ответа
-		_, err = fmt.Fprintf(w, "%s/%s", config.Args.URLShort, alias)
+		_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
 		if err != nil {
 			log.Printf("Error sending short URL response: %v", err)
 			return

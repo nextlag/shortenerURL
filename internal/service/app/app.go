@@ -20,14 +20,14 @@ type Storage interface {
 type App struct {
 	Stor Storage
 	Log  *zap.Logger
-	Cfg  config.ArgsHTTP
+	Cfg  config.ConfigHTTP
 }
 
 func New() *App {
 	return &App{
 		Stor: storage.New(),
 		Log:  lg.New(),
-		Cfg:  config.Args,
+		Cfg:  config.Config,
 	}
 }
 

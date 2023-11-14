@@ -24,7 +24,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := config.InitializeArgs(); err != nil {
+	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
 
