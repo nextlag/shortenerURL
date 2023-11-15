@@ -11,7 +11,7 @@ type ConfigHTTP struct {
 	Address     string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	URLShort    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `env:"FILE_STORAGE_PATH" envDefault:"/tmp/data.json"`
-	DSN         string `env:"DATABASE_DSN" // envDefault:"host=localhost port=5432 user=shorten password=skypass12345 dbname=shorten sslmode=disable"`
+	DSN         string `env:"DATABASE_DSN" envDefault:""`
 }
 
 // Config - переменная с конфигурацией
