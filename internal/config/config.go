@@ -10,7 +10,7 @@ import (
 type ConfigHTTP struct {
 	Address     string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	URLShort    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `env:"FILE_STORAGE_PATH" envDefault:"/tmp/data.json"`
+	FileStorage string `env:"FILE_STORAGE_PATH" envDefault:""`
 	DSN         string `env:"DATABASE_DSN" envDefault:""`
 }
 
@@ -24,6 +24,5 @@ func MakeConfig() error {
 	flag.StringVar(&Config.URLShort, "b", Config.URLShort, "Base URL")
 	flag.StringVar(&Config.FileStorage, "f", Config.FileStorage, "Storage in data.json")
 	flag.StringVar(&Config.DSN, "d", Config.DSN, "Connect to database")
-	// flag.Parse()
 	return env.Parse(&Config)
 }

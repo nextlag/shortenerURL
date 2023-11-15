@@ -10,14 +10,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
-	mwLogger "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/zaplogger"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
 
@@ -34,7 +32,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger := app.New().Log // Создание и настройка логгера
+	var logger = app.New().Log // Создание и настройка логгера
+	var cfg = app.New().Cfg
 
 	if config.Config.DSN != "" {
 		db, err := dbstorage.New(config.Config.DSN)
@@ -51,27 +50,28 @@ func main() {
 
 	flag.Parse() // Парсинг флагов командной строки
 
-	fmt.Printf("Address: %s\n", config.Config.Address)
-	fmt.Printf("URLShort: %s\n", config.Config.URLShort)
-	fmt.Printf("FileStorage: %s\n", config.Config.FileStorage)
-	fmt.Printf("DSN: %s\n", config.Config.DSN)
+	logger.Info("initialized flags",
+		zap.String("-a", cfg.Address),
+		zap.String("-b", cfg.URLShort),
+		zap.String("-f", cfg.FileStorage),
+		zap.String("-d", cfg.DSN),
+	)
+
 	// Создание хранилища данных в памяти
 	stor := app.New().Stor
-	err := stor.Load(app.New().Cfg.FileStorage)
+	err := stor.Load(cfg.FileStorage)
 	if err != nil {
 		_ = fmt.Errorf("failed to load data from file: %v", err)
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
 	rout := router.SetupRouter(stor, logger)
-	// middleware для логирования запросов
-	chi.NewRouter().Use(mwLogger.New(logger))
 	mw := gzip.New(rout.ServeHTTP)
 	srv := setupServer(mw)
 
 	logger.Info("server starting",
-		zap.String("address", app.New().Cfg.Address),
-		zap.String("url", app.New().Cfg.URLShort))
+		zap.String("address", cfg.Address),
+		zap.String("url", cfg.URLShort))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

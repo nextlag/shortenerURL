@@ -7,8 +7,8 @@ import (
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS short_urls (
     id serial PRIMARY KEY,
-    url text NOT NULL,
-    alias text NOT NULL UNIQUE,
+    url text NOT NULL UNIQUE,
+    alias text NOT NULL,
     created_at timestamp
 );`
 

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"flag"
+
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -24,6 +26,7 @@ type App struct {
 }
 
 func New() *App {
+	flag.Parse()
 	return &App{
 		Stor: storage.New(),
 		Log:  lg.New(),
