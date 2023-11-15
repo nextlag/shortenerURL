@@ -20,9 +20,9 @@ type Storage interface {
 }
 
 type App struct {
-	Stor Storage
-	Log  *zap.Logger
-	Cfg  config.ConfigHTTP
+	Stor Storage           `json:"stor,omitempty"`
+	Log  *zap.Logger       `json:"log,omitempty"`
+	Cfg  config.ConfigHTTP `json:"cfg,omitempty"`
 }
 
 func New() *App {

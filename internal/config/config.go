@@ -8,10 +8,10 @@ import (
 
 // ConfigHTTP структура для хранения конфигурации HTTP-сервера.
 type ConfigHTTP struct {
-	Address     string `env:"SERVER_ADDRESS" envDefault:":8080"`
-	URLShort    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `env:"FILE_STORAGE_PATH" envDefault:""`
-	DSN         string `env:"DATABASE_DSN" envDefault:""`
+	Address     string `json:"address" env:"SERVER_ADDRESS" envDefault:":8080"`
+	URLShort    string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
+	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
 }
 
 // Config - переменная с конфигурацией

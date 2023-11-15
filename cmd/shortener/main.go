@@ -35,7 +35,7 @@ func main() {
 	var logger = app.New().Log // Создание и настройка логгера
 	var cfg = app.New().Cfg
 
-	if config.Config.DSN != "" {
+	if cfg.DSN != "" {
 		db, err := dbstorage.New(config.Config.DSN)
 		if err != nil {
 			logger.Error("failed to connect in database", zap.Error(err))
@@ -59,9 +59,11 @@ func main() {
 
 	// Создание хранилища данных в памяти
 	stor := app.New().Stor
-	err := stor.Load(cfg.FileStorage)
-	if err != nil {
-		_ = fmt.Errorf("failed to load data from file: %v", err)
+	if cfg.FileStorage != "" {
+		err := stor.Load(cfg.FileStorage)
+		if err != nil {
+			_ = fmt.Errorf("failed to load data from file: %v", err)
+		}
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
