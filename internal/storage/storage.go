@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -96,9 +95,7 @@ func (s *Data) Put(alias, url string) error {
 		}
 	}
 	s.data[alias] = url
-	flag.Parse()
-	var cfg config.ConfigHTTP
-	if cfg.FileStorage != "" {
+	if config.Config.FileStorage != "" {
 		err := Save(config.Config.FileStorage, alias, url)
 		if err != nil {
 			return err
