@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,22 +35,28 @@ func main() {
 
 	logger := app.New().Log // Создание и настройка логгера
 
-	db, err := dbstorage.New(config.Config.DSN)
-	if err != nil {
-		logger.Error("failed to connect in database", zap.Error(err))
-	}
-	// Закрытие соединения с базой данных при завершении работы
-	defer func() {
-		if err := db.Stop(); err != nil {
-			logger.Error("error stopping DB", zap.Error(err))
+	if config.Config.DSN != "" {
+		db, err := dbstorage.New(config.Config.DSN)
+		if err != nil {
+			logger.Error("failed to connect in database", zap.Error(err))
 		}
-	}()
+		// Закрытие соединения с базой данных при завершении работы
+		defer func() {
+			if err := db.Stop(); err != nil {
+				logger.Error("error stopping DB", zap.Error(err))
+			}
+		}()
+	}
 
-	flag.Parse() // Парсинг флагов командной строки
+	// flag.Parse() // Парсинг флагов командной строки
 
+	fmt.Printf("Address: %s\n", config.Config.Address)
+	fmt.Printf("URLShort: %s\n", config.Config.URLShort)
+	fmt.Printf("FileStorage: %s\n", config.Config.FileStorage)
+	fmt.Printf("DSN: %s\n", config.Config.DSN)
 	// Создание хранилища данных в памяти
 	stor := app.New().Stor
-	err = stor.Load(app.New().Cfg.FileStorage)
+	err := stor.Load(app.New().Cfg.FileStorage)
 	if err != nil {
 		_ = fmt.Errorf("failed to load data from file: %v", err)
 	}
