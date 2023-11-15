@@ -29,18 +29,6 @@ func New() *Data {
 	}
 }
 
-// // // Get возвращает значение по ключу
-// func (s *Data) Get(key string) (string, error) {
-// 	s.mutex.Lock()
-// 	defer s.mutex.Unlock()
-//
-// 	value, ok := s.data[key]
-// 	if !ok {
-// 		return "", fmt.Errorf("key '%s' not found", key)
-// 	}
-// 	return value, nil
-// }
-
 func (s *Data) Get(alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -131,21 +119,23 @@ func Save(file string, alias string, url string) error {
 }
 
 func (s *Data) Load(filename string) error {
-	Consumer, err := filestorage.NewConsumer(filename)
-	if err != nil {
-		return err
-	}
-	defer Consumer.Close()
-
-	for {
-		item, err := Consumer.ReadEvent()
+	if config.Config.FileStorage != "" {
+		Consumer, err := filestorage.NewConsumer(filename)
 		if err != nil {
-			if err == io.EOF {
-				break // Достигнут конец файла
-			}
 			return err
 		}
-		s.data[item.Alias] = item.URL
+		defer Consumer.Close()
+
+		for {
+			item, err := Consumer.ReadEvent()
+			if err != nil {
+				if err == io.EOF {
+					break // Достигнут конец файла
+				}
+				return err
+			}
+			s.data[item.Alias] = item.URL
+		}
 	}
 	return nil
 }
