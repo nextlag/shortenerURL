@@ -119,9 +119,6 @@ func Save(file string, alias string, url string) error {
 }
 
 func (s *Data) Load(filename string) error {
-	if config.Config.FileStorage != "" {
-
-	}
 	Consumer, err := filestorage.NewConsumer(filename)
 	if err != nil {
 		return err
