@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -48,7 +49,7 @@ func main() {
 		}()
 	}
 
-	// flag.Parse() // Парсинг флагов командной строки
+	flag.Parse() // Парсинг флагов командной строки
 
 	fmt.Printf("Address: %s\n", config.Config.Address)
 	fmt.Printf("URLShort: %s\n", config.Config.URLShort)

@@ -3,7 +3,6 @@ package main_test
 import (
 	"encoding/json"
 	"errors"
-	"flag"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +27,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	flag.Parse()
+	// flag.Parse()
 	exitCode := m.Run()
 	// Закрываем все оставшиеся тела ответов
 	http.DefaultTransport.(*http.Transport).CloseIdleConnections()

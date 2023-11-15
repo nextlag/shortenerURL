@@ -24,6 +24,6 @@ func MakeConfig() error {
 	flag.StringVar(&Config.URLShort, "b", Config.URLShort, "Base URL")
 	flag.StringVar(&Config.FileStorage, "f", Config.FileStorage, "Storage in data.json")
 	flag.StringVar(&Config.DSN, "d", Config.DSN, "Connect to database")
-	flag.Parse()
+	// flag.Parse()
 	return env.Parse(&Config)
 }
