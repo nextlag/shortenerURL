@@ -13,7 +13,7 @@ import (
 func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
-	router.Use(mwLogger.New(log))    // добавляем middleware.Logger
+	// router.Use(mwLogger.New(log))    // добавляем middleware.Logger
 
 	h := handlers.New(log, db, nil)
 

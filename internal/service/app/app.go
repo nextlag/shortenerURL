@@ -34,4 +34,5 @@ func New() *App {
 type DBStorage interface {
 	Stop() error
 	CheckConnection() bool
+	CreateTable() error
 }

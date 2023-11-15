@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 	mwLogger "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/zaplogger"
@@ -35,9 +36,9 @@ func main() {
 
 	logger := app.New().Log // Создание и настройка логгера
 
-	db, err := psql.New(config.Config.DSN)
+	db, err := dbstorage.New(config.Config.DSN)
 	if err != nil {
-		logger.Error("failed to connect in database")
+		logger.Error("failed to connect in database", zap.Error(err))
 	}
 	// Закрытие соединения с базой данных при завершении работы
 	defer func() {
