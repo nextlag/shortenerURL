@@ -10,8 +10,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
-// TODO:
-
 // Storage представляет интерфейс для хранилища данных
 type Storage interface {
 	Get(string) (string, error)
