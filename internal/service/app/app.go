@@ -7,20 +7,19 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
-
-// TODO:
 
 // Storage представляет интерфейс для хранилища данных
 type Storage interface {
 	Get(string) (string, error)
 	Put(string, string) error
-	Load(string) error
 }
 
 type App struct {
 	Stor Storage
+	db   dbstorage.DBStorage
 	Log  *zap.Logger
 	Cfg  config.ConfigHTTP
 }
@@ -32,10 +31,4 @@ func New() *App {
 		Log:  lg.New(),
 		Cfg:  config.Config,
 	}
-}
-
-type DBStorage interface {
-	Stop() error
-	CheckConnection() bool
-	CreateTable() error
 }

@@ -3,6 +3,7 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -61,20 +62,30 @@ func (s *DBStorage) CreateTable() error {
 	return nil
 }
 
-func (s *DBStorage) Insert(shortURL *ShortURL) (int64, error) {
+func (s *DBStorage) Put(alias, url string) error {
 	var id int64
+	shortURL := ShortURL{
+		URL:       url,
+		Alias:     alias,
+		CreatedAt: time.Now(),
+	}
+
 	err := s.db.QueryRow(insert, shortURL.URL, shortURL.Alias, shortURL.CreatedAt).Scan(&id)
 	if err != nil {
-		return 0, err
+		return fmt.Errorf("failed to insert short URL into database: %w", err)
 	}
-	return id, nil
+	return nil
 }
-
-func (s *DBStorage) Get(alias string) (*ShortURL, error) {
+func (s *DBStorage) Get(alias string) (string, error) {
 	var url ShortURL
 	err := s.db.QueryRow(get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
+			return "", fmt.Errorf("no URL found for alias %s", alias)
+		}
+		// Обработка других ошибок базы данных
+		return "", err
 	}
-	return &url, nil
+	return url.URL, nil
 }

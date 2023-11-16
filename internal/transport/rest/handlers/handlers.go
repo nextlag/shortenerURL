@@ -6,8 +6,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
 )
 
 type Handlers struct {
@@ -15,6 +15,7 @@ type Handlers struct {
 	Shorten http.HandlerFunc
 	Save    http.HandlerFunc
 	Ping    http.HandlerFunc
+	Batch   http.HandlerFunc
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
@@ -28,5 +29,6 @@ func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
 		Shorten: Shorten(log, stor),
 		Save:    Save(stor),
 		Ping:    pingHandler.healCheck,
+		Batch:   NewBatchHandler(log, stor).ServeHTTP,
 	}
 }

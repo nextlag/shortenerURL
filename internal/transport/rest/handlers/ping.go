@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
 )
 
 type PingHandler struct {
