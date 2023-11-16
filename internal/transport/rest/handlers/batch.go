@@ -15,24 +15,21 @@ import (
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
-type BatchShortenRequest struct {
-	URLs []struct {
-		CorrelationID string `json:"correlation_id"`
-		OriginalURL   string `json:"original_url"`
-	} `json:"urls"`
+type BatchShortenRequest []struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
 }
 
 // BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
-type BatchShortenResponse struct {
-	ShortURLs []struct {
-		CorrelationID string `json:"correlation_id"`
-		ShortURL      string `json:"short_url"`
-	} `json:"short_urls"`
+type BatchShortenResponse []struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
 }
 
 // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
 func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req BatchShortenRequest
+	h.log.Info("Request Body", zap.Any("body", r.Body))
 	err := render.DecodeJSON(r.Body, &req)
 
 	if errors.Is(err, io.EOF) {
@@ -49,7 +46,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var response BatchShortenResponse
 
-	for _, url := range req.URLs {
+	for _, url := range req {
 		alias := generatestring.NewRandomString(aliasLength)
 
 		if err := h.db.Put(alias, url.OriginalURL); err != nil {
@@ -58,7 +55,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		response.ShortURLs = append(response.ShortURLs, struct {
+		response = append(response, struct {
 			CorrelationID string `json:"correlation_id"`
 			ShortURL      string `json:"short_url"`
 		}{
