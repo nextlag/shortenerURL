@@ -29,18 +29,18 @@ func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
 		Shorten: Shorten(log, stor),
 		Save:    Save(stor),
 		Ping:    pingHandler.healCheck,
-		Batch:   NewBatchHandler(log, stor).ServeHTTP,
+		Batch:   NewBatchHandler(log, db).ServeHTTP,
 	}
 }
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
 type BatchHandler struct {
 	log *zap.Logger
-	db  app.Storage
+	db  *dbstorage.DBStorage
 }
 
 // NewBatchHandler создает новый экземпляр BatchHandler.
-func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
+func NewBatchHandler(log *zap.Logger, db *dbstorage.DBStorage) *BatchHandler {
 	return &BatchHandler{
 		log: log,
 		db:  db,

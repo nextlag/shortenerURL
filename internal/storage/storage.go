@@ -30,7 +30,6 @@ func New() *Data {
 func (s *Data) Get(alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
 	// Получение из файла или памяти
 	url, ok := s.data[alias]
 	if !ok {
@@ -55,11 +54,9 @@ func (s *Data) Put(alias, url string) error {
 		}
 	}
 	s.data[alias] = url
-	if config.Config.FileStorage != "" {
-		err := Save(config.Config.FileStorage, alias, url)
-		if err != nil {
-			return err
-		}
+	err := Save(config.Config.FileStorage, alias, url)
+	if err != nil {
+		return err
 	}
 	return nil
 }

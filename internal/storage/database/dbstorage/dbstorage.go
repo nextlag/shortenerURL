@@ -63,7 +63,7 @@ func (s *DBStorage) CreateTable() error {
 
 func (s *DBStorage) Put(alias, url string) error {
 	var id int64
-	shortURL := ShortURL{
+	shortURL := &ShortURL{
 		URL:       url,
 		Alias:     alias,
 		CreatedAt: time.Now(),
