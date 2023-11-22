@@ -5,12 +5,10 @@ import (
 	"io"
 	"log"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
@@ -32,23 +30,6 @@ func New() *Data {
 func (s *Data) Get(alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	logger := lg.New()
-
-	if config.Config.DSN != "" {
-		// Получение из базы данных
-		db, err := dbstorage.New(config.Config.DSN)
-		if err != nil {
-			return "", fmt.Errorf("failed to connect to database: %w", err)
-		}
-		defer db.Stop()
-
-		url, err := db.Get(alias)
-		if err != nil {
-			logger.Error("failed to get data from DB", zap.Error(err))
-			return "", err
-		}
-		return url.URL, nil
-	}
 
 	// Получение из файла или памяти
 	url, ok := s.data[alias]
@@ -62,27 +43,6 @@ func (s *Data) Get(alias string) (string, error) {
 func (s *Data) Put(alias, url string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
-	if config.Config.DSN != "" {
-		// Сохранение в базу данных
-		db, err := dbstorage.New(config.Config.DSN)
-		if err != nil {
-			return fmt.Errorf("failed to connect to database: %w", err)
-		}
-		defer db.Stop()
-
-		shortURL := &dbstorage.ShortURL{
-			URL:       url,
-			Alias:     alias,
-			CreatedAt: time.Now(),
-		}
-
-		_, err = db.Insert(shortURL)
-		if err != nil {
-			return fmt.Errorf("failed to insert short URL into database: %w", err)
-		}
-		return nil
-	}
 
 	// Проверка на пустое значение ключа
 	if len(alias) == 0 {
@@ -120,7 +80,8 @@ func Save(file string, alias string, url string) error {
 	return nil
 }
 
-func (s *Data) Load(filename string) error {
+func Load(filename string) error {
+	var s Data
 	Consumer, err := filestorage.NewConsumer(filename)
 	if err != nil {
 		return err

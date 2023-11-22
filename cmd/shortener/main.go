@@ -13,8 +13,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/storage"
+	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
@@ -60,7 +61,7 @@ func main() {
 	// Создание хранилища данных в памяти
 	stor := app.New().Stor
 	if cfg.FileStorage != "" {
-		err := stor.Load(cfg.FileStorage)
+		err := storage.Load(cfg.FileStorage)
 		if err != nil {
 			_ = fmt.Errorf("failed to load data from file: %v", err)
 		}
