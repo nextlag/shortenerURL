@@ -54,9 +54,11 @@ func (s *Data) Put(alias, url string) error {
 		}
 	}
 	s.data[alias] = url
-	err := Save(config.Config.FileStorage, alias, url)
-	if err != nil {
-		return err
+	if config.Config.FileStorage != "" {
+		err := Save(config.Config.FileStorage, alias, url)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
