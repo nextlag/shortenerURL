@@ -16,14 +16,14 @@ import (
 )
 
 type BatchShortenRequest []struct {
-	CorrelationID string `json:"id"`
-	OriginalURL   string `json:"url"`
+	ID  string `json:"id"`
+	URL string `json:"url"`
 }
 
 // BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
 type BatchShortenResponse []struct {
-	CorrelationID string `json:"id"`
-	ShortURL      string `json:"url"`
+	ID  string `json:"id"`
+	URL string `json:"url"`
 }
 
 // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
@@ -49,18 +49,18 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, url := range req {
 		alias := generatestring.NewRandomString(aliasLength)
 
-		if err := h.db.Put(alias, url.OriginalURL); err != nil {
+		if err := h.db.Put(alias, url.URL); err != nil {
 			er := "failed to add URL: " + err.Error()
 			render.JSON(w, r, resp.Error(er))
 			return
 		}
 
 		response = append(response, struct {
-			CorrelationID string `json:"id"`
-			ShortURL      string `json:"url"`
+			ID  string `json:"id"`
+			URL string `json:"url"`
 		}{
-			CorrelationID: url.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+			ID:  url.ID,
+			URL: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
 		})
 	}
 
