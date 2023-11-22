@@ -79,8 +79,7 @@ func Save(file string, alias string, url string) error {
 	return nil
 }
 
-func Load(filename string) error {
-	var s Data
+func (s *Data) Load(filename string) error {
 	Consumer, err := filestorage.NewConsumer(filename)
 	if err != nil {
 		return err

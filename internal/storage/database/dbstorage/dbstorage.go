@@ -71,10 +71,13 @@ func (s *DBStorage) Put(alias, url string) error {
 
 	err := s.db.QueryRow(insert, shortURL.URL, shortURL.Alias, shortURL.CreatedAt).Scan(&id)
 	if err != nil {
+		log.Printf("Error inserting short URL into database: %v", err)
 		return fmt.Errorf("failed to insert short URL into database: %w", err)
 	}
+	log.Printf("Inserted short URL with ID: %d", id)
 	return nil
 }
+
 func (s *DBStorage) Get(alias string) (string, error) {
 	var url ShortURL
 	err := s.db.QueryRow(get, alias).Scan(&url.URL)

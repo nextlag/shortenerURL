@@ -61,7 +61,8 @@ func main() {
 	// Создание хранилища данных в памяти
 	stor := app.New().Stor
 	if cfg.FileStorage != "" {
-		err := storage.Load(cfg.FileStorage)
+		// err := storage.Load(cfg.FileStorage)
+		err := storage.New().Load(cfg.FileStorage)
 		if err != nil {
 			_ = fmt.Errorf("failed to load data from file: %v", err)
 		}
