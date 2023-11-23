@@ -3,6 +3,7 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -79,6 +80,11 @@ func (s *DBStorage) Get(alias string) (string, error) {
 	var url ShortURL
 	err := s.db.QueryRow(get, alias).Scan(&url.URL)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
+			return "", fmt.Errorf("no URL found for alias %s", alias)
+		}
+		// Обработка других ошибок базы данных
 		return "", err
 	}
 	return url.URL, nil
