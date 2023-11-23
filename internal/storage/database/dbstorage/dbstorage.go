@@ -19,6 +19,10 @@ type DBStorage struct {
 	db *sql.DB
 }
 
+func NewDBStorage(db *sql.DB) *DBStorage {
+	return &DBStorage{db: db}
+}
+
 func New(dbConfig string) (*DBStorage, error) {
 	db, err := sql.Open("pgx", dbConfig)
 	if err != nil {

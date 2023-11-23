@@ -32,24 +32,26 @@ func main() {
 	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
+	flag.Parse() // Парсинг флагов командной строки
 
 	var logger = app.New().Log // Создание и настройка логгера
 	var cfg = app.New().Cfg
+	var stor app.Storage
 
 	if cfg.DSN != "" {
 		db, err := dbstorage.New(config.Config.DSN)
 		if err != nil {
 			logger.Error("failed to connect in database", zap.Error(err))
 		}
-		// Закрытие соединения с базой данных при завершении работы
 		defer func() {
 			if err := db.Stop(); err != nil {
 				logger.Error("error stopping DB", zap.Error(err))
 			}
 		}()
+		stor = db
+	} else {
+		stor = storage.New()
 	}
-
-	flag.Parse() // Парсинг флагов командной строки
 
 	logger.Info("initialized flags",
 		zap.String("-a", cfg.Address),
@@ -59,7 +61,7 @@ func main() {
 	)
 
 	// Создание хранилища данных в памяти
-	stor := app.New().Stor
+	// stor = app.New().Stor
 	if cfg.FileStorage != "" {
 		// err := storage.Load(cfg.FileStorage)
 		err := storage.New().Load(cfg.FileStorage)
