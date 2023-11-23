@@ -48,11 +48,11 @@ func (s *Data) Put(alias, url string) error {
 		return fmt.Errorf("key '%s' cannot be empty", alias)
 	}
 	// Проверка уникальности данных
-	for existingKey, existingValue := range s.data {
-		if existingKey == alias || existingValue == url {
-			return fmt.Errorf("alias '%s' or URL '%s' already exists", alias, url)
-		}
-	}
+	// for existingKey, existingValue := range s.data {
+	// 	if existingKey == alias || existingValue == url {
+	// 		return fmt.Errorf("alias '%s' or URL '%s' already exists", alias, url)
+	// 	}
+	// }
 	s.data[alias] = url
 	if config.Config.FileStorage != "" {
 		err := Save(config.Config.FileStorage, alias, url)
