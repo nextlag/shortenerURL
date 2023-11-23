@@ -5,17 +5,14 @@ import (
 	"testing"
 
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 
 func TestSettings(t *testing.T) {
 	fname := "file_test.json"
 	defer os.Remove(fname)
-	data := filestorage.Request{
-		URL:   "http://yandex.ru",
-		Alias: "12345",
-	}
-	if err := storage.Save(fname, data.Alias, data.URL); err != nil {
+	data := usecase.NewRequest("-", "12345", "https://yandex.ru")
+	if err := storage.Save(fname, data.GetEntityRequest().Alias, data.GetEntityRequest().URL); err != nil {
 		t.Error(err)
 	}
 }

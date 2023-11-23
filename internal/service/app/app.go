@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"flag"
 
 	"go.uber.org/zap"
@@ -12,9 +13,11 @@ import (
 )
 
 // Storage представляет интерфейс для хранилища данных
+//
+//go:generate mockgen -destination=internal/service/app/mocks/mock.go -package=mocks github.com/nextlag/shortenerURL/internal/service/app Storage
 type Storage interface {
 	Get(string) (string, error)
-	Put(string, string) error
+	Put(context.Context, string) (string, error)
 }
 
 type App struct {
@@ -32,10 +35,3 @@ func New() *App {
 		Cfg:  config.Config,
 	}
 }
-
-// type DBStorage interface {
-// 	Stop() error
-// 	CheckConnection() bool
-// 	CreateTable() error
-// 	Get(string) (*dbstorage.ShortURL, error)
-// }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,39 +10,29 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
-	resp "github.com/nextlag/shortenerURL/internal/transport/rest/response"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
+	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 )
-
-// Response представляет структуру ответа, отправляемого клиенту.
-type Response struct {
-	Result string `json:"result"` // Результат - сокращенная ссылка.
-}
-
-// aliasLength - длина по умолчанию для генерируемых алиасов.
-const aliasLength = 8
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
 func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req filestorage.Request
+		var req usecase.CustomRequest
 		// декодирование JSON-запроса из тела HTTP-запроса в структуру Request.
 		err := render.DecodeJSON(r.Body, &req)
 
 		// Обработка случая, когда тело запроса пустое.
 		if errors.Is(err, io.EOF) {
-			log.Error("request body is empty")
-			render.JSON(w, r, resp.Error("empty request"))
+			log.Error("request body is empty", zap.Error(err))
+			render.JSON(w, r, Error("empty request"))
 			return
 		}
 
 		// Обработка ошибок декодирования тела запроса.
 		if err != nil {
-			log.Error("failed to decode request body")
-			render.JSON(w, r, resp.Error("failed to decode request"))
+			log.Error("failed to decode request body", zap.Error(err))
+			render.JSON(w, r, Error("failed to decode request"))
 			return
 		}
 
@@ -52,39 +41,26 @@ func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 			var validateErr validator.ValidationErrors
 			errors.As(err, &validateErr)
 			log.Error("invalid request")
-			render.JSON(w, r, resp.ValidationError(validateErr))
+			render.JSON(w, r, ValidationError(validateErr))
 			return
 		}
 
-		// Генерация алиаса, если пользовательский алиас не указан.
-		alias := req.Alias
-		if alias == "" {
-			alias = generatestring.NewRandomString(aliasLength)
-		}
 		// Добавление URL в хранилище и получение идентификатора (id).
-		err = db.Put(alias, req.URL)
+		alias, err := db.Put(r.Context(), req.GetEntityRequest().URL)
+		if errors.Is(err, dbstorage.ErrConflict) {
+			// ошибка для случая конфликта оригинальных url
+			log.Error("Извините, такой url уже занят")
+			ResponseConflict(w, alias)
+			return
+		}
+
 		// Обработка ошибки при добавлении URL в хранилище.
 		if err != nil {
 			er := fmt.Sprintf("failed to add URL: %s", err)
-			render.JSON(w, r, resp.Error(er))
+			render.JSON(w, r, Error(er))
 			return
 		}
 		// Отправка ответа клиенту с сокращенной ссылкой.
-		responseCreated(w, alias)
-	}
-}
-
-// responseCreated отправляет успешный ответ с сокращенной ссылкой в JSON-формате.
-func responseCreated(w http.ResponseWriter, alias string) {
-	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// Обработка ошибки кодирования JSON.
-		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
+		ResponseCreated(w, alias)
 	}
 }

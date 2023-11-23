@@ -1,15 +1,16 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"log"
 	"sync"
 
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -40,35 +41,38 @@ func (s *Data) Get(alias string) (string, error) {
 }
 
 // Put сохраняет значение по ключу
-func (s *Data) Put(alias, url string) error {
+func (s *Data) Put(_ context.Context, url string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Проверка на пустое значение ключа
-	if len(alias) == 0 {
-		return fmt.Errorf("key '%s' cannot be empty", alias)
-	}
-	s.data[alias] = url
+	log := lg.New()
+	alias := generatestring.NewRandomString(8)
 
-	if config.Config.FileStorage != "" {
-		err := Save(config.Config.FileStorage, alias, url)
-		if err != nil {
-			return err
+	// Проверяем существование ключа
+	if _, exists := s.data[alias]; exists {
+		return "", fmt.Errorf("alias '%s/%s' already exists", config.Config.URLShort, alias)
+	}
+
+	// Проверяем существование значения
+	for k, v := range s.data {
+		if v == url {
+			log.Info("response", zap.String("ulr", v), zap.String("alias", k))
+			return k, nil
 		}
 	}
 
-	// Добавим логи для диагностики
-	log.Printf("Data.Put: alias=%s, url=%s", alias, url)
+	// Запись url
+	s.data[alias] = url
 
-	return nil
+	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
+	if config.Config.FileStorage != "" {
+		err := Save(config.Config.FileStorage, alias, url)
+		if err != nil {
+			return alias, err
+		}
+	}
+	return alias, nil
 }
-
-// Проверка уникальности данных
-// for existingKey, existingValue := range s.data {
-// 	if existingKey == alias || existingValue == url {
-// 		return fmt.Errorf("alias '%s' or URL '%s' already exists", alias, url)
-// 	}
-// }
 
 func Save(file string, alias string, url string) error {
 	Producer, err := filestorage.NewProducer(file)
@@ -78,14 +82,14 @@ func Save(file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := filestorage.New(uuid, alias, url)
+	event := usecase.NewRequest(uuid, alias, url)
 
-	if err := Producer.WriteEvent(event); err != nil {
+	if err := Producer.WriteEvent(&event); err != nil {
 		return err
 	}
 
 	logger := lg.New()
-	logger.Info("add_request", zap.Any("data", event))
+	logger.Info("Data.Put", zap.Any("Save", event))
 
 	return nil
 }
@@ -109,7 +113,7 @@ func Load(filename string) (*Data, error) {
 			}
 			return nil, err
 		}
-		s.data[item.Alias] = item.URL
+		s.data[item.GetEntityRequest().Alias] = item.GetEntityRequest().URL
 	}
 
 	return s, nil
