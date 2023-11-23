@@ -78,7 +78,7 @@ func (s *DBStorage) Put(alias, url string) error {
 }
 func (s *DBStorage) Get(alias string) (string, error) {
 	var url ShortURL
-	err := s.db.QueryRow(get, alias).Scan(&url.URL)
+	err := s.db.QueryRow(get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
