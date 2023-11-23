@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/service/mock"
+	"github.com/nextlag/shortenerURL/internal/service/app/mocks"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/handlers"
 	gz "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 )
@@ -37,7 +37,7 @@ func TestGetHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	// Создаем фейковое хранилище
-	db := mock.NewMockStorage(ctrl)
+	db := mocks.NewMockStorage(ctrl)
 
 	tests := []struct {
 		Name             string
@@ -110,8 +110,8 @@ func TestTextPostHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
-			db := mock.NewMockStorage(ctrl)
-			db.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			db := mocks.NewMockStorage(ctrl)
+			db.EXPECT().Put(gomock.Any(), gomock.Any()).Return("", nil).Times(1)
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
@@ -210,25 +210,25 @@ func TestShorten(t *testing.T) {
 		{
 			name:         "Empty Request Body1",
 			body:         `{}`,
-			expectedJSON: `{"error":"поле URL обязательно для заполнения"}`,
+			expectedJSON: `{"error":"поле URL обязательно для заполнения", "result":""}`,
 		},
 		{
 			name:         "Empty Request Body2",
 			body:         `{"url": "example.com"}`,
-			expectedJSON: `{"error":"поле URL не является допустимым URL"}`,
+			expectedJSON: `{"error":"поле URL не является допустимым URL", "result":""}`,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
-			db := mock.NewMockStorage(ctrl)
+			db := mocks.NewMockStorage(ctrl)
 			// Если валидация завершается с ошибкой, то вызов Put не должен произойти
 			if !strings.Contains(test.name, "ValidRequest") {
 				db.EXPECT().Put(gomock.Any(), gomock.Any()).Times(0)
 			} else {
 				// Ожидаемый вызов Put
-				db.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+				db.EXPECT().Put(gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
 			}
 			log := zap.NewNop()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
