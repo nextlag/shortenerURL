@@ -32,17 +32,3 @@ func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
 		Batch:   NewBatchHandler(log, stor).ServeHTTP,
 	}
 }
-
-// BatchHandler представляет хендлер для сокращения нескольких URL.
-type BatchHandler struct {
-	log *zap.Logger
-	db  app.Storage
-}
-
-// NewBatchHandler создает новый экземпляр BatchHandler.
-func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
-	return &BatchHandler{
-		log: log,
-		db:  db,
-	}
-}

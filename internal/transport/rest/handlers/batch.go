@@ -11,19 +11,34 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
 	resp "github.com/nextlag/shortenerURL/internal/transport/rest/response"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
+// BatchHandler представляет хендлер для сокращения нескольких URL.
+type BatchHandler struct {
+	log *zap.Logger
+	db  app.Storage
+}
+
+// NewBatchHandler создает новый экземпляр BatchHandler.
+func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
+	return &BatchHandler{
+		log: log,
+		db:  db,
+	}
+}
+
 type BatchShortenRequest []struct {
-	ID  string `json:"id"`
-	URL string `json:"url"`
+	ID  string `json:"correlation_id"`
+	URL string `json:"original_url"`
 }
 
 // BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
 type BatchShortenResponse []struct {
-	ID  string `json:"id"`
-	URL string `json:"url"`
+	ID  string `json:"correlation_id"`
+	URL string `json:"short_url"`
 }
 
 // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
@@ -55,8 +70,8 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response = append(response, struct {
-			ID  string `json:"id"`
-			URL string `json:"url"`
+			ID  string `json:"correlation_id"`
+			URL string `json:"short_url"`
 		}{
 			ID:  url.ID,
 			URL: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),

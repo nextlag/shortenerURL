@@ -32,10 +32,3 @@ func New() *App {
 		Cfg:  config.Config,
 	}
 }
-
-// type DBStorage interface {
-// 	Stop() error
-// 	CheckConnection() bool
-// 	CreateTable() error
-// 	Get(string) (*dbstorage.ShortURL, error)
-// }
