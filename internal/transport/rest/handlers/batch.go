@@ -37,8 +37,8 @@ type BatchShortenRequest []struct {
 
 // BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
 type BatchShortenResponse []struct {
-	ID  string `json:"correlation_id"`
-	URL string `json:"short_url"`
+	ID    string `json:"correlation_id"`
+	Alias string `json:"short_url"`
 }
 
 // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
@@ -70,11 +70,11 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response = append(response, struct {
-			ID  string `json:"correlation_id"`
-			URL string `json:"short_url"`
+			ID    string `json:"correlation_id"`
+			Alias string `json:"short_url"`
 		}{
-			ID:  url.ID,
-			URL: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+			ID:    url.ID,
+			Alias: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
 		})
 	}
 
