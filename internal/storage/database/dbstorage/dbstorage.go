@@ -8,7 +8,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 const (
@@ -62,7 +66,9 @@ func (s *DBStorage) CreateTable() error {
 	return nil
 }
 
-func (s *DBStorage) Put(alias, url string) error {
+// Put сохраняет значение по ключу
+func (s *DBStorage) Put(url string) (string, error) {
+	alias := generatestring.NewRandomString(8)
 	var id int64
 	shortURL := ShortURL{
 		URL:       url,
@@ -72,10 +78,20 @@ func (s *DBStorage) Put(alias, url string) error {
 
 	err := s.db.QueryRow(insert, shortURL.URL, shortURL.Alias, shortURL.CreatedAt).Scan(&id)
 	if err != nil {
-		return fmt.Errorf("failed to insert short URL into database: %w", err)
+		// Если произошел конфликт (например, дублирование URL), возвращаем существующий alias
+		if pgerrcode.IsIntegrityConstraintViolation(err.(*pgconn.PgError).Code) {
+			existingAlias, err := s.Get(url)
+			if err != nil {
+				return "", fmt.Errorf("failed to get existing alias: %w", err)
+			}
+			return existingAlias, nil
+		}
+		return "", fmt.Errorf("failed to insert short URL into database: %w", err)
 	}
-	return nil
+
+	return alias, nil
 }
+
 func (s *DBStorage) Get(alias string) (string, error) {
 	var url ShortURL
 	err := s.db.QueryRow(get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)

@@ -13,7 +13,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	resp "github.com/nextlag/shortenerURL/internal/transport/rest/response"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
@@ -118,9 +117,9 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var response BatchShortenResponse
 
 	for _, url := range req {
-		alias := generatestring.NewRandomString(aliasLength)
 
-		if err := h.db.Put(alias, url.OriginalURL); err != nil {
+		alias, err := h.db.Put(url.OriginalURL)
+		if err != nil {
 			er := "failed to add URL: " + err.Error()
 			render.JSON(w, r, resp.Error(er))
 			return

@@ -8,7 +8,6 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 // PostHandler - обработчик POST-запросов для создания и сохранения URL в storage.
@@ -20,11 +19,10 @@ func Save(db app.Storage) http.HandlerFunc {
 			http.Error(w, "bad request 400", http.StatusBadRequest)
 			return
 		}
-		// Генерируем случайную строку
-		alias := generatestring.NewRandomString(aliasLength)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		if err := db.Put(alias, string(body)); err != nil {
+		alias, err := db.Put(string(body))
+		if err != nil {
 			er := fmt.Sprintf("failed to add URL: %s", err)
 			http.Error(w, er, http.StatusInternalServerError)
 			return
@@ -39,5 +37,8 @@ func Save(db app.Storage) http.HandlerFunc {
 			log.Printf("Error sending short URL response: %v", err)
 			return
 		}
+
+		// Добавим код для успешного случая
+		log.Printf("URL added successfully. Alias: %s", alias)
 	}
 }

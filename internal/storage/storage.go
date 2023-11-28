@@ -40,27 +40,35 @@ func (s *Data) Get(alias string) (string, error) {
 }
 
 // Put сохраняет значение по ключу
-func (s *Data) Put(alias, url string) error {
+func (s *Data) Put(url string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
+	// Генерируем случайную строку
+	var req filestorage.Request
+	alias := req.Alias
+
+	if alias == "" {
+		alias = generatestring.NewRandomString(8)
+	}
+
 	// Проверка на пустое значение ключа
 	if len(alias) == 0 {
-		return fmt.Errorf("key '%s' cannot be empty", alias)
+		return "", fmt.Errorf("key '%s' cannot be empty", alias)
 	}
 	s.data[alias] = url
 
 	if config.Config.FileStorage != "" {
 		err := Save(config.Config.FileStorage, alias, url)
 		if err != nil {
-			return err
+			return alias, err
 		}
 	}
 
 	// Добавим логи для диагностики
 	log.Printf("Data.Put: alias=%s, url=%s", alias, url)
 
-	return nil
+	return alias, nil
 }
 
 // Проверка уникальности данных

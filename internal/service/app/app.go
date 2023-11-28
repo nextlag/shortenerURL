@@ -14,7 +14,7 @@ import (
 // Storage представляет интерфейс для хранилища данных
 type Storage interface {
 	Get(string) (string, error)
-	Put(string, string) error
+	Put(string) (string, error)
 }
 
 type App struct {

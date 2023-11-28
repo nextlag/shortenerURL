@@ -15,7 +15,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	resp "github.com/nextlag/shortenerURL/internal/transport/rest/response"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 // Response представляет структуру ответа, отправляемого клиенту.
@@ -56,13 +55,8 @@ func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 			return
 		}
 
-		// Генерация алиаса, если пользовательский алиас не указан.
-		alias := req.Alias
-		if alias == "" {
-			alias = generatestring.NewRandomString(aliasLength)
-		}
 		// Добавление URL в хранилище и получение идентификатора (id).
-		err = db.Put(alias, req.URL)
+		alias, err := db.Put(req.URL)
 		// Обработка ошибки при добавлении URL в хранилище.
 		if err != nil {
 			er := fmt.Sprintf("failed to add URL: %s", err)
