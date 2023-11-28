@@ -55,7 +55,7 @@ func (s *Data) Put(url string) (string, error) {
 	for existingKey, existingValue := range s.data {
 		if existingValue == url {
 			log.Info("response", zap.String("ulr", existingValue), zap.String("alias", existingKey))
-			return fmt.Sprintf("%s", existingKey), nil
+			return existingKey, nil
 		}
 	}
 
