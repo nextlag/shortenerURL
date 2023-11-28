@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"sync"
 
 	"go.uber.org/zap"
@@ -44,39 +43,34 @@ func (s *Data) Put(url string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Генерируем случайную строку
-	var req filestorage.Request
-	alias := req.Alias
+	log := lg.New()
+	alias := generatestring.NewRandomString(8)
 
-	if alias == "" {
-		alias = generatestring.NewRandomString(8)
+	// Проверяем существование ключа
+	if _, exists := s.data[alias]; exists {
+		return "", fmt.Errorf("alias '%s/%s' already exists", config.Config.URLShort, alias)
 	}
 
-	// Проверка на пустое значение ключа
-	if len(alias) == 0 {
-		return "", fmt.Errorf("key '%s' cannot be empty", alias)
+	// Проверяем существование значения
+	for existingKey, existingValue := range s.data {
+		if existingValue == url {
+			log.Info("response", zap.String("ulr", existingValue), zap.String("alias", existingKey))
+			return fmt.Sprintf("%s", existingKey), nil
+		}
 	}
+
+	// Запись url
 	s.data[alias] = url
 
+	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
 	if config.Config.FileStorage != "" {
 		err := Save(config.Config.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}
 	}
-
-	// Добавим логи для диагностики
-	log.Printf("Data.Put: alias=%s, url=%s", alias, url)
-
 	return alias, nil
 }
-
-// Проверка уникальности данных
-// for existingKey, existingValue := range s.data {
-// 	if existingKey == alias || existingValue == url {
-// 		return fmt.Errorf("alias '%s' or URL '%s' already exists", alias, url)
-// 	}
-// }
 
 func Save(file string, alias string, url string) error {
 	Producer, err := filestorage.NewProducer(file)
@@ -93,7 +87,7 @@ func Save(file string, alias string, url string) error {
 	}
 
 	logger := lg.New()
-	logger.Info("add_request", zap.Any("data", event))
+	logger.Info("Data.Put", zap.Any("Save", event))
 
 	return nil
 }

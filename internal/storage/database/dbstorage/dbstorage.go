@@ -11,8 +11,10 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
+	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 const (
@@ -88,7 +90,7 @@ func (s *DBStorage) Put(url string) (string, error) {
 		}
 		return "", fmt.Errorf("failed to insert short URL into database: %w", err)
 	}
-
+	lg.New().Info("DBStorage.Put", zap.String("alias", alias), zap.String("url", url))
 	return alias, nil
 }
 

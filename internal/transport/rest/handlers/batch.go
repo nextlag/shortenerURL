@@ -29,62 +29,6 @@ func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
 	}
 }
 
-// type BatchShortenRequest []struct {
-// 	ID  string `json:"correlation_id"`
-// 	URL string `json:"original_url"`
-// }
-//
-// // BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
-// type BatchShortenResponse []struct {
-// 	ID    string `json:"correlation_id"`
-// 	Alias string `json:"short_url"`
-// }
-//
-// // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
-// func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	var req BatchShortenRequest
-// 	err := render.DecodeJSON(r.Body, &req)
-//
-// 	if errors.Is(err, io.EOF) {
-// 		h.log.Error("request body is empty")
-// 		render.JSON(w, r, resp.Error("empty request"))
-// 		return
-// 	}
-//
-// 	if err != nil {
-// 		h.log.Error("failed to decode request body", zap.Error(err))
-// 		render.JSON(w, r, resp.Error("failed to decode request"))
-// 		return
-// 	}
-//
-// 	var response BatchShortenResponse
-//
-// 	for _, url := range req {
-// 		alias := generatestring.NewRandomString(aliasLength)
-//
-// 		if err := h.db.Put(alias, url.URL); err != nil {
-// 			er := "failed to add URL: " + err.Error()
-// 			render.JSON(w, r, resp.Error(er))
-// 			return
-// 		}
-//
-// 		response = append(response, struct {
-// 			ID    string `json:"correlation_id"`
-// 			Alias string `json:"short_url"`
-// 		}{
-// 			ID:    url.ID,
-// 			Alias: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
-// 		})
-// 	}
-//
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusCreated)
-//
-// 	if err := json.NewEncoder(w).Encode(response); err != nil {
-// 		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
-// 	}
-// }
-
 type BatchShortenRequest []struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
@@ -99,7 +43,6 @@ type BatchShortenResponse []struct {
 // ServeHTTP обрабатывает HTTP-запрос для сокращения нескольких URL.
 func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req BatchShortenRequest
-	h.log.Info("Request Body", zap.Any("body", r.Body))
 	err := render.DecodeJSON(r.Body, &req)
 
 	if errors.Is(err, io.EOF) {
@@ -120,7 +63,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		alias, err := h.db.Put(url.OriginalURL)
 		if err != nil {
-			er := "failed to add URL: " + err.Error()
+			er := "URL" + err.Error()
 			render.JSON(w, r, resp.Error(er))
 			return
 		}
