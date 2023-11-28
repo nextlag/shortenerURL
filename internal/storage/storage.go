@@ -52,10 +52,10 @@ func (s *Data) Put(url string) (string, error) {
 	}
 
 	// Проверяем существование значения
-	for existingKey, existingValue := range s.data {
-		if existingValue == url {
-			log.Info("response", zap.String("ulr", existingValue), zap.String("alias", existingKey))
-			return existingKey, nil
+	for k, v := range s.data {
+		if v == url {
+			log.Info("response", zap.String("ulr", v), zap.String("alias", k))
+			return k, nil
 		}
 	}
 
