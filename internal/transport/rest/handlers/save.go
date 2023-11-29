@@ -30,12 +30,17 @@ func Save(db app.Storage) http.HandlerFunc {
 		// обработка конфликта дубликатов
 		if errors.Is(err, dbstorage.ErrConflict) {
 			log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
-			http.Error(w, fmt.Sprintf("%s/%s", config.Config.URLShort, alias), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
+			_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
+			if err != nil {
+				log.Error("error sending short URL response", zap.Error(err))
+				return
+			}
 			return
 		}
-
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to add URL: %s", err), http.StatusInternalServerError)
+			er := fmt.Sprintf("failed to add URL: %s", err)
+			http.Error(w, er, http.StatusInternalServerError)
 			return
 		}
 
