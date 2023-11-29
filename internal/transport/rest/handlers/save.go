@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -33,7 +32,12 @@ func Save(db app.Storage) http.HandlerFunc {
 		// Обработка конфликта дубликатов
 		if errors.Is(err, dbstorage.ErrConflict) {
 			log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
-			http.Error(w, strings.TrimSpace(fmt.Sprintf("%s/%s", config.Config.URLShort, alias)), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
+			_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
+			if err != nil {
+				log.Error("error sending short URL response", zap.Error(err))
+				return
+			}
 			return
 		}
 
@@ -48,7 +52,7 @@ func Save(db app.Storage) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 
 		// Отправляем short-URL в теле HTTP-ответа
-		_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, strings.TrimSpace(alias))
+		_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
 		if err != nil {
 			log.Error("error sending short URL response", zap.Error(err))
 			return
