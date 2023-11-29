@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -18,6 +19,7 @@ import (
 func Save(db app.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log := lg.New()
+
 		// Считываем тело запроса (оригинальный URL)
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -25,22 +27,20 @@ func Save(db app.Storage) http.HandlerFunc {
 			return
 		}
 
-		//  Попытка сохранить short-URL и оригинальный URL в хранилище
+		// Попытка сохранить short-URL и оригинальный URL в хранилище
 		alias, err := db.Put(r.Context(), string(body))
-		// обработка конфликта дубликатов
+
+		// Обработка конфликта дубликатов
 		if errors.Is(err, dbstorage.ErrConflict) {
 			log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
-			w.WriteHeader(http.StatusConflict)
-			_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
-			if err != nil {
-				log.Error("error sending short URL response", zap.Error(err))
-				return
-			}
+			http.Error(w, strings.TrimSpace(fmt.Sprintf("%s/%s", config.Config.URLShort, alias)), http.StatusConflict)
 			return
 		}
+
+		// Обработка других ошибок
 		if err != nil {
-			er := fmt.Sprintf("failed to add URL: %s", err)
-			http.Error(w, er, http.StatusInternalServerError)
+			log.Error("failed to add URL", zap.Error(err))
+			http.Error(w, fmt.Sprintf("failed to add URL: %s", err), http.StatusInternalServerError)
 			return
 		}
 
@@ -48,7 +48,7 @@ func Save(db app.Storage) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 
 		// Отправляем short-URL в теле HTTP-ответа
-		_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
+		_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, strings.TrimSpace(alias))
 		if err != nil {
 			log.Error("error sending short URL response", zap.Error(err))
 			return
