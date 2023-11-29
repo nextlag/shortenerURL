@@ -27,16 +27,20 @@ func Save(db app.Storage) http.HandlerFunc {
 
 		//  Попытка сохранить short-URL и оригинальный URL в хранилище
 		alias, err := db.Put(r.Context(), string(body))
-
+		if errors.Is(err, dbstorage.ErrConflict) {
+			// ошибка для случая конфликта оригинальных url
+			log.Error("Извините, такой url уже занят", zap.String("alias", alias), zap.String("url", string(body)))
+			w.WriteHeader(http.StatusConflict)
+			_, err = fmt.Fprintf(w, "%s/%s", config.Config.URLShort, alias)
+			if err != nil {
+				log.Error("error sending short URL response", zap.Error(err))
+				return
+			}
+			return
+		}
 		if err != nil {
 			er := fmt.Sprintf("failed to add URL: %s", err)
 			http.Error(w, er, http.StatusInternalServerError)
-			return
-		}
-		if errors.Is(err, dbstorage.ErrConflict) {
-			// ошибка для случая конфликта оригинальных url
-			log.Error("Извините, такой url уже занят")
-			ResponseConflict(w, alias)
 			return
 		}
 
