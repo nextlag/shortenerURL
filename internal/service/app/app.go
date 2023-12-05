@@ -8,7 +8,6 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
@@ -22,7 +21,6 @@ type Storage interface {
 
 type App struct {
 	Stor Storage
-	db   dbstorage.DBStorage
 	Log  *zap.Logger
 	Cfg  config.ConfigHTTP
 }
