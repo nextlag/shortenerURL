@@ -6,8 +6,8 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// ConfigHTTP структура для хранения конфигурации HTTP-сервера.
-type ConfigHTTP struct {
+// Args структура для хранения конфигурации HTTP-сервера.
+type Args struct {
 	Address     string `json:"address" env:"SERVER_ADDRESS" envDefault:":8080"`
 	URLShort    string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
@@ -15,7 +15,7 @@ type ConfigHTTP struct {
 }
 
 // Config - переменная с конфигурацией
-var Config ConfigHTTP
+var Config Args
 
 // MakeConfig инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
 func MakeConfig() error {

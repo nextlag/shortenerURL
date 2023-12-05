@@ -22,7 +22,7 @@ type Storage interface {
 type App struct {
 	Stor Storage
 	Log  *zap.Logger
-	Cfg  config.ConfigHTTP
+	Cfg  config.Args
 }
 
 func New() *App {
