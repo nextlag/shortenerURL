@@ -13,9 +13,9 @@ import (
 
 // Storage представляет интерфейс для хранилища данных
 //
-//go:generate mockgen -destination=internal/service/app/mocks/mock.go -package=mocks github.com/nextlag/shortenerURL/internal/service/app Storage
+//go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/service/app Storage
 type Storage interface {
-	Get(string) (string, error)
+	Get(context.Context, string) (string, error)
 	Put(context.Context, string) (string, error)
 }
 

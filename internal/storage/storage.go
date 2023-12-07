@@ -28,7 +28,7 @@ func New() *Data {
 	}
 }
 
-func (s *Data) Get(alias string) (string, error) {
+func (s *Data) Get(_ context.Context, alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
