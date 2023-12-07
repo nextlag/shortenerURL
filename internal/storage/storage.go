@@ -1,15 +1,16 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"log"
 	"sync"
 
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -27,62 +28,80 @@ func New() *Data {
 	}
 }
 
-// Get возвращает значение по ключу
-func (s *Data) Get(key string) (string, error) {
+func (s *Data) Get(_ context.Context, alias string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	value, ok := s.data[key]
+	// Получение из файла или памяти
+	url, ok := s.data[alias]
 	if !ok {
-		return "", fmt.Errorf("key '%s' not found", key)
+		return "", fmt.Errorf("key '%s' not found", alias)
 	}
-	return value, nil
+	return url, nil
 }
 
 // Put сохраняет значение по ключу
-func (s *Data) Put(key, value string) error {
+func (s *Data) Put(_ context.Context, url string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	// Проверка на пустое значение ключа
-	if len(key) == 0 {
-		return fmt.Errorf("key '%s' cannot be empty", key)
+
+	log := lg.New()
+	alias := generatestring.NewRandomString(8)
+
+	// Проверяем существование ключа
+	if _, exists := s.data[alias]; exists {
+		return "", fmt.Errorf("alias '%s/%s' already exists", config.Config.URLShort, alias)
 	}
 
-	// Проверка уникальности данных
-	for existingKey, existingValue := range s.data {
-		if existingKey == key || existingValue == value {
-			return fmt.Errorf("alias '%s' or URL '%s' already exists", key, value)
+	// Проверяем существование значения
+	for k, v := range s.data {
+		if v == url {
+			log.Info("response", zap.String("ulr", v), zap.String("alias", k))
+			return k, nil
 		}
 	}
 
-	s.data[key] = value
-	err := Save(config.Args.FileStorage, key, value)
-	if err != nil {
-		return err
+	// Запись url
+	s.data[alias] = url
+
+	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
+	if config.Config.FileStorage != "" {
+		err := Save(config.Config.FileStorage, alias, url)
+		if err != nil {
+			return alias, err
+		}
 	}
-	return nil
+	return alias, nil
 }
 
 func Save(file string, alias string, url string) error {
 	Producer, err := filestorage.NewProducer(file)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer Producer.Close()
+
 	uuid := generatestring.GenerateUUID()
-	event := filestorage.New(uuid, alias, url)
-	if err := Producer.WriteEvent(event); err != nil {
-		log.Fatal(err)
+	event := usecase.NewRequest(uuid, alias, url)
+
+	if err := Producer.WriteEvent(&event); err != nil {
+		return err
 	}
+
 	logger := lg.New()
-	logger.Info("add_request", zap.Any("data", event))
+	logger.Info("Data.Put", zap.Any("Save", event))
+
 	return nil
 }
 
-func (s *Data) Load(filename string) error {
+func Load(filename string) (*Data, error) {
+	s := &Data{
+		data: make(map[string]string),
+	}
+
 	Consumer, err := filestorage.NewConsumer(filename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer Consumer.Close()
 
@@ -92,9 +111,10 @@ func (s *Data) Load(filename string) error {
 			if err == io.EOF {
 				break // Достигнут конец файла
 			}
-			return err
+			return nil, err
 		}
-		s.data[item.Alias] = item.URL
+		s.data[item.GetEntityRequest().Alias] = item.GetEntityRequest().URL
 	}
-	return nil
+
+	return s, nil
 }

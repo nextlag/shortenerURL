@@ -13,7 +13,6 @@ import (
 func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
-	router.Use(mwLogger.New(log))    // добавляем middleware.Logger
 
 	h := handlers.New(log, db, nil)
 
@@ -21,6 +20,7 @@ func SetupRouter(db app.Storage, log *zap.Logger) *chi.Mux {
 	router.With(mwLogger.New(log)).Route("/", func(r chi.Router) {
 		r.Get("/{id}", h.Get)
 		r.Post("/api/shorten", h.Shorten)
+		r.Post("/api/shorten/batch", h.Batch)
 		r.Get("/ping", h.Ping)
 		r.Post("/", h.Save)
 	})

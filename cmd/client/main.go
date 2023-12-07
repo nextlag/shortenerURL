@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -13,14 +14,12 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-func init() {
-	if err := config.InitializeArgs(); err != nil {
+func main() {
+	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func main() {
-	endpoint := config.Args.URLShort
+	flag.Parse() // Парсинг флагов командной строки
+	endpoint := config.Config.URLShort
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли

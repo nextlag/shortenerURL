@@ -15,7 +15,7 @@ func GetHandler(db app.Storage) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 
 		// Пытаемся найти оригинальный URL в хранилище
-		originalURL, err := db.Get(id)
+		originalURL, err := db.Get(r.Context(), id)
 		if err != nil {
 			http.Error(w, "not found 400", http.StatusBadRequest)
 			return
