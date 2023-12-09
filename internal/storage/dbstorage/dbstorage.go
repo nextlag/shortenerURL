@@ -136,7 +136,10 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 		s.log.Error("Error getting batch data: ", zap.Error(err))
 		return nil, err
 	}
-	defer allIDs.Close()
+	defer func() {
+		_ = allIDs.Close()
+		_ = allIDs.Err()
+	}()
 
 	for allIDs.Next() {
 		var links URLs
