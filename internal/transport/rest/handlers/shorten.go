@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 

@@ -3,6 +3,7 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -22,7 +23,8 @@ const (
 )
 
 type DBStorage struct {
-	db *sql.DB
+	log *zap.Logger
+	db  *sql.DB
 }
 
 var ErrConflict = errors.New("data conflict in DBStorage")
@@ -118,4 +120,40 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 		return "", err
 	}
 	return url.URL, nil
+}
+
+type URLs struct {
+	LongLink  string `json:"original_url"`
+	ShortLink string `json:"short_url"`
+}
+
+func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
+
+	var userIDs []URLs
+
+	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+	if err != nil {
+		s.log.Error("Error getting batch data: ", zap.Error(err))
+		return nil, err
+	}
+
+	for allIDs.Next() {
+		var links URLs
+		err := allIDs.Scan(&links.LongLink, &links.ShortLink)
+		if err != nil {
+			s.log.Error("Error scanning data: ", zap.Error(err))
+			return nil, err
+		}
+		userIDs = append(userIDs, URLs{
+			LongLink:  links.LongLink,
+			ShortLink: url + "/" + links.ShortLink,
+		})
+	}
+	jsonUserIDs, err := json.Marshal(userIDs)
+	if err != nil {
+		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+		return nil, err
+	}
+
+	return jsonUserIDs, nil
 }

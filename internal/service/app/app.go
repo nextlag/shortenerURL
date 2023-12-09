@@ -17,6 +17,7 @@ import (
 type Storage interface {
 	Get(context.Context, string) (string, error)
 	Put(context.Context, string) (string, error)
+	GetAll(ctx context.Context, id int, url string) ([]byte, error)
 }
 
 type App struct {
