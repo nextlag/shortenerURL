@@ -58,7 +58,7 @@ func getUserID(tokenString string, log *zap.Logger) int {
 	return claims.UserID
 }
 
-func CheckCookieForID(w http.ResponseWriter, r *http.Request, log *zap.Logger) int {
+func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) int {
 	var id int
 	userIDCookie, err := r.Cookie("UserID")
 	if err != nil {

@@ -26,7 +26,7 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 func (h *GetAllURLsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	var cfg config.Args
 
-	userID := auth.CheckCookieForID(res, req, h.log)
+	userID := auth.CheckCookie(res, req, h.log)
 
 	switch userID {
 	case -1:
@@ -43,7 +43,7 @@ func (h *GetAllURLsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request
 			res.WriteHeader(204)
 			res.Write([]byte("No content"))
 		} else {
-			res.WriteHeader(201)
+			res.WriteHeader(200)
 			res.Write(userURLs)
 		}
 	}
