@@ -9,7 +9,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/service/auth"
-	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 type GetAllURLsHandler struct {
@@ -25,10 +24,9 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 	}
 }
 func (h *GetAllURLsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	log := lg.New()
 	var cfg config.Args
 
-	userID := auth.CheckCookieForID(res, req, log)
+	userID := auth.CheckCookieForID(res, req, h.log)
 
 	switch userID {
 	case -1:

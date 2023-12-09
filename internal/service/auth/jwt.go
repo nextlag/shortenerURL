@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-const SecretKey = "nextbug"
-const TokenExp = time.Hour * 3
+const SECRET_KEY = "nextbug"
+const TOKEN_EXP = time.Hour * 3
 
 type Claims struct {
 	jwt.RegisteredClaims
