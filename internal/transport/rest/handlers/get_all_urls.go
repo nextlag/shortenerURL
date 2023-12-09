@@ -24,67 +24,28 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 	}
 }
 
-func (h *GetAllURLsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cfg config.Args
 
-	userID := auth.CheckCookie(res, req, h.log)
+	userID := auth.CheckCookie(w, r, h.log)
 
 	switch userID {
 	case -1:
-		res.WriteHeader(401)
-		res.Write([]byte("Unauthorized"))
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
 	default:
-		userURLs, err := h.db.GetAll(req.Context(), userID, cfg.URLShort)
+		allURL, err := h.db.GetAll(r.Context(), userID, cfg.URLShort)
 		if err != nil {
 			h.log.Error("Error getting URLs by ID", zap.Error(err))
 		}
 
-		res.Header().Set("Content-Type", "application/json")
-		if string(userURLs) == "null" {
-			res.WriteHeader(204)
-			res.Write([]byte("No content"))
+		w.Header().Set("Content-Type", "application/json")
+		if string(allURL) == "null" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("No content"))
 		} else {
-			res.WriteHeader(200)
-			res.Write(userURLs)
+			w.WriteHeader(http.StatusOK)
+			w.Write(allURL)
 		}
 	}
 }
-
-// func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	userID := auth.CheckCookie(w, r, h.log)
-// 	var cfg config.Args
-//
-// 	switch userID {
-// 	case -1:
-// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-// 		return
-// 	default:
-// 		userURLs, err := h.db.GetAll(r.Context(), userID, cfg.URLShort)
-// 		if err != nil {
-// 			h.log.Error("Error getting URLs by ID", zap.Error(err))
-// 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 			return
-// 		}
-//
-// 		w.Header().Set("Content-Type", "application/json")
-// 		if string(userURLs) == "null" {
-// 			w.WriteHeader(http.StatusNoContent)
-// 			return
-// 		}
-//
-// 		w.WriteHeader(http.StatusCreated)
-// 		w.Header().Set("Content-Type", "application/json")
-// 		if string(userURLs) == "null" {
-// 			w.WriteHeader(http.StatusNoContent)
-// 			return
-// 		}
-//
-// 		w.WriteHeader(http.StatusOK)
-// 		w.Header().Set("Content-Type", "application/json")
-// 		err = json.NewEncoder(w).Encode(userURLs)
-// 		if err != nil {
-// 			h.log.Error("Failed to encode JSON response", zap.Error(err))
-// 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		}
-// 	}
-// }
