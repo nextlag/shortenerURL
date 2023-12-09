@@ -8,10 +8,13 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
+
+	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "nextbug"
+const tokenExp = time.Hour * 3
+
+var cfg config.Args
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -31,11 +34,11 @@ func buildJWTString() (string, error) {
 	id := generateRandomID(1000)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		UserID: id,
 	})
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(cfg.TokenKey))
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +52,7 @@ func getUserID(tokenString string, log *zap.Logger) int {
 			log.Error("unexpected signing method")
 			return nil, nil
 		}
-		return []byte(SECRET_KEY), nil
+		return []byte(cfg.TokenKey), nil
 	})
 	if err != nil || !token.Valid {
 		log.Error("Token is not valid", zap.Error(err))
