@@ -49,6 +49,21 @@ func (mr *MockStorageMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), arg0, arg1)
 }
 
+// GetAll mocks base method.
+func (m *MockStorage) GetAll(arg0 context.Context, arg1 int, arg2 string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll.
+func (mr *MockStorageMockRecorder) GetAll(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockStorage)(nil).GetAll), arg0, arg1, arg2)
+}
+
 // Put mocks base method.
 func (m *MockStorage) Put(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
