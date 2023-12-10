@@ -140,34 +140,70 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
-func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-	var userID []ShortURL
-	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+type URLs struct {
+	LongLink  string `json:"original_url"`
+	ShortLink string `json:"short_url"`
+}
+
+func (s *DBStorage) GetURLsByID(ctx context.Context, id int, URLaddr string) ([]byte, error) {
+
+	var userIDs []URLs
+
+	allIDs, err := s.db.QueryContext(ctx, insert, id)
 	if err != nil {
 		s.log.Error("Error getting batch data: ", zap.Error(err))
 		return nil, err
 	}
-	defer func() {
-		_ = allIDs.Close()
-		_ = allIDs.Err()
-	}()
 
 	for allIDs.Next() {
-		var uid ShortURL
-		err := allIDs.Scan(&uid.URL, &uid.Alias)
+		var links URLs
+		err := allIDs.Scan(&links.LongLink, &links.ShortLink)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
-		// Формируем полный URL, включая хост
-		uid.Alias = host + "/" + uid.Alias
-		userID = append(userID, uid)
-		s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
+		userIDs = append(userIDs, URLs{
+			LongLink:  links.LongLink,
+			ShortLink: URLaddr + "/" + links.ShortLink,
+		})
 	}
-	jsonUserIDs, err := json.Marshal(userID)
+	jsonUserIDs, err := json.Marshal(userIDs)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
 		return nil, err
 	}
+
 	return jsonUserIDs, nil
 }
+
+// func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
+// 	var userID []ShortURL
+// 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+// 	if err != nil {
+// 		s.log.Error("Error getting batch data: ", zap.Error(err))
+// 		return nil, err
+// 	}
+// 	defer func() {
+// 		_ = allIDs.Close()
+// 		_ = allIDs.Err()
+// 	}()
+//
+// 	for allIDs.Next() {
+// 		var uid ShortURL
+// 		err := allIDs.Scan(&uid.URL, &uid.Alias)
+// 		if err != nil {
+// 			s.log.Error("Error scanning data: ", zap.Error(err))
+// 			return nil, err
+// 		}
+// 		// Формируем полный URL, включая хост
+// 		uid.Alias = host + "/" + uid.Alias
+// 		userID = append(userID, uid)
+// 		s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
+// 	}
+// 	jsonUserIDs, err := json.Marshal(userID)
+// 	if err != nil {
+// 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+// 		return nil, err
+// 	}
+// 	return jsonUserIDs, nil
+// }
