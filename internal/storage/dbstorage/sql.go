@@ -5,10 +5,9 @@ const (
     userID INT,
     url VARCHAR(255) UNIQUE NOT NULL, 
     alias VARCHAR(255) UNIQUE NOT NULL,
-    created_at timestamp
 );`
 
-	insert      = `INSERT INTO short_urls (user_id, url, alias, created_at) VALUES ($1, $2, $3, $4)`
+	insert      = `INSERT INTO short_urls (user_id, url, alias) VALUES ($1, $2, $3)`
 	get         = `SELECT userID, url, alias, created_at FROM short_urls WHERE alias = $1;`
 	getConflict = `SELECT alias FROM short_urls WHERE url = $1`
 	getAll      = `SELECT url, alias from short_urls WHERE userID = $1;`

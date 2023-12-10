@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -87,7 +86,7 @@ func Save(file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := usecase.NewRequest(0, uuid, alias, url, time.Now())
+	event := usecase.NewRequestFile(uuid, alias, url)
 
 	if err := Producer.WriteEvent(&event); err != nil {
 		return err
