@@ -7,11 +7,12 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 )
 
 type Handlers struct {
 	Get     http.HandlerFunc
+	GetAll  http.HandlerFunc
 	Shorten http.HandlerFunc
 	Save    http.HandlerFunc
 	Ping    http.HandlerFunc
@@ -26,6 +27,7 @@ func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
 	pingHandler := NewHealCheck(db)
 	return &Handlers{
 		Get:     GetHandler(stor),
+		GetAll:  NewGetAllHandler(log, stor).ServeHTTP,
 		Shorten: Shorten(log, stor),
 		Save:    Save(stor),
 		Ping:    pingHandler.healCheck,

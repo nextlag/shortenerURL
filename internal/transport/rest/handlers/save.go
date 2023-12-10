@@ -10,7 +10,8 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/service/auth"
+	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
@@ -25,9 +26,10 @@ func Save(db app.Storage) http.HandlerFunc {
 			http.Error(w, "bad request 400", http.StatusBadRequest)
 			return
 		}
+		uid := auth.CheckCookie(w, r, log)
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		alias, err := db.Put(r.Context(), string(body))
+		alias, err := db.Put(r.Context(), string(body), uid)
 
 		// Обработка конфликта дубликатов
 		if errors.Is(err, dbstorage.ErrConflict) {
