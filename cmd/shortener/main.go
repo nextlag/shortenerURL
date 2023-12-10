@@ -16,7 +16,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
@@ -33,28 +33,28 @@ func main() {
 	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse()               // Парсинг флагов командной строки
-	var logger = app.New().Log // Создание и настройка логгера
+	flag.Parse() // Парсинг флагов командной строки
+
+	var db app.Storage
+	var log = app.New().Log // Создание и настройка логгера
 	var cfg = app.New().Cfg
 
-	var stor app.Storage
-
 	if cfg.DSN != "" {
-		db, err := dbstorage.New(config.Config.DSN)
+		stor, err := dbstorage.New(cfg.DSN, log)
 		if err != nil {
-			logger.Error("failed to connect in database", zap.Error(err))
+			log.Error("failed to connect in database", zap.Error(err))
 		}
 		defer func() {
-			if err := db.Stop(); err != nil {
-				logger.Error("error stopping DB", zap.Error(err))
+			if err := stor.Stop(); err != nil {
+				log.Error("error stopping DB", zap.Error(err))
 			}
 		}()
-		stor = db
+		db = stor
 	} else {
-		stor = storage.New()
+		db = storage.New()
 	}
 
-	logger.Info("initialized flags",
+	log.Info("initialized flags",
 		zap.String("-a", cfg.Address),
 		zap.String("-b", cfg.URLShort),
 		zap.String("-f", cfg.FileStorage),
@@ -65,18 +65,18 @@ func main() {
 	if cfg.FileStorage != "" {
 		data, err := storage.Load(cfg.FileStorage)
 		if err != nil {
-			logger.Error("failed to load data from file", zap.Error(err))
+			log.Error("failed to load data from file", zap.Error(err))
 			os.Exit(1) // Завершаем программу при ошибке загрузки данных
 		}
-		stor = data
+		db = data
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	rout := router.SetupRouter(stor, logger)
+	rout := router.SetupRouter(db, log, cfg)
 	mw := gzip.New(rout.ServeHTTP)
 	srv := setupServer(mw)
 
-	logger.Info("server starting",
+	log.Info("server starting",
 		zap.String("address", cfg.Address),
 		zap.String("url", cfg.URLShort))
 
@@ -87,12 +87,12 @@ func main() {
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			// Если сервер не стартовал, логируем ошибку
-			logger.Error("failed to start server", zap.String("error", err.Error()))
+			log.Error("failed to start server", zap.String("error", err.Error()))
 			done <- os.Interrupt
 		}
 	}()
-	logger.Info("server started")
+	log.Info("server started")
 
 	<-done // Ожидание сигнала завершения
-	logger.Info("server stopped")
+	log.Info("server stopped")
 }

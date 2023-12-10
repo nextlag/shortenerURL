@@ -12,19 +12,22 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/service/auth"
 )
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
 type BatchHandler struct {
-	log *zap.Logger
 	db  app.Storage
+	log *zap.Logger
+	cfg config.Args
 }
 
 // NewBatchHandler создает новый экземпляр BatchHandler.
-func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
+func NewBatchHandler(db app.Storage, log *zap.Logger, cfg config.Args) *BatchHandler {
 	return &BatchHandler{
-		log: log,
 		db:  db,
+		log: log,
+		cfg: cfg,
 	}
 }
 
@@ -57,9 +60,10 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, Error("failed to decode request"))
 		return
 	}
+	uid := auth.CheckCookie(w, r, h.log)
 
 	for _, url := range req {
-		alias, err := h.db.Put(r.Context(), url.OriginalURL)
+		alias, err := h.db.Put(r.Context(), url.OriginalURL, uid)
 		if err != nil {
 			h.log.Error("URL", zap.Error(err))
 			return
@@ -70,7 +74,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ShortURL      string `json:"short_url"`
 		}{
 			CorrelationID: url.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+			ShortURL:      fmt.Sprintf("%s/%s", h.cfg.URLShort, alias),
 		})
 	}
 
