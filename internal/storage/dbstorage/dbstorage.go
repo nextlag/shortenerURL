@@ -11,6 +11,8 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
@@ -145,37 +147,48 @@ type URLs struct {
 	ShortLink string `json:"short_url"`
 }
 
-func (s *DBStorage) GetAll(ctx context.Context, id int, URLaddr string) ([]byte, error) {
+func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 
 	var userIDs []URLs
 
-	allIDs, err := s.db.QueryContext(ctx, insert, id)
+	var bunURLS struct {
+		URL   string `bun:"long_link"`
+		Alias string `bun:"short_link"`
+	}
+
+	db := bun.NewDB(s.db, pgdialect.New())
+
+	rows, err := db.NewSelect().
+		TableExpr("shorten_URLs").
+		Model(&bunURLS).
+		Where("user_id = ?", id).
+		Rows(ctx)
+	rows.Err()
 	if err != nil {
-		s.log.Error("Error getting batch data: ", zap.Error(err))
+		s.log.Error("Error getting data: ", zap.Error(err))
 		return nil, err
 	}
 
-	for allIDs.Next() {
+	defer rows.Close()
+
+	for rows.Next() {
 		var links URLs
-		err := allIDs.Scan(&links.LongLink, &links.ShortLink)
+		err := rows.Scan(&links.LongLink, &links.ShortLink)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
 		userIDs = append(userIDs, URLs{
 			LongLink:  links.LongLink,
-			ShortLink: URLaddr + "/" + links.ShortLink,
+			ShortLink: host + "/" + links.ShortLink,
 		})
 	}
+
 	jsonUserIDs, err := json.Marshal(userIDs)
 	if err != nil {
-		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+		logger.ErrorLogger("Can't marshal IDs: ", err)
 		return nil, err
 	}
-	defer func() {
-		_ = allIDs.Close()
-		_ = allIDs.Err()
-	}()
 
 	return jsonUserIDs, nil
 }
