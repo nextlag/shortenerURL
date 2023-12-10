@@ -111,7 +111,7 @@ func TestTextPostHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Создаем фейковое хранилище
 			db := mocks.NewMockStorage(ctrl)
-			db.EXPECT().Put(gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+			db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
@@ -204,7 +204,7 @@ func TestShorten(t *testing.T) {
 	}{
 		{
 			name:         "ValidRequest",
-			body:         `{"url": "https://example.com", "alias": "example"}`,
+			body:         `{"original_url": "https://example.com", "shortener_url": "example"}`,
 			expectedJSON: `{"result":"http://localhost:8080/example"}`,
 		},
 		{
@@ -214,7 +214,7 @@ func TestShorten(t *testing.T) {
 		},
 		{
 			name:         "Empty Request Body2",
-			body:         `{"url": "example.com"}`,
+			body:         `{"original_url": "example.com"}`,
 			expectedJSON: `{"error":"поле URL не является допустимым URL", "result":""}`,
 		},
 	}
@@ -225,10 +225,10 @@ func TestShorten(t *testing.T) {
 			db := mocks.NewMockStorage(ctrl)
 			// Если валидация завершается с ошибкой, то вызов Put не должен произойти
 			if !strings.Contains(test.name, "ValidRequest") {
-				db.EXPECT().Put(gomock.Any(), gomock.Any()).Times(0)
+				db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			} else {
 				// Ожидаемый вызов Put
-				db.EXPECT().Put(gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
+				db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
 			}
 			log := zap.NewNop()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
