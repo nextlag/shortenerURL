@@ -213,6 +213,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		// Формируем полный URL, включая хост
 		uid.Alias = host + "/" + uid.Alias
 		userID = append(userID, uid)
+		// s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
 	}
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
