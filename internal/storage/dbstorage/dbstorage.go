@@ -3,6 +3,7 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -22,7 +23,8 @@ const (
 )
 
 type DBStorage struct {
-	db *sql.DB
+	log *zap.Logger
+	db  *sql.DB
 }
 
 var ErrConflict = errors.New("data conflict in DBStorage")
@@ -69,16 +71,17 @@ func (s *DBStorage) CreateTable() error {
 	return nil
 }
 
-func (s *DBStorage) Put(ctx context.Context, url string) (string, error) {
+func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
 	log := lg.New()
 	alias := generatestring.NewRandomString(8)
 	shortURL := ShortURL{
+		ID:        userID,
 		URL:       url,
 		Alias:     alias,
 		CreatedAt: time.Now(),
 	}
 
-	_, err := s.db.ExecContext(ctx, insert, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := s.db.ExecContext(ctx, insert, shortURL.ID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -118,4 +121,36 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 		return "", err
 	}
 	return url.URL, nil
+}
+
+func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
+	var userID []ShortURL
+	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+	if err != nil {
+		s.log.Error("Error getting batch data: ", zap.Error(err))
+		return nil, err
+	}
+	defer func() {
+		_ = allIDs.Close()
+		_ = allIDs.Err()
+	}()
+
+	for allIDs.Next() {
+		var uid ShortURL
+		err := allIDs.Scan(&uid.URL, &uid.Alias)
+		if err != nil {
+			s.log.Error("Error scanning data: ", zap.Error(err))
+			return nil, err
+		}
+		userID = append(userID, ShortURL{
+			URL:   uid.URL,
+			Alias: url + "/" + uid.Alias,
+		})
+	}
+	jsonUserIDs, err := json.Marshal(userID)
+	if err != nil {
+		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+		return nil, err
+	}
+	return jsonUserIDs, nil
 }
