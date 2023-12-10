@@ -186,7 +186,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 
 	jsonUserIDs, err := json.Marshal(userIDs)
 	if err != nil {
-		logger.ErrorLogger("Can't marshal IDs: ", err)
+		s.log.Error("Can't marshal IDs: ", zap.Error(err))
 		return nil, err
 	}
 
