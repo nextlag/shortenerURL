@@ -40,8 +40,12 @@ func (s *Data) Get(_ context.Context, alias string) (string, error) {
 	return url, nil
 }
 
+func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+	return []byte("Memory storage can't operate with user IDs"), nil
+}
+
 // Put сохраняет значение по ключу
-func (s *Data) Put(_ context.Context, url string) (string, error) {
+func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
