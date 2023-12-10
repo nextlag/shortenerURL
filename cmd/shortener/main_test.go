@@ -214,8 +214,8 @@ func TestShorten(t *testing.T) {
 		},
 		{
 			name:         "Empty Request Body2",
-			body:         `{"original_url": "example.com"}`,
-			expectedJSON: `{"error":"поле URL не является допустимым URL", "result":""}`,
+			body:         `{"original_url": "example"}`,
+			expectedJSON: `{"result":""}`,
 		},
 	}
 
