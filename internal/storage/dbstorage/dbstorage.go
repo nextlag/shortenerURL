@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
 
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -125,6 +126,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 
 func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
 	var userID []ShortURL
+	var cfg config.Args
 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
 	if err != nil {
 		s.log.Error("Error getting batch data: ", zap.Error(err))
@@ -144,7 +146,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 		}
 		userID = append(userID, ShortURL{
 			URL:   uid.URL,
-			Alias: "/" + uid.Alias,
+			Alias: cfg.URLShort + "/" + uid.Alias,
 		})
 	}
 	jsonUserIDs, err := json.Marshal(userID)
