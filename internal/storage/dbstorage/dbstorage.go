@@ -17,18 +17,22 @@ import (
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
-const (
-	pingTimeout         = time.Second * 3
-	createTablesTimeout = time.Second * 5
-)
+// Время ожидания пинга для проверки подключения к базе данных
+const pingTimeout = time.Second * 3
 
+// Время ожидания создания таблицы
+const createTablesTimeout = time.Second * 5
+
+// DBStorage - структура для взаимодействия с базой данных
 type DBStorage struct {
 	log *zap.Logger
 	db  *sql.DB
 }
 
+// ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
 
+// New - создает новый экземпляр DBStorage
 func New(dbConfig string) (*DBStorage, error) {
 	db, err := sql.Open("pgx", dbConfig)
 	if err != nil {
@@ -41,12 +45,14 @@ func New(dbConfig string) (*DBStorage, error) {
 	return storage, nil
 }
 
+// Stop - закрывает соединение с базой данных
 func (s *DBStorage) Stop() error {
 	s.db.Close()
 
 	return nil
 }
 
+// CheckConnection - проверяет подключение к базе данных
 func (s *DBStorage) CheckConnection() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
@@ -59,6 +65,7 @@ func (s *DBStorage) CheckConnection() bool {
 	return err == nil
 }
 
+// CreateTable - создает таблицу в базе данных
 func (s *DBStorage) CreateTable() error {
 	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
 	defer cancel()
@@ -71,9 +78,11 @@ func (s *DBStorage) CreateTable() error {
 	return nil
 }
 
+// Put - добавляет запись в базу данных
 func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
 	log := lg.New()
 	alias := generatestring.NewRandomString(8)
+
 	// Проверяем, является ли строка JSON
 	var jsonData map[string]string
 	if err := json.Unmarshal([]byte(url), &jsonData); err == nil {
@@ -116,6 +125,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	return alias, nil
 }
 
+// Get - получает URL по алиасу
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	var url ShortURL
 	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)
@@ -130,7 +140,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
-func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
+func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var userID []ShortURL
 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
 	if err != nil {
@@ -149,10 +159,9 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
-		userID = append(userID, ShortURL{
-			URL:   uid.URL,
-			Alias: url + "/" + uid.Alias,
-		})
+		// Формируем полный URL, включая хост
+		uid.Alias = host + "/" + uid.Alias
+		userID = append(userID, uid)
 	}
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
