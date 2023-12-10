@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"time"
+
 	"github.com/nextlag/shortenerURL/internal/entity"
 )
 
@@ -16,12 +18,14 @@ func (r *CustomRequest) GetEntityRequest() *entity.Request {
 	return &r.Request
 }
 
-func NewRequest(uuid, alias, url string) RequestEntity {
+func NewRequest(userID int, uuid, alias, url string, created_ad time.Time) RequestEntity {
 	return &CustomRequest{
 		Request: entity.Request{
-			UUID:  uuid,
-			Alias: alias,
-			URL:   url,
+			UserID:    userID,
+			UUID:      uuid,
+			Alias:     alias,
+			URL:       url,
+			CreatedAt: created_ad,
 		},
 	}
 }

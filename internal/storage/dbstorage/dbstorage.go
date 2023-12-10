@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
 
+	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -71,16 +72,16 @@ func (s *DBStorage) CreateTable() error {
 	return nil
 }
 
-func (s *DBStorage) Put(ctx context.Context, url string) (string, error) {
+func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
 	log := lg.New()
 	alias := generatestring.NewRandomString(8)
-	shortURL := ShortURL{
-		URL:       url,
-		Alias:     alias,
-		CreatedAt: time.Now(),
-	}
+	var shortURL usecase.CustomRequest
+	shortURL.URL = url
+	shortURL.Alias = alias
+	shortURL.UserID = userID
+	shortURL.CreatedAt = time.Now()
 
-	_, err := s.db.ExecContext(ctx, insert, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := s.db.ExecContext(ctx, insert, shortURL.UserID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -109,8 +110,8 @@ func (s *DBStorage) Put(ctx context.Context, url string) (string, error) {
 }
 
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
-	var url ShortURL
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)
+	var url usecase.CustomRequest
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UserID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
@@ -122,42 +123,27 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
-type URLs struct {
-	LongLink  string `json:"original_url"`
-	ShortLink string `json:"short_url"`
-}
-
-func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
-
-	var userIDs []URLs
-
-	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+func (s *DBStorage) GetAll(ctx context.Context, userID int, url string) ([]byte, error) {
+	var uid usecase.CustomRequest
+	allURL, err := s.db.QueryContext(ctx, getAll, userID)
 	if err != nil {
 		s.log.Error("Error getting batch data: ", zap.Error(err))
 		return nil, err
 	}
 	defer func() {
-		_ = allIDs.Close()
-		_ = allIDs.Err()
+		_ = allURL.Close()
+		_ = allURL.Err()
 	}()
 
-	for allIDs.Next() {
-		var links URLs
-		err := allIDs.Scan(&links.LongLink, &links.ShortLink)
+	var userURL []usecase.CustomRequest
+	for allURL.Next() {
+		err := allURL.Scan(&uid.UserID, &uid.URL, &uid.Alias, &uid.CreatedAt)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
-		userIDs = append(userIDs, URLs{
-			LongLink:  links.LongLink,
-			ShortLink: url + "/" + links.ShortLink,
-		})
-	}
-	jsonUserIDs, err := json.Marshal(userIDs)
-	if err != nil {
-		s.log.Error("Can't marshal IDs: ", zap.Error(err))
-		return nil, err
+		userURL = append(userURL, uid)
 	}
 
-	return jsonUserIDs, nil
+	return json.Marshal(userURL)
 }

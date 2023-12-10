@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/service/auth"
 	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
@@ -44,9 +45,11 @@ func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 			render.JSON(w, r, ValidationError(validateErr))
 			return
 		}
+		UserID := auth.CheckCookie(w, r, log)
+		log.Info("auth", zap.Int("User ID", UserID))
 
 		// Добавление URL в хранилище и получение идентификатора (id).
-		alias, err := db.Put(r.Context(), req.GetEntityRequest().URL)
+		alias, err := db.Put(r.Context(), req.GetEntityRequest().URL, UserID)
 		if errors.Is(err, dbstorage.ErrConflict) {
 			// ошибка для случая конфликта оригинальных url
 			log.Error("Извините, такой url уже занят")

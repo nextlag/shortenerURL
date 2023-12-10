@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -45,7 +46,7 @@ func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
 }
 
 // Put сохраняет значение по ключу
-func (s *Data) Put(_ context.Context, url string) (string, error) {
+func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -86,14 +87,14 @@ func Save(file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := usecase.NewRequest(uuid, alias, url)
+	event := usecase.NewRequest(0, uuid, alias, url, time.Now())
 
 	if err := Producer.WriteEvent(&event); err != nil {
 		return err
 	}
 
-	logger := lg.New()
-	logger.Info("Data.Put", zap.Any("Save", event))
+	log := lg.New()
+	log.Info("Data.Put", zap.Any("Save", event))
 
 	return nil
 }

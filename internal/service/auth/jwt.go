@@ -8,13 +8,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
-
-	"github.com/nextlag/shortenerURL/internal/config"
 )
 
 const tokenExp = time.Hour * 3
-
-var cfg config.Args
+const tokenKey = "nextbug"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -38,7 +35,7 @@ func buildJWTString() (string, error) {
 		},
 		UserID: id,
 	})
-	tokenString, err := token.SignedString([]byte(cfg.TokenKey))
+	tokenString, err := token.SignedString([]byte(tokenKey))
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +49,7 @@ func getUserID(tokenString string, log *zap.Logger) int {
 			log.Error("unexpected signing method")
 			return nil, nil
 		}
-		return []byte(cfg.TokenKey), nil
+		return []byte(tokenKey), nil
 	})
 	if err != nil || !token.Valid {
 		log.Error("Token is not valid", zap.Error(err))
@@ -73,11 +70,13 @@ func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) int {
 			log.Error("Error making cookie", zap.Error(err))
 			return -1
 		}
+		log.Info("Generated Token:", zap.String("token key:", jwt))
 		cookie := http.Cookie{Name: "UserID", Value: jwt}
 		http.SetCookie(w, &cookie)
 		id = getUserID(jwt, log)
 		return id
 	}
 	id = getUserID(userIDCookie.Value, log)
+	log.Info("User ID after getting from cookie", zap.Int("UserID", id))
 	return id
 }

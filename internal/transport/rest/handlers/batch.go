@@ -12,6 +12,7 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/service/auth"
 )
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
@@ -57,9 +58,10 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, Error("failed to decode request"))
 		return
 	}
+	UserID := auth.CheckCookie(w, r, h.log)
 
 	for _, url := range req {
-		alias, err := h.db.Put(r.Context(), url.OriginalURL)
+		alias, err := h.db.Put(r.Context(), url.OriginalURL, UserID)
 		if err != nil {
 			h.log.Error("URL", zap.Error(err))
 			return

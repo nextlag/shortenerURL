@@ -27,7 +27,7 @@ func Save(db app.Storage) http.HandlerFunc {
 		}
 
 		// Попытка сохранить short-URL и оригинальный URL в хранилище
-		alias, err := db.Put(r.Context(), string(body))
+		alias, err := db.Put(r.Context(), string(body), 0)
 
 		// Обработка конфликта дубликатов
 		if errors.Is(err, dbstorage.ErrConflict) {
