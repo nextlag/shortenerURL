@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -75,6 +74,13 @@ func (s *DBStorage) CreateTable() error {
 func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
 	log := lg.New()
 	alias := generatestring.NewRandomString(8)
+	// Проверяем, является ли строка JSON
+	var jsonData map[string]string
+	if err := json.Unmarshal([]byte(url), &jsonData); err == nil {
+		// Если декодирование прошло успешно, используем значение "url"
+		url = jsonData["url"]
+	}
+
 	shortURL := ShortURL{
 		ID:        userID,
 		URL:       url,
@@ -126,7 +132,6 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 
 func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
 	var userID []ShortURL
-	var cfg config.Args
 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
 	if err != nil {
 		s.log.Error("Error getting batch data: ", zap.Error(err))
@@ -146,7 +151,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 		}
 		userID = append(userID, ShortURL{
 			URL:   uid.URL,
-			Alias: cfg.URLShort + "/" + uid.Alias,
+			Alias: url + "/" + uid.Alias,
 		})
 	}
 	jsonUserIDs, err := json.Marshal(userID)
