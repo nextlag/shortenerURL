@@ -18,14 +18,14 @@ func (r *CustomRequest) GetEntityRequest() *entity.Request {
 	return &r.Request
 }
 
-func NewRequest(userID int, uuid, alias, url string, created_ad time.Time) RequestEntity {
+func NewRequest(userID int, uuid, alias, url string, created_at time.Time) RequestEntity {
 	return &CustomRequest{
 		Request: entity.Request{
-			UserID:    userID,
-			UUID:      uuid,
-			Alias:     alias,
-			URL:       url,
-			CreatedAt: created_ad,
+			UserID:     userID,
+			UUID:       uuid,
+			Alias:      alias,
+			URL:        url,
+			Created_at: created_at,
 		},
 	}
 }

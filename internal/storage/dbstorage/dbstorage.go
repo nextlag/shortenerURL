@@ -79,9 +79,9 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	shortURL.URL = url
 	shortURL.Alias = alias
 	shortURL.UserID = userID
-	shortURL.CreatedAt = time.Now()
+	shortURL.Created_at = time.Now()
 
-	_, err := s.db.ExecContext(ctx, insert, shortURL.UserID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := s.db.ExecContext(ctx, insert, shortURL.UserID, shortURL.URL, shortURL.Alias, shortURL.Created_at)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -111,7 +111,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	var url usecase.CustomRequest
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UserID, &url.URL, &url.Alias, &url.CreatedAt)
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UserID, &url.URL, &url.Alias, &url.Created_at)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
@@ -137,7 +137,7 @@ func (s *DBStorage) GetAll(ctx context.Context, userID int, url string) ([]byte,
 
 	var userURL []usecase.CustomRequest
 	for allURL.Next() {
-		err := allURL.Scan(&uid.UserID, &uid.URL, &uid.Alias, &uid.CreatedAt)
+		err := allURL.Scan(&uid.UserID, &uid.URL, &uid.Alias, &uid.Created_at)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
