@@ -145,7 +145,7 @@ type URLs struct {
 	ShortLink string `json:"short_url"`
 }
 
-func (s *DBStorage) GetURLsByID(ctx context.Context, id int, URLaddr string) ([]byte, error) {
+func (s *DBStorage) GetAll(ctx context.Context, id int, URLaddr string) ([]byte, error) {
 
 	var userIDs []URLs
 
