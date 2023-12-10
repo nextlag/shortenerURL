@@ -16,7 +16,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/storage/database/dbstorage"
+	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
