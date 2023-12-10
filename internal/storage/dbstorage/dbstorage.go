@@ -203,8 +203,8 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		_ = allIDs.Err()
 	}()
 
+	var uid ShortURL
 	for allIDs.Next() {
-		var uid ShortURL
 		err := allIDs.Scan(&uid.URL, &uid.Alias)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
@@ -213,8 +213,8 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		// Формируем полный URL, включая хост
 		uid.Alias = host + "/" + uid.Alias
 		userID = append(userID, uid)
-		// s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
 	}
+	s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
