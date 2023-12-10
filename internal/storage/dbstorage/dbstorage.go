@@ -193,19 +193,19 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var userID []ShortURL
-	allURL, err := s.db.QueryContext(ctx, getAll, id)
+	allIDs, err := s.db.QueryContext(ctx, getAll, id)
 	if err != nil {
 		s.log.Error("Error getting batch data: ", zap.Error(err))
 		return nil, err
 	}
 	defer func() {
-		_ = allURL.Close()
-		_ = allURL.Err()
+		_ = allIDs.Close()
+		_ = allIDs.Err()
 	}()
 
-	for allURL.Next() {
+	for allIDs.Next() {
 		var uid ShortURL
-		err := allURL.Scan(&uid.URL, &uid.Alias)
+		err := allIDs.Scan(&uid.URL, &uid.Alias)
 		if err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
@@ -214,7 +214,6 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		uid.Alias = host + "/" + uid.Alias
 		userID = append(userID, uid)
 	}
-
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
