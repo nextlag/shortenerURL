@@ -172,6 +172,10 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, URLaddr string) ([]byte,
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
 		return nil, err
 	}
+	defer func() {
+		_ = allIDs.Close()
+		_ = allIDs.Err()
+	}()
 
 	return jsonUserIDs, nil
 }
