@@ -17,15 +17,17 @@ import (
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
 type BatchHandler struct {
-	log *zap.Logger
 	db  app.Storage
+	log *zap.Logger
+	cfg config.Args
 }
 
 // NewBatchHandler создает новый экземпляр BatchHandler.
-func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
+func NewBatchHandler(db app.Storage, log *zap.Logger, cfg config.Args) *BatchHandler {
 	return &BatchHandler{
-		log: log,
 		db:  db,
+		log: log,
+		cfg: cfg,
 	}
 }
 
@@ -72,7 +74,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ShortURL      string `json:"short_url"`
 		}{
 			CorrelationID: url.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+			ShortURL:      fmt.Sprintf("%s/%s", h.cfg.URLShort, alias),
 		})
 	}
 
