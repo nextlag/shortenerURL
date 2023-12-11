@@ -163,7 +163,8 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 			URL:   uid.URL,
 			Alias: host + "/" + uid.Alias,
 		})
-		fmt.Println("OUTPUT", userID)
+		// fmt.Println("OUTPUT", userID)
+		s.log.Debug("OUTPUT", zap.Any("host/alias", userID))
 	}
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
