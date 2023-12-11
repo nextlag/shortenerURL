@@ -11,8 +11,6 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
@@ -142,80 +140,80 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
-func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-
-	var userIDs []ShortURL
-
-	var bunURLS struct {
-		URL   string `bun:"original_url"`
-		Alias string `bun:"short_url"`
-	}
-
-	db := bun.NewDB(s.db, pgdialect.New())
-
-	rows, err := db.NewSelect().
-		TableExpr("short_urls").
-		Model(&bunURLS).
-		Where("user_id = ?", id).
-		Rows(ctx)
-	rows.Err()
-	if err != nil {
-		s.log.Error("Error getting data: ", zap.Error(err))
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var links ShortURL
-		err := rows.Scan(&links.URL, &links.Alias)
-		if err != nil {
-			s.log.Error("Error scanning data: ", zap.Error(err))
-			return nil, err
-		}
-		userIDs = append(userIDs, ShortURL{
-			URL:   links.URL,
-			Alias: host + "/" + links.Alias,
-		})
-	}
-
-	jsonUserIDs, err := json.Marshal(userIDs)
-	if err != nil {
-		s.log.Error("Can't marshal IDs: ", zap.Error(err))
-		return nil, err
-	}
-
-	return jsonUserIDs, nil
-}
-
-// func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-// 	var userID []ShortURL
-// 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+// func (s *DBStorage) GetAll(ctx context.Context, userID int, host string) ([]byte, error) {
+//
+// 	var userIDs []ShortURL
+//
+// 	var bunURLS struct {
+// 		URL   string `bun:"original_url"`
+// 		Alias string `bun:"short_url"`
+// 	}
+//
+// 	db := bun.NewDB(s.db, pgdialect.New())
+//
+// 	rows, err := db.NewSelect().
+// 		TableExpr("short_urls").
+// 		Model(&bunURLS).
+// 		Where("user_id = ?", userID).
+// 		Rows(ctx)
+// 	rows.Err()
 // 	if err != nil {
-// 		s.log.Error("Error getting batch data: ", zap.Error(err))
+// 		s.log.Error("Error getting data: ", zap.Error(err))
 // 		return nil, err
 // 	}
-// 	defer func() {
-// 		_ = allIDs.Close()
-// 		_ = allIDs.Err()
-// 	}()
 //
-// 	for allIDs.Next() {
-// 		var uid ShortURL
-// 		err := allIDs.Scan(&uid.URL, &uid.Alias)
+// 	defer rows.Close()
+//
+// 	for rows.Next() {
+// 		var links ShortURL
+// 		err := rows.Scan(&links.URL, &links.Alias)
 // 		if err != nil {
 // 			s.log.Error("Error scanning data: ", zap.Error(err))
 // 			return nil, err
 // 		}
-// 		// Формируем полный URL, включая хост
-// 		uid.Alias = host + "/" + uid.Alias
-// 		userID = append(userID, uid)
+// 		userIDs = append(userIDs, ShortURL{
+// 			URL:   links.URL,
+// 			Alias: host + "/" + links.Alias,
+// 		})
 // 	}
 //
-// 	jsonUserIDs, err := json.Marshal(userID)
+// 	jsonUserIDs, err := json.Marshal(userIDs)
 // 	if err != nil {
 // 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
 // 		return nil, err
 // 	}
+//
 // 	return jsonUserIDs, nil
 // }
+
+func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
+	var userID []ShortURL
+	allIDs, err := s.db.QueryContext(ctx, getAll, id)
+	if err != nil {
+		s.log.Error("Error getting batch data: ", zap.Error(err))
+		return nil, err
+	}
+	defer func() {
+		_ = allIDs.Close()
+		_ = allIDs.Err()
+	}()
+
+	for allIDs.Next() {
+		var uid ShortURL
+		err := allIDs.Scan(&uid.URL, &uid.Alias)
+		if err != nil {
+			s.log.Error("Error scanning data: ", zap.Error(err))
+			return nil, err
+		}
+		userID = append(userID, ShortURL{
+			URL:   uid.URL,
+			Alias: url + "/" + uid.Alias,
+		})
+	}
+	jsonUserIDs, err := json.Marshal(userID)
+	if err != nil {
+		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+		return nil, err
+	}
+	return jsonUserIDs, nil
+}
