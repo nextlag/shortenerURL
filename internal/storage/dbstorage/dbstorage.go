@@ -215,9 +215,6 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		userID = append(userID, uid)
 	}
 
-	var uid ShortURL
-	s.log.Info("uid.Alias", zap.String("OUTPUT", uid.Alias))
-
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
