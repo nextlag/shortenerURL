@@ -186,7 +186,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 // 	return jsonUserIDs, nil
 // }
 
-func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, error) {
+func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var userID []ShortURL
 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
 	if err != nil {
@@ -207,7 +207,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 		}
 		userID = append(userID, ShortURL{
 			URL:   uid.URL,
-			Alias: url + uid.Alias,
+			Alias: host + uid.Alias,
 		})
 		fmt.Println("OUTPUT", userID)
 	}

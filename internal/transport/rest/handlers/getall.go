@@ -27,6 +27,7 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 
 func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cfg config.Args
+	h.log.Info(cfg.URLShort)
 
 	userID := auth.CheckCookie(w, r, h.log)
 
