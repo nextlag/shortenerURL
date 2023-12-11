@@ -8,13 +8,20 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/service/auth"
 	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 )
 
-func NewSaveHandlers(db app.Storage) *Handler {
-	return &Handler{
+type SaveHandler struct {
+	db  app.Storage
+	log *zap.Logger
+	cfg config.Args
+}
+
+func NewSaveHandlers(db app.Storage) *SaveHandler {
+	return &SaveHandler{
 		db:  db,
 		log: app.New().Log,
 		cfg: app.New().Cfg,
@@ -22,7 +29,7 @@ func NewSaveHandlers(db app.Storage) *Handler {
 }
 
 // Save - обработчик POST-запросов для создания и сохранения URL в storage.
-func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Считываем тело запроса (оригинальный URL)
 	body, err := io.ReadAll(r.Body)

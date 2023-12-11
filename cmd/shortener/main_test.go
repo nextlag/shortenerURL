@@ -71,7 +71,7 @@ func TestGetHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Создаем и вызываем handler для маршрута
-			handlers.GetHandler(db).ServeHTTP(w, req)
+			handlers.NewGetHandler(db).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода
@@ -120,7 +120,7 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			handlers.Save(db).ServeHTTP(w, req)
+			handlers.NewSaveHandlers(db).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
