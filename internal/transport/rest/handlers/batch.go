@@ -13,19 +13,20 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/service/auth"
+	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // BatchHandler представляет хендлер для сокращения нескольких URL.
 type BatchHandler struct {
-	log *zap.Logger
 	db  app.Storage
+	log *zap.Logger
 }
 
 // NewBatchHandler создает новый экземпляр BatchHandler.
-func NewBatchHandler(log *zap.Logger, db app.Storage) *BatchHandler {
+func NewBatchHandler(db app.Storage) *BatchHandler {
 	return &BatchHandler{
-		log: log,
 		db:  db,
+		log: lg.New(),
 	}
 }
 
