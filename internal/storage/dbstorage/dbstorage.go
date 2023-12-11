@@ -178,8 +178,10 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	var userID []ShortURL
 
 	var bunURL struct {
-		URL   string `bun:"original_url"`
-		Alias string `bun:"short_url"`
+		UserID    int       `bun:"id"`
+		URL       string    `bun:"url"`
+		Alias     string    `bun:"alias"`
+		CreatedAt time.Time `bun:"cratedAt"`
 	}
 
 	db := bun.NewDB(s.db, pgdialect.New())
@@ -202,15 +204,14 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	}
 
 	for rows.Next() {
-		var uid ShortURL
-		err := rows.Scan(&uid.URL, &uid.Alias)
-		if err != nil {
+		var url ShortURL
+		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
 		userID = append(userID, ShortURL{
-			URL:   uid.URL,
-			Alias: host + "/" + uid.Alias,
+			URL:   url.URL,
+			Alias: host + "/" + url.Alias,
 		})
 	}
 
