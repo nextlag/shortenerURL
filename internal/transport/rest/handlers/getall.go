@@ -8,7 +8,6 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/service/auth"
 
-	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 )
 
@@ -26,7 +25,7 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 }
 
 func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var cfg config.Args
+	var cfg = app.New().Cfg
 	h.log.Info(cfg.URLShort)
 
 	userID := auth.CheckCookie(w, r, h.log)
