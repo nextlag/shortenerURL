@@ -142,41 +142,8 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
-// func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-// 	var userID []ShortURL
-// 	allIDs, err := s.db.QueryContext(ctx, getAll, id)
-// 	if err != nil {
-// 		s.log.Error("Error getting batch data: ", zap.Error(err))
-// 		return nil, err
-// 	}
-// 	defer func() {
-// 		_ = allIDs.Close()
-// 		_ = allIDs.Err()
-// 	}()
-//
-// 	for allIDs.Next() {
-// 		var uid ShortURL
-// 		err := allIDs.Scan(&uid.URL, &uid.Alias)
-// 		if err != nil {
-// 			s.log.Error("Error scanning data: ", zap.Error(err))
-// 			return nil, err
-// 		}
-// 		userID = append(userID, ShortURL{
-// 			URL:   uid.URL,
-// 			Alias: host + "/" + uid.Alias,
-// 		})
-// 	}
-// 	jsonUserIDs, err := json.Marshal(userID)
-// 	if err != nil {
-// 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
-// 		return nil, err
-// 	}
-// 	return jsonUserIDs, nil
-// }
-
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-	var userID []ShortURL
-
+	var urls []ShortURL
 	db := bun.NewDB(s.db, pgdialect.New())
 
 	rows, err := db.NewSelect().
@@ -201,11 +168,11 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
-		url.Alias = host + "/" + url.Alias
-		userID = append(userID, url)
+		url.Alias = fmt.Sprintf("%s/%s", host, url.Alias)
+		urls = append(urls, url)
 	}
 
-	allURL, err := json.Marshal(userID)
+	allURL, err := json.Marshal(urls)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
 		return nil, err
@@ -213,3 +180,34 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 
 	return allURL, nil
 }
+
+// func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
+// 	var urls []ShortURL
+// 	allID, err := s.db.QueryContext(ctx, getAll, id)
+// 	if err != nil {
+// 		s.log.Error("Error getting batch data: ", zap.Error(err))
+// 		return nil, err
+// 	}
+// 	defer func() {
+// 		_ = allID.Close()
+// 		_ = allID.Err()
+// 	}()
+//
+// 	for allID.Next() {
+// 		var url ShortURL
+// 		if err := allID.Scan(&url.URL, &url.Alias); err != nil {
+// 			s.log.Error("Error scanning data: ", zap.Error(err))
+// 			return nil, err
+// 		}
+// 		urls = append(urls, ShortURL{
+// 			URL:   url.URL,
+// 			Alias: fmt.Sprintf("%s/%s", host, url.Alias),
+// 		})
+// 	}
+// 	allURL, err := json.Marshal(urls)
+// 	if err != nil {
+// 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
+// 		return nil, err
+// 	}
+// 	return allURL, nil
+// }
