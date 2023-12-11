@@ -21,7 +21,7 @@ const (
 )
 
 type ShortURL struct {
-	UserID    int       `json:"user_id"`
+	UserID    int       `json:"user_id" `
 	URL       string    `json:"original_url"`
 	Alias     string    `json:"short_url"`
 	CreatedAt time.Time `json:"created_at,omitempty"`

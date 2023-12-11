@@ -175,7 +175,6 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 // }
 
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-
 	var userID []ShortURL
 
 	var bunURL struct {
@@ -190,13 +189,17 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		Model(&bunURL).
 		Where("user_id = ?", id).
 		Rows(ctx)
-	rows.Err()
 	if err != nil {
 		s.log.Error("Error getting data: ", zap.Error(err))
 		return nil, err
 	}
-
 	defer rows.Close()
+
+	if rows.Err() != nil {
+		// обработка ошибки rows.Err()
+		s.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
+		return nil, rows.Err()
+	}
 
 	for rows.Next() {
 		var uid ShortURL
