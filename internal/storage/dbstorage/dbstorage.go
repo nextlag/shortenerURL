@@ -93,13 +93,13 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	}
 
 	shortURL := ShortURL{
-		ID:        userID,
+		UserID:    userID,
 		URL:       url,
 		Alias:     alias,
 		CreatedAt: time.Now(),
 	}
 
-	_, err := s.db.ExecContext(ctx, insert, shortURL.ID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := s.db.ExecContext(ctx, insert, shortURL.UserID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -130,7 +130,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 // Get - получает URL по алиасу
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	var url ShortURL
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.ID, &url.URL, &url.Alias, &url.CreatedAt)
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UserID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
@@ -147,14 +147,14 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	var userIDs []ShortURL
 
 	var bunURLS struct {
-		URL   string `bun:"long_link"`
-		Alias string `bun:"short_link"`
+		URL   string `bun:"original_url"`
+		Alias string `bun:"short_url"`
 	}
 
 	db := bun.NewDB(s.db, pgdialect.New())
 
 	rows, err := db.NewSelect().
-		TableExpr("shorten_URLs").
+		TableExpr("short_urls").
 		Model(&bunURLS).
 		Where("user_id = ?", id).
 		Rows(ctx)
