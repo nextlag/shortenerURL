@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -26,21 +25,17 @@ func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
 }
 
 func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	cfg := app.New().Cfg
-	h.log.Info(cfg.URLShort)
-
+	var cfg = app.New().Cfg
 	userID := auth.CheckCookie(w, r, h.log)
 
 	switch userID {
 	case -1:
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
 	default:
 		allURL, err := h.db.GetAll(r.Context(), userID, cfg.URLShort)
 		if err != nil {
 			h.log.Error("Error getting URLs by ID", zap.Error(err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -49,7 +44,7 @@ func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("No content"))
 		} else {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(allURL)
+			w.Write(allURL)
 		}
 	}
 }

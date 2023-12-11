@@ -148,14 +148,17 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 		return nil, err
 	}
 	defer func() {
-		_ = allIDs.Close()
-		_ = allIDs.Err()
+		if closeErr := allIDs.Close(); closeErr != nil {
+			s.log.Error("Error closing rows: ", zap.Error(closeErr))
+		}
+		if err := allIDs.Err(); err != nil {
+			s.log.Error("Error in rows: ", zap.Error(err))
+		}
 	}()
 
 	for allIDs.Next() {
 		var uid ShortURL
-		err := allIDs.Scan(&uid.URL, &uid.Alias)
-		if err != nil {
+		if err := allIDs.Scan(&uid.URL, &uid.Alias); err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
@@ -163,9 +166,10 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 			URL:   uid.URL,
 			Alias: host + "/" + uid.Alias,
 		})
-		// fmt.Println("OUTPUT", userID)
-		s.log.Debug("OUTPUT", zap.Any("host/alias", userID))
 	}
+
+	s.log.Debug("OUTPUT", zap.Any("host/alias", userID))
+
 	jsonUserIDs, err := json.Marshal(userID)
 	if err != nil {
 		s.log.Error("Can't marshal IDs: ", zap.Error(err))
