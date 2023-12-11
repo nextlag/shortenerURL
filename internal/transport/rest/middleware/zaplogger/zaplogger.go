@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
 )
 
 // RequestFields содержит поля запроса для логгера.
@@ -28,6 +28,7 @@ type RequestFields struct {
 func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			cfg := app.New().Cfg
 			// Создаем логгер запроса
 			requestFields := RequestFields{
 				Method:         r.Method,
@@ -36,7 +37,7 @@ func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 				UserAgent:      r.UserAgent(),
 				RequestID:      middleware.GetReqID(r.Context()),
 				ContentType:    r.Header.Get("Content-Type"),
-				DataStorageLoc: config.Config.FileStorage,
+				DataStorageLoc: cfg.FileStorage,
 			}
 
 			// Создаем WrapResponseWriter для перехвата статуса ответа и количества байтов.

@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
-	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // Время ожидания пинга для проверки подключения к базе данных
@@ -82,7 +81,6 @@ func (s *DBStorage) CreateTable() error {
 
 // Put - добавляет запись в базу данных
 func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
-	log := lg.New()
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем, является ли строка JSON
@@ -111,19 +109,19 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 					// Обработка ситуации, когда не найдено совпадение по URL
 					return alias, ErrConflict
 				}
-				log.Error("DBStorage.QueryRowContext failed", zap.Error(err))
+				s.log.Error("DBStorage.QueryRowContext failed", zap.Error(err))
 				return alias, fmt.Errorf("failed to query existing alias: %w", err)
 			}
 			return existingAlias, ErrConflict
 		}
 
 		// Логирование текста ошибки для анализа
-		log.Error("DBStorage.Put failed", zap.Error(err))
+		s.log.Error("DBStorage.Put failed", zap.Error(err))
 		return alias, fmt.Errorf("failed to insert short URL into database: %w", err)
 	}
 
 	// Логирование успешной вставки
-	lg.New().Info("DBStorage.Put", zap.String("alias", alias), zap.String("url", url))
+	s.log.Info("DBStorage.Put", zap.String("alias", alias), zap.String("url", url))
 	return alias, nil
 }
 
@@ -134,6 +132,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
+
 			return "", fmt.Errorf("no URL found for alias %s", alias)
 		}
 		// Обработка других ошибок базы данных
@@ -142,6 +141,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	return url.URL, nil
 }
 
+// GetAll - получает все URL конкретного пользователя
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var urls []ShortURL
 	db := bun.NewDB(s.db, pgdialect.New())
@@ -181,6 +181,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	return allURL, nil
 }
 
+// GetAll - получает все URL конкретного пользователя (вариант 2)
 // func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 // 	var urls []ShortURL
 // 	allID, err := s.db.QueryContext(ctx, getAll, id)

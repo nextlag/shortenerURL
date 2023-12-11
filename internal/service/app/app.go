@@ -18,6 +18,7 @@ type Storage interface {
 	Get(context.Context, string) (string, error)
 	GetAll(ctx context.Context, userID int, url string) ([]byte, error)
 	Put(context.Context, string, int) (string, error)
+	CheckConnection() bool
 }
 
 type App struct {

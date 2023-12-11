@@ -10,6 +10,12 @@ import (
 	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
 )
 
+type Handler struct {
+	db  app.Storage
+	log *zap.Logger
+	cfg config.Args
+}
+
 type Handlers struct {
 	Get     http.HandlerFunc
 	GetAll  http.HandlerFunc
@@ -24,13 +30,12 @@ func New(log *zap.Logger, stor app.Storage, db *dbstorage.DBStorage) *Handlers {
 	if db == nil {
 		db, _ = dbstorage.New(config.Config.DSN)
 	}
-	pingHandler := NewHealCheck(db)
 	return &Handlers{
 		Get:     GetHandler(stor),
 		GetAll:  NewGetAllHandler(log, stor).ServeHTTP,
 		Shorten: Shorten(log, stor),
-		Save:    Save(stor),
-		Ping:    pingHandler.healCheck,
+		Save:    NewSaveHandlers(db).ServeHTTP,
+		Ping:    NewHealCheck(db).ServeHTTP,
 		Batch:   NewBatchHandler(log, stor).ServeHTTP,
 	}
 }

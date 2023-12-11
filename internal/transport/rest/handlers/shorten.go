@@ -52,7 +52,7 @@ func Shorten(log *zap.Logger, db app.Storage) http.HandlerFunc {
 		alias, err := db.Put(r.Context(), req.GetEntityRequest().URL, uid)
 		if errors.Is(err, dbstorage.ErrConflict) {
 			// ошибка для случая конфликта оригинальных url
-			log.Error("Извините, такой url уже занят")
+			log.Error("trying to add a duplicate URL", zap.Error(err))
 			ResponseConflict(w, alias)
 			return
 		}

@@ -18,6 +18,7 @@ import (
 // Data представляет реализацию интерфейса Storage
 type Data struct {
 	data  map[string]string
+	log   *zap.Logger
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
@@ -44,12 +45,15 @@ func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
 	return []byte("Memory storage can't operate with user IDs"), nil
 }
 
+func (s *Data) CheckConnection() bool {
+	return true
+}
+
 // Put сохраняет значение по ключу
 func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	log := lg.New()
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем существование ключа
@@ -60,7 +64,7 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	// Проверяем существование значения
 	for k, v := range s.data {
 		if v == url {
-			log.Info("response", zap.String("ulr", v), zap.String("alias", k))
+			s.log.Info("response", zap.String("ulr", v), zap.String("alias", k))
 			return k, nil
 		}
 	}
@@ -79,6 +83,7 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 }
 
 func Save(file string, alias string, url string) error {
+	log := lg.New()
 	Producer, err := filestorage.NewProducer(file)
 	if err != nil {
 		return err
@@ -92,8 +97,7 @@ func Save(file string, alias string, url string) error {
 		return err
 	}
 
-	logger := lg.New()
-	logger.Info("Data.Put", zap.Any("Save", event))
+	log.Info("Data.Put", zap.Any("Save", event))
 
 	return nil
 }
