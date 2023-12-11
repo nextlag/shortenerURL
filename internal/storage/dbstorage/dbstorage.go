@@ -207,7 +207,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, url string) ([]byte, err
 		}
 		userID = append(userID, ShortURL{
 			URL:   uid.URL,
-			Alias: url + "/" + uid.Alias,
+			Alias: url + uid.Alias,
 		})
 		fmt.Println("OUTPUT", userID)
 	}
