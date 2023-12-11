@@ -177,18 +177,11 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var userID []ShortURL
 
-	var bunURL struct {
-		UserID    int       `bun:"id"`
-		URL       string    `bun:"url"`
-		Alias     string    `bun:"alias"`
-		CreatedAt time.Time `bun:"cratedAt"`
-	}
-
 	db := bun.NewDB(s.db, pgdialect.New())
 
 	rows, err := db.NewSelect().
 		TableExpr("short_urls").
-		Model(&bunURL).
+		Column("url", "alias").
 		Where("user_id = ?", id).
 		Rows(ctx)
 	if err != nil {
@@ -198,7 +191,6 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	defer rows.Close()
 
 	if rows.Err() != nil {
-		// обработка ошибки rows.Err()
 		s.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
 		return nil, rows.Err()
 	}
@@ -209,10 +201,8 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
-		userID = append(userID, ShortURL{
-			URL:   url.URL,
-			Alias: host + "/" + url.Alias,
-		})
+		url.Alias = host + "/" + url.Alias
+		userID = append(userID, url)
 	}
 
 	allURL, err := json.Marshal(userID)
