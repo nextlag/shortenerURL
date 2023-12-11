@@ -7,9 +7,11 @@ import (
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS short_urls (
     user_id INT,
-    url VARCHAR(255) UNIQUE NOT NULL, 
-    alias VARCHAR(255) UNIQUE NOT NULL,
-    created_at timestamp
+    url VARCHAR(255) NOT NULL,
+    alias VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP,
+    PRIMARY KEY (user_id, alias),
+    UNIQUE (user_id, url)
 );`
 
 	insert      = `INSERT INTO short_urls (user_id, url, alias, created_at) VALUES ($1, $2, $3, $4);`

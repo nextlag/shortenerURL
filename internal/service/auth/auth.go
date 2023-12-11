@@ -4,13 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"net/http"
-	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
 )
 
-const tokenExp = time.Hour * 3
+// const tokenExp = time.Hour * 3
 const tokenKey = "nextbug"
 
 type Claims struct {
@@ -31,7 +30,11 @@ func buildJWTString() (string, error) {
 	id := generateRandomID(1000)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
+			// хранение токена по времени
+			// ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
+
+			// хранение токена бессрочно
+			ExpiresAt: nil,
 		},
 		UserID: id,
 	})
@@ -70,10 +73,10 @@ func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) int {
 			log.Error("Error making cookie", zap.Error(err))
 			return -1
 		}
-		log.Info("Generated Token:", zap.String("token key:", jwt))
 		cookie := http.Cookie{Name: "UserID", Value: jwt}
 		http.SetCookie(w, &cookie)
 		id = getUserID(jwt, log)
+		log.Info("Generate UserID and token:", zap.Int("UserID", id), zap.String("token key", jwt))
 		return id
 	}
 	id = getUserID(userIDCookie.Value, log)
