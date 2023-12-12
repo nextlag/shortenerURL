@@ -3,9 +3,21 @@ package filestorage
 import (
 	"encoding/json"
 	"os"
-
-	"github.com/nextlag/shortenerURL/internal/usecase"
 )
+
+type Request struct {
+	UUID  string `json:"uuid"`
+	Alias string `json:"alias,omitempty"`
+	URL   string `json:"url" validate:"required,url"`
+}
+
+func NewRequest(uuid, alias, url string) *Request {
+	return &Request{
+		UUID:  uuid,
+		Alias: alias,
+		URL:   url,
+	}
+}
 
 type Producer struct {
 	file    *os.File
@@ -24,7 +36,7 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteEvent(event *usecase.RequestEntity) error {
+func (p *Producer) WriteEvent(event *Request) error {
 	return p.encoder.Encode(&event)
 }
 
@@ -49,9 +61,9 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadEvent() (usecase.RequestEntity, error) {
-	event := &usecase.CustomRequest{}
-	if err := c.decoder.Decode(&event); err != nil {
+func (c *Consumer) ReadEvent() (*Request, error) {
+	event := &Request{}
+	if err := c.decoder.Decode(event); err != nil {
 		return nil, err
 	}
 	return event, nil

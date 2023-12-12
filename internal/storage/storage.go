@@ -10,7 +10,6 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
-	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
@@ -91,9 +90,9 @@ func Save(log *zap.Logger, file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := usecase.NewRequest(uuid, alias, url)
+	event := filestorage.NewRequest(uuid, alias, url)
 
-	if err := Producer.WriteEvent(&event); err != nil {
+	if err := Producer.WriteEvent(event); err != nil {
 		return err
 	}
 
@@ -122,7 +121,7 @@ func Load(filename string) (*Data, error) {
 			}
 			return nil, err
 		}
-		s.data[item.GetEntityRequest().Alias] = item.GetEntityRequest().URL
+		s.data[item.Alias] = item.URL
 	}
 	return s, nil
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/service/auth"
 	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
-	"github.com/nextlag/shortenerURL/internal/usecase"
+	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 )
 
 type ShortenHandler struct {
@@ -33,7 +33,7 @@ func NewShortenHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *Short
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
 func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req usecase.CustomRequest
+	var req filestorage.Request
 	// декодирование JSON-запроса из тела HTTP-запроса в структуру Request.
 	err := render.DecodeJSON(r.Body, &req)
 
@@ -63,7 +63,7 @@ func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	uid := auth.CheckCookie(w, r, s.log)
 
 	// Добавление URL в хранилище и получение идентификатора (id).
-	alias, err := s.db.Put(r.Context(), req.GetEntityRequest().URL, uid)
+	alias, err := s.db.Put(r.Context(), req.URL, uid)
 	if errors.Is(err, dbstorage.ErrConflict) {
 		// ошибка для случая конфликта оригинальных url
 		s.log.Error("trying to add a duplicate URL", zap.Error(err))
