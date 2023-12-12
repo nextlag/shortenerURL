@@ -6,12 +6,12 @@ import (
 )
 
 type Request struct {
-	UUID  string `json:"uuid"`
-	Alias string `json:"alias,omitempty"`
-	URL   string `json:"url" validate:"required,url"`
+	UUID  string `json:"uuid"`                        // UUID, генерация uuid
+	Alias string `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
+	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
-func NewRequest(uuid, alias, url string) *Request {
+func New(uuid, alias, url string) *Request {
 	return &Request{
 		UUID:  uuid,
 		Alias: alias,
@@ -37,7 +37,7 @@ func NewProducer(fileName string) (*Producer, error) {
 }
 
 func (p *Producer) WriteEvent(event *Request) error {
-	return p.encoder.Encode(&event)
+	return p.encoder.Encode(event)
 }
 
 func (p *Producer) Close() error {
@@ -63,7 +63,7 @@ func NewConsumer(fileName string) (*Consumer, error) {
 
 func (c *Consumer) ReadEvent() (*Request, error) {
 	event := &Request{}
-	if err := c.decoder.Decode(event); err != nil {
+	if err := c.decoder.Decode(&event); err != nil {
 		return nil, err
 	}
 	return event, nil

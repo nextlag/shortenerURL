@@ -90,7 +90,7 @@ func Save(log *zap.Logger, file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := filestorage.NewRequest(uuid, alias, url)
+	event := filestorage.New(uuid, alias, url)
 
 	if err := Producer.WriteEvent(event); err != nil {
 		return err
