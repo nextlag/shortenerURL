@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"flag"
 
 	"go.uber.org/zap"
 
@@ -27,7 +26,6 @@ type App struct {
 }
 
 func New() *App {
-	flag.Parse()
 	return &App{
 		Log: lg.New(),
 		Cfg: config.Config,
