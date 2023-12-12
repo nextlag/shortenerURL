@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
@@ -22,16 +21,15 @@ type Storage interface {
 }
 
 type App struct {
-	Stor Storage
-	Log  *zap.Logger
-	Cfg  config.Args
+	DB  Storage
+	Log *zap.Logger
+	Cfg config.Args
 }
 
 func New() *App {
 	flag.Parse()
 	return &App{
-		Stor: storage.New(),
-		Log:  lg.New(),
-		Cfg:  config.Config,
+		Log: lg.New(),
+		Cfg: config.Config,
 	}
 }

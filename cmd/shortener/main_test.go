@@ -71,7 +71,7 @@ func TestGetHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Создаем и вызываем handler для маршрута
-			handlers.NewGetHandler(db, nil).ServeHTTP(w, req)
+			handlers.NewGetHandler(db, nil, config.Config).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода
@@ -112,6 +112,10 @@ func TestTextPostHandler(t *testing.T) {
 			// Создаем фейковое хранилище
 			db := mocks.NewMockStorage(ctrl)
 			db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+
+			// Создаем фейковый логгер
+			fakeLogger := zap.NewNop() // это минимальный фейковый логгер
+
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
@@ -119,8 +123,9 @@ func TestTextPostHandler(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
-			// Вызываем обработчик для HTTP POST запроса
-			handlers.NewSaveHandlers(db).ServeHTTP(w, req)
+
+			// Используем фейковый логгер при создании SaveHandler
+			handlers.NewSaveHandlers(db, fakeLogger, config.Config).ServeHTTP(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
@@ -130,7 +135,6 @@ func TestTextPostHandler(t *testing.T) {
 		})
 	}
 }
-
 func TestGzipMiddleware(t *testing.T) {
 	// Структура с параметрами для тестовых случаев.
 	testCases := []struct {
@@ -239,7 +243,7 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			handlers.Shorten(log, db).ServeHTTP(w, req)
+			handlers.NewShortenHandlers(db, log, config.Config).ServeHTTP(w, req)
 			// Проверяем, что все ожидаемые вызовы были выполнены
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
