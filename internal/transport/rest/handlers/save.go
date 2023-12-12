@@ -46,7 +46,7 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, dbstorage.ErrConflict) {
 		s.log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
 		w.WriteHeader(http.StatusConflict)
-		_, err = fmt.Fprintf(w, "%s/%s", s.cfg.URLShort, alias)
+		_, err = fmt.Fprintf(w, "%s/%s", s.cfg.BaseURL, alias)
 		if err != nil {
 			s.log.Error("error sending short URL response", zap.Error(err))
 			return
@@ -64,7 +64,7 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	// Отправляем short-URL в теле HTTP-ответа
-	_, err = fmt.Fprintf(w, "%s/%s", s.cfg.URLShort, alias)
+	_, err = fmt.Fprintf(w, "%s/%s", s.cfg.BaseURL, alias)
 	if err != nil {
 		s.log.Error("error sending short URL response", zap.Error(err))
 		return

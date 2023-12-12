@@ -24,7 +24,7 @@ import (
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    app.New().Cfg.Address, // Получение адреса из настроек
+		Addr:    app.New().Cfg.Host, // Получение адреса из настроек
 		Handler: router,
 	}
 }
@@ -36,8 +36,9 @@ func main() {
 	flag.Parse() // Парсинг флагов командной строки
 
 	var db app.Storage
-	var log = app.New().Log // Создание и настройка логгера
-	var cfg = app.New().Cfg
+	var run = app.New()
+	var log = run.Log
+	var cfg = run.Cfg
 
 	if cfg.DSN != "" {
 		stor, err := dbstorage.New(cfg.DSN, log)
@@ -51,12 +52,12 @@ func main() {
 		}()
 		db = stor
 	} else {
-		db = storage.New(log, cfg)
+		db = storage.New()
 	}
 
 	log.Info("initialized flags",
-		zap.String("-a", cfg.Address),
-		zap.String("-b", cfg.URLShort),
+		zap.String("-a", cfg.Host),
+		zap.String("-b", cfg.BaseURL),
 		zap.String("-f", cfg.FileStorage),
 		zap.String("-d", cfg.DSN),
 	)
@@ -77,8 +78,8 @@ func main() {
 	srv := setupServer(mw)
 
 	log.Info("server starting",
-		zap.String("address", cfg.Address),
-		zap.String("url", cfg.URLShort))
+		zap.String("address", cfg.Host),
+		zap.String("url", cfg.BaseURL))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

@@ -45,7 +45,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 // ResponseConflict обрабатывает конфликтный запрос
 func ResponseConflict(w http.ResponseWriter, alias string) {
 	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+		Result: fmt.Sprintf("%s/%s", config.Config.BaseURL, alias),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -60,7 +60,7 @@ func ResponseConflict(w http.ResponseWriter, alias string) {
 // ResponseCreated отправляет успешный ответ с сокращенной ссылкой в JSON-формате.
 func ResponseCreated(w http.ResponseWriter, alias string) {
 	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Config.URLShort, alias),
+		Result: fmt.Sprintf("%s/%s", config.Config.BaseURL, alias),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -33,7 +33,7 @@ func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 	default:
-		allURL, err := h.db.GetAll(r.Context(), userID, cfg.URLShort)
+		allURL, err := h.db.GetAll(r.Context(), userID, cfg.BaseURL)
 		if err != nil {
 			h.log.Error("Error getting URLs by ID", zap.Error(err))
 		}

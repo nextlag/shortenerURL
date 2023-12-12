@@ -74,7 +74,7 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ShortURL      string `json:"short_url"`
 		}{
 			CorrelationID: url.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", h.cfg.URLShort, alias),
+			ShortURL:      fmt.Sprintf("%s/%s", h.cfg.BaseURL, alias),
 		})
 	}
 

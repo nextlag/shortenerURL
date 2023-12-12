@@ -26,8 +26,8 @@ const createTablesTimeout = time.Second * 5
 
 // DBStorage - структура для взаимодействия с базой данных
 type DBStorage struct {
-	log *zap.Logger
 	db  *sql.DB
+	log *zap.Logger
 }
 
 // ErrConflict - ошибка конфликта данных

@@ -8,26 +8,23 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
+	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // Data представляет реализацию интерфейса Storage
 type Data struct {
 	data  map[string]string
-	log   *zap.Logger
-	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
 // New - конструктор для создания нового экземпляра Data
-func New(log *zap.Logger, cfg config.Args) *Data {
+func New() *Data {
 	return &Data{
 		data: make(map[string]string),
-		log:  log,
-		cfg:  cfg,
 	}
 }
 
@@ -53,6 +50,8 @@ func (s *Data) CheckConnection() bool {
 
 // Put сохраняет значение по ключу
 func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
+	var log = lg.New()
+	var cfg = app.New().Cfg
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -60,22 +59,23 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 
 	// Проверяем существование ключа
 	if _, exists := s.data[alias]; exists {
-		return "", fmt.Errorf("alias '%s/%s' already exists", s.cfg.URLShort, alias)
+		return "", fmt.Errorf("alias '%s/%s' already exists", cfg.BaseURL, alias)
 	}
 
 	// Проверяем существование значения
 	for k, v := range s.data {
 		if v == url {
-			s.log.Info("response", zap.String("ulr", v), zap.String("alias", k))
+			log.Info("response", zap.String("ulr", v), zap.String("alias", k))
 			return k, nil
 		}
 	}
 	// Запись url
 	s.data[alias] = url
+	log.Info(cfg.FileStorage)
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
-	if s.cfg.FileStorage != "" {
-		err := Save(s.log, s.cfg.FileStorage, alias, url)
+	if cfg.FileStorage != "" {
+		err := Save(log, cfg.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}
