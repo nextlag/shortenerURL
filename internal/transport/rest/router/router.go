@@ -18,7 +18,7 @@ func SetupRouter(db app.Storage, log *zap.Logger, cfg config.Args) *chi.Mux {
 	h := handlers.New(db, log, cfg)
 
 	// Настройка маршрутов с использованием middleware
-	router.With(mwLogger.New(log)).Route("/", func(r chi.Router) {
+	router.With(mwLogger.New(log, cfg)).Route("/", func(r chi.Router) {
 		r.Get("/{id}", h.Get)
 		r.Get("/api/user/urls", h.GetAll)
 		r.Get("/ping", h.Ping)
@@ -26,6 +26,5 @@ func SetupRouter(db app.Storage, log *zap.Logger, cfg config.Args) *chi.Mux {
 		r.Post("/api/shorten/batch", h.Batch)
 		r.Post("/", h.Save)
 	})
-
 	return router
 }
