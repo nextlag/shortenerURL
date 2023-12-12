@@ -56,7 +56,7 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Обработка других ошибок
 	if err != nil {
-		s.log.Error("failed to add URL", zap.Error(err))
+		s.log.Error("failed to add URL", zap.Error(err), zap.String("path to filestorage", s.cfg.FileStorage))
 		http.Error(w, fmt.Sprintf("failed to add URL: %s", err), http.StatusInternalServerError)
 		return
 	}

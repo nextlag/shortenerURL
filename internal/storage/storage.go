@@ -12,7 +12,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
-	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // Data представляет реализацию интерфейса Storage
@@ -71,13 +70,12 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 			return k, nil
 		}
 	}
-
 	// Запись url
 	s.data[alias] = url
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
-	if config.Config.FileStorage != "" {
-		err := Save(s.cfg.FileStorage, alias, url)
+	if s.cfg.FileStorage != "" {
+		err := Save(s.log, s.cfg.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}
@@ -85,8 +83,7 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	return alias, nil
 }
 
-func Save(file string, alias string, url string) error {
-	log := lg.New()
+func Save(log *zap.Logger, file string, alias string, url string) error {
 	Producer, err := filestorage.NewProducer(file)
 	if err != nil {
 		return err
@@ -114,6 +111,7 @@ func Load(filename string) (*Data, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer Consumer.Close()
 
 	for {
@@ -126,6 +124,5 @@ func Load(filename string) (*Data, error) {
 		}
 		s.data[item.GetEntityRequest().Alias] = item.GetEntityRequest().URL
 	}
-
 	return s, nil
 }
