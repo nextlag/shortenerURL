@@ -1,18 +1,12 @@
-package filestorage
+package storage
 
 import (
 	"encoding/json"
 	"os"
 )
 
-type Request struct {
-	UUID  string `json:"uuid"`                        // UUID, генерация uuid
-	Alias string `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
-	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
-}
-
-func New(uuid, alias, url string) *Request {
-	return &Request{
+func NewFile(uuid, alias, url string) *Data {
+	return &Data{
 		UUID:  uuid,
 		Alias: alias,
 		URL:   url,
@@ -36,7 +30,7 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteEvent(event *Request) error {
+func (p *Producer) WriteEvent(event *Data) error {
 	return p.encoder.Encode(event)
 }
 
@@ -61,8 +55,8 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadEvent() (*Request, error) {
-	event := &Request{}
+func (c *Consumer) ReadEvent() (*Data, error) {
+	event := &Data{}
 	if err := c.decoder.Decode(&event); err != nil {
 		return nil, err
 	}

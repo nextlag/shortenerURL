@@ -43,7 +43,7 @@ func main() {
 	if cfg.DSN != "" {
 		stor, err := dbstorage.New(cfg.DSN, log)
 		if err != nil {
-			log.Error("failed to connect in database", zap.Error(err))
+			log.Fatal("failed to connect in database", zap.Error(err))
 		}
 		defer func() {
 			if err := stor.Stop(); err != nil {
