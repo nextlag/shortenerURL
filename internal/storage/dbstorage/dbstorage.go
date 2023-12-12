@@ -34,12 +34,15 @@ type DBStorage struct {
 var ErrConflict = errors.New("data conflict in DBStorage")
 
 // New - создает новый экземпляр DBStorage
-func New(dbConfig string) (*DBStorage, error) {
+func New(dbConfig string, log *zap.Logger) (*DBStorage, error) {
 	db, err := sql.Open("pgx", dbConfig)
 	if err != nil {
 		return nil, fmt.Errorf("db connection err=%w", err)
 	}
-	storage := &DBStorage{db: db}
+	storage := &DBStorage{
+		db:  db,
+		log: log,
+	}
 	if err := storage.CreateTable(); err != nil {
 		return nil, fmt.Errorf("create table error: %w", err)
 	}
@@ -121,7 +124,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	}
 
 	// Логирование успешной вставки
-	s.log.Info("DBStorage.Put", zap.String("alias", alias), zap.String("url", url))
+	s.log.Info("DBStorage.Put", zap.String("url", url), zap.String("alias", alias))
 	return alias, nil
 }
 

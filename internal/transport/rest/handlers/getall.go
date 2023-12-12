@@ -1,26 +1,26 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/service/auth"
-
+	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
+	"github.com/nextlag/shortenerURL/internal/service/auth"
 )
 
 type GetAllURLsHandler struct {
 	db  app.Storage
 	log *zap.Logger
-	ctx context.Context
+	cfg config.Args
 }
 
-func NewGetAllHandler(log *zap.Logger, db app.Storage) *GetAllURLsHandler {
+func NewGetAllHandler(db app.Storage, log *zap.Logger, cfg config.Args) *GetAllURLsHandler {
 	return &GetAllURLsHandler{
-		log: log,
 		db:  db,
+		log: log,
+		cfg: cfg,
 	}
 }
 

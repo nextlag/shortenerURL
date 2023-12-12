@@ -16,11 +16,11 @@ type GetHandler struct {
 	cfg config.Args
 }
 
-func NewGetHandler(db app.Storage) *GetHandler {
+func NewGetHandler(db app.Storage, log *zap.Logger, cfg config.Args) *GetHandler {
 	return &GetHandler{
 		db:  db,
-		log: app.New().Log,
-		cfg: app.New().Cfg,
+		log: log,
+		cfg: cfg,
 	}
 }
 

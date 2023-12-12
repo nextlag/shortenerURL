@@ -20,11 +20,11 @@ type SaveHandler struct {
 	cfg config.Args
 }
 
-func NewSaveHandlers(db app.Storage) *SaveHandler {
+func NewSaveHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *SaveHandler {
 	return &SaveHandler{
 		db:  db,
-		log: app.New().Log,
-		cfg: app.New().Cfg,
+		log: log,
+		cfg: cfg,
 	}
 }
 
@@ -60,7 +60,6 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to add URL: %s", err), http.StatusInternalServerError)
 		return
 	}
-
 	// Устанавливаем статус HTTP 201 Created
 	w.WriteHeader(http.StatusCreated)
 
@@ -70,7 +69,5 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.log.Error("error sending short URL response", zap.Error(err))
 		return
 	}
-
-	// Добавим код для успешного случая
-	s.log.Info("URL added success", zap.String("alias", alias))
+	s.log.Info("alias added success", zap.String("alias", alias))
 }

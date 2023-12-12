@@ -71,7 +71,7 @@ func TestGetHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Создаем и вызываем handler для маршрута
-			handlers.NewGetHandler(db).ServeHTTP(w, req)
+			handlers.NewGetHandler(db, nil).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода

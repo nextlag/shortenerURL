@@ -20,16 +20,16 @@ type Handlers struct {
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
-func New(log *zap.Logger, db app.Storage) *Handlers {
+func New(db app.Storage, log *zap.Logger, cfg config.Args) *Handlers {
 	if db == nil {
-		db, _ = dbstorage.New(config.Config.DSN)
+		db, _ = dbstorage.New(cfg.DSN, log)
 	}
 	return &Handlers{
-		Get:     NewGetHandler(db).ServeHTTP,
-		GetAll:  NewGetAllHandler(log, db).ServeHTTP,
-		Shorten: Shorten(log, db),
-		Save:    NewSaveHandlers(db).ServeHTTP,
+		Get:     NewGetHandler(db, log, cfg).ServeHTTP,
+		GetAll:  NewGetAllHandler(db, log, cfg).ServeHTTP,
+		Shorten: NewShortenHandlers(db, log, cfg).ServeHTTP,
+		Save:    NewSaveHandlers(db, log, cfg).ServeHTTP,
 		Ping:    NewHealCheck(db).ServeHTTP,
-		Batch:   NewBatchHandler(db).ServeHTTP,
+		Batch:   NewBatchHandler(db, log, cfg).ServeHTTP,
 	}
 }

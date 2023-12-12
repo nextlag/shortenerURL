@@ -11,7 +11,7 @@ type Args struct {
 	Address     string `json:"address" env:"SERVER_ADDRESS" envDefault:":8080"`
 	URLShort    string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
-	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""` // -d
+	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""` // host=localhost port=5432 user=shorten password=skypass12345 database=shorten sslmode=disable
 }
 
 // Config - переменная с конфигурацией

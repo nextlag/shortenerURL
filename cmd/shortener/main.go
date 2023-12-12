@@ -33,25 +33,25 @@ func main() {
 	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse()            // Парсинг флагов командной строки
+	flag.Parse() // Парсинг флагов командной строки
+
+	var db app.Storage
 	var log = app.New().Log // Создание и настройка логгера
 	var cfg = app.New().Cfg
 
-	var stor app.Storage
-
 	if cfg.DSN != "" {
-		db, err := dbstorage.New(config.Config.DSN)
+		stor, err := dbstorage.New(cfg.DSN, log)
 		if err != nil {
 			log.Error("failed to connect in database", zap.Error(err))
 		}
 		defer func() {
-			if err := db.Stop(); err != nil {
+			if err := stor.Stop(); err != nil {
 				log.Error("error stopping DB", zap.Error(err))
 			}
 		}()
-		stor = db
+		db = stor
 	} else {
-		stor = storage.New()
+		db = storage.New()
 	}
 
 	log.Info("initialized flags",
@@ -68,11 +68,11 @@ func main() {
 			log.Error("failed to load data from file", zap.Error(err))
 			os.Exit(1) // Завершаем программу при ошибке загрузки данных
 		}
-		stor = data
+		db = data
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	rout := router.SetupRouter(stor, log)
+	rout := router.SetupRouter(db, log, cfg)
 	mw := gzip.New(rout.ServeHTTP)
 	srv := setupServer(mw)
 
