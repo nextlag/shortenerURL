@@ -19,7 +19,7 @@ func NewHealCheck(db app.Storage) *PingHandler {
 func (h *PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if h.db == nil || !h.db.CheckConnection(r.Context()) {
+		if h.db == nil || !h.db.CheckConnection() {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			w.WriteHeader(http.StatusOK)
