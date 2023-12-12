@@ -34,8 +34,8 @@ type DBStorage struct {
 var ErrConflict = errors.New("data conflict in DBStorage")
 
 // New - создает новый экземпляр DBStorage
-func New(dbConfig string, log *zap.Logger) (*DBStorage, error) {
-	db, err := sql.Open("pgx", dbConfig)
+func New(cfg string, log *zap.Logger) (*DBStorage, error) {
+	db, err := sql.Open("pgx", cfg)
 	if err != nil {
 		return nil, fmt.Errorf("db connection err=%w", err)
 	}
@@ -57,7 +57,7 @@ func (s *DBStorage) Stop() error {
 }
 
 // CheckConnection - проверяет подключение к базе данных
-func (s *DBStorage) CheckConnection() bool {
+func (s *DBStorage) CheckConnection(ctx context.Context) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
 

@@ -19,13 +19,16 @@ import (
 type Data struct {
 	data  map[string]string
 	log   *zap.Logger
+	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
 // New - конструктор для создания нового экземпляра Data
-func New() *Data {
+func New(log *zap.Logger, cfg config.Args) *Data {
 	return &Data{
 		data: make(map[string]string),
+		log:  log,
+		cfg:  cfg,
 	}
 }
 
@@ -58,7 +61,7 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 
 	// Проверяем существование ключа
 	if _, exists := s.data[alias]; exists {
-		return "", fmt.Errorf("alias '%s/%s' already exists", config.Config.URLShort, alias)
+		return "", fmt.Errorf("alias '%s/%s' already exists", s.cfg.URLShort, alias)
 	}
 
 	// Проверяем существование значения
@@ -74,7 +77,7 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
 	if config.Config.FileStorage != "" {
-		err := Save(config.Config.FileStorage, alias, url)
+		err := Save(s.cfg.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}

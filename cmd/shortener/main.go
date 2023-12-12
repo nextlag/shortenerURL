@@ -51,7 +51,7 @@ func main() {
 		}()
 		db = stor
 	} else {
-		db = storage.New()
+		db = storage.New(log, cfg)
 	}
 
 	log.Info("initialized flags",
