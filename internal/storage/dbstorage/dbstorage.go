@@ -24,12 +24,6 @@ const pingTimeout = time.Second * 3
 // Время ожидания создания таблицы
 const createTablesTimeout = time.Second * 5
 
-// DBStorage - структура для взаимодействия с базой данных
-type DBStorage struct {
-	db  *sql.DB
-	log *zap.Logger
-}
-
 // ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
 
@@ -83,7 +77,7 @@ func (s *DBStorage) CreateTable() error {
 }
 
 // Put - добавляет запись в базу данных
-func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
+func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, error) {
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем, является ли строка JSON
@@ -93,18 +87,18 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 		url = jsonData["url"]
 	}
 
-	shortURL := ShortURL{
-		UserID:    userID,
+	shortURL := DBStorage{
+		UUID:      uuid,
 		URL:       url,
 		Alias:     alias,
 		CreatedAt: time.Now(),
 	}
 
-	_, err := s.db.ExecContext(ctx, insert, shortURL.UserID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := s.db.ExecContext(ctx, insert, shortURL.UUID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			// В случае конфликта выполните дополнительный запрос для получения алиаса
+			// В случае конфликта выполняем дополнительный запрос для получения алиаса
 			var existingAlias string
 			err := s.db.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
 			if err != nil {
@@ -130,12 +124,11 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 
 // Get - получает URL по алиасу
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
-	var url ShortURL
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UserID, &url.URL, &url.Alias, &url.CreatedAt)
+	var url DBStorage
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
-
 			return "", fmt.Errorf("no URL found for alias %s", alias)
 		}
 		// Обработка других ошибок базы данных
@@ -146,13 +139,13 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 
 // GetAll - получает все URL конкретного пользователя
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-	var urls []ShortURL
+	var urls []DBStorage
 	db := bun.NewDB(s.db, pgdialect.New())
 
 	rows, err := db.NewSelect().
 		TableExpr("short_urls").
 		Column("url", "alias").
-		Where("user_id = ?", id).
+		Where("uuid = ?", id).
 		Rows(ctx)
 	if err != nil {
 		s.log.Error("Error getting data: ", zap.Error(err))
@@ -166,7 +159,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	}
 
 	for rows.Next() {
-		var url ShortURL
+		var url DBStorage
 		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
