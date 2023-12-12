@@ -114,7 +114,7 @@ func TestTextPostHandler(t *testing.T) {
 			db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
 
 			// Создаем фейковый логгер
-			fakeLogger := zap.NewNop() // это минимальный фейковый логгер
+			fakeLogger := zap.NewNop()
 
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)

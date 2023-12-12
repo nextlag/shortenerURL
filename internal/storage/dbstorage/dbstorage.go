@@ -104,7 +104,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			// В случае конфликта выполните дополнительный запрос для получения алиаса
+			// В случае конфликта выполняем дополнительный запрос для получения алиаса
 			var existingAlias string
 			err := s.db.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
 			if err != nil {
@@ -135,7 +135,6 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
-
 			return "", fmt.Errorf("no URL found for alias %s", alias)
 		}
 		// Обработка других ошибок базы данных
