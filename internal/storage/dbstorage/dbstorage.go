@@ -57,7 +57,10 @@ func (s *DBStorage) Stop() error {
 }
 
 // CheckConnection - проверяет подключение к базе данных
-func (s *DBStorage) CheckConnection(ctx context.Context) bool {
+func (s *DBStorage) CheckConnection() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	defer cancel()
+
 	err := s.db.PingContext(ctx)
 
 	if err != nil {
@@ -67,7 +70,10 @@ func (s *DBStorage) CheckConnection(ctx context.Context) bool {
 }
 
 // CreateTable - создает таблицу в базе данных
-func (s *DBStorage) CreateTable(ctx context.Context) error {
+func (s *DBStorage) CreateTable() error {
+	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
+	defer cancel()
+
 	_, err := s.db.ExecContext(ctx, createTable)
 	if err != nil {
 		return fmt.Errorf("exec create table query, err=%v", err)

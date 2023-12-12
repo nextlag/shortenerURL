@@ -48,7 +48,7 @@ func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
 	return []byte("Memory storage can't operate with user IDs"), nil
 }
 
-func (s *Data) CheckConnection(_ context.Context) bool {
+func (s *Data) CheckConnection() bool {
 	return true
 }
 
