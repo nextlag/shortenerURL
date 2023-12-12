@@ -11,7 +11,6 @@ import (
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
-	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
 // Data представляет реализацию интерфейса Storage
@@ -49,7 +48,7 @@ func (s *Data) CheckConnection() bool {
 
 // Put сохраняет значение по ключу
 func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
-	var log = lg.New()
+	var log = app.New().Log
 	var cfg = app.New().Cfg
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -70,7 +69,6 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	}
 	// Запись url
 	s.data[alias] = url
-	log.Info(cfg.FileStorage)
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
 	if cfg.FileStorage != "" {
