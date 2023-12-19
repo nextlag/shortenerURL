@@ -10,16 +10,17 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
-// Data представляет реализацию интерфейса Storage
 type Data struct {
 	data  map[string]string
 	log   *zap.Logger
 	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
+	UUID  string     `json:"uuid"`                        // UUID, генерация uuid
+	Alias string     `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
+	URL   string     `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
 // New - конструктор для создания нового экземпляра Data
@@ -87,14 +88,14 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 }
 
 func Save(log *zap.Logger, file string, alias string, url string) error {
-	Producer, err := filestorage.NewProducer(file)
+	Producer, err := NewProducer(file)
 	if err != nil {
 		return err
 	}
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := filestorage.New(uuid, alias, url)
+	event := NewFile(uuid, alias, url)
 
 	if err := Producer.WriteEvent(event); err != nil {
 		return err
@@ -110,7 +111,7 @@ func Load(filename string) (*Data, error) {
 		data: make(map[string]string),
 	}
 
-	Consumer, err := filestorage.NewConsumer(filename)
+	Consumer, err := NewConsumer(filename)
 	if err != nil {
 		return nil, err
 	}

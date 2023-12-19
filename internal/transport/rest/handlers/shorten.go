@@ -13,8 +13,8 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/service/auth"
+	"github.com/nextlag/shortenerURL/internal/storage"
 	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
-	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
 )
 
 type ShortenHandler struct {
@@ -33,8 +33,8 @@ func NewShortenHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *Short
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
 func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req filestorage.Request
-	// декодирование JSON-запроса из тела HTTP-запроса в структуру Request.
+	var req storage.Data
+	// декодирование JSON-запроса из тела HTTP-запроса в структуру Data.
 	err := render.DecodeJSON(r.Body, &req)
 
 	// Обработка случая, когда тело запроса пустое.

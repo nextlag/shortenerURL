@@ -24,12 +24,6 @@ const pingTimeout = time.Second * 3
 // Время ожидания создания таблицы
 const createTablesTimeout = time.Second * 5
 
-// DBStorage - структура для взаимодействия с базой данных
-// type DBStorage struct {
-// 	db  *sql.DB
-// 	log *zap.Logger
-// }
-
 // ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
 
