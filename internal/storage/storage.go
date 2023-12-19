@@ -9,22 +9,26 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/storage/filestorage"
-	"github.com/nextlag/shortenerURL/internal/usecase"
+	"github.com/nextlag/shortenerURL/internal/service/app"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
-	"github.com/nextlag/shortenerURL/internal/utils/lg"
 )
 
-// Data представляет реализацию интерфейса Storage
 type Data struct {
 	data  map[string]string
+	log   *zap.Logger
+	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
+	UUID  string     `json:"uuid"`                        // UUID, генерация uuid
+	Alias string     `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
+	URL   string     `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
 // New - конструктор для создания нового экземпляра Data
-func New() *Data {
+func New(log *zap.Logger, cfg config.Args) *Data {
 	return &Data{
 		data: make(map[string]string),
+		log:  log,
+		cfg:  cfg,
 	}
 }
 
@@ -40,17 +44,27 @@ func (s *Data) Get(_ context.Context, alias string) (string, error) {
 	return url, nil
 }
 
+func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+	return []byte("Memory storage can't operate with user IDs"), nil
+}
+
+func (s *Data) CheckConnection() bool {
+	return true
+}
+
 // Put сохраняет значение по ключу
-func (s *Data) Put(_ context.Context, url string) (string, error) {
+func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
+	r := app.New()
+	cfg := r.Cfg
+	log := r.Log
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	log := lg.New()
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем существование ключа
 	if _, exists := s.data[alias]; exists {
-		return "", fmt.Errorf("alias '%s/%s' already exists", config.Config.URLShort, alias)
+		return "", fmt.Errorf("alias '%s/%s' already exists", cfg.BaseURL, alias)
 	}
 
 	// Проверяем существование значения
@@ -60,13 +74,12 @@ func (s *Data) Put(_ context.Context, url string) (string, error) {
 			return k, nil
 		}
 	}
-
 	// Запись url
 	s.data[alias] = url
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
-	if config.Config.FileStorage != "" {
-		err := Save(config.Config.FileStorage, alias, url)
+	if cfg.FileStorage != "" {
+		err := Save(log, cfg.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}
@@ -74,22 +87,21 @@ func (s *Data) Put(_ context.Context, url string) (string, error) {
 	return alias, nil
 }
 
-func Save(file string, alias string, url string) error {
-	Producer, err := filestorage.NewProducer(file)
+func Save(log *zap.Logger, file string, alias string, url string) error {
+	Producer, err := NewProducer(file)
 	if err != nil {
 		return err
 	}
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := usecase.NewRequest(uuid, alias, url)
+	event := NewFile(uuid, alias, url)
 
-	if err := Producer.WriteEvent(&event); err != nil {
+	if err := Producer.WriteEvent(event); err != nil {
 		return err
 	}
 
-	logger := lg.New()
-	logger.Info("Data.Put", zap.Any("Save", event))
+	log.Info("Data.Put", zap.Any("Save", event))
 
 	return nil
 }
@@ -99,10 +111,11 @@ func Load(filename string) (*Data, error) {
 		data: make(map[string]string),
 	}
 
-	Consumer, err := filestorage.NewConsumer(filename)
+	Consumer, err := NewConsumer(filename)
 	if err != nil {
 		return nil, err
 	}
+
 	defer Consumer.Close()
 
 	for {
@@ -113,8 +126,7 @@ func Load(filename string) (*Data, error) {
 			}
 			return nil, err
 		}
-		s.data[item.GetEntityRequest().Alias] = item.GetEntityRequest().URL
+		s.data[item.Alias] = item.URL
 	}
-
 	return s, nil
 }

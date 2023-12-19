@@ -25,7 +25,7 @@ type RequestFields struct {
 }
 
 // New создает и возвращает новый middleware для логирования HTTP запросов.
-func New(logger *zap.Logger) func(next http.Handler) http.Handler {
+func New(log *zap.Logger, cfg config.Args) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Создаем логгер запроса
@@ -36,7 +36,7 @@ func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 				UserAgent:      r.UserAgent(),
 				RequestID:      middleware.GetReqID(r.Context()),
 				ContentType:    r.Header.Get("Content-Type"),
-				DataStorageLoc: config.Config.FileStorage,
+				DataStorageLoc: cfg.FileStorage,
 			}
 
 			// Создаем WrapResponseWriter для перехвата статуса ответа и количества байтов.
@@ -51,9 +51,9 @@ func New(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 				// Добавляем логирование, только если статус запроса - ошибка
 				if requestFields.Status >= http.StatusInternalServerError {
-					logger.Error("request completed with error", zap.Any("request", requestFields))
+					log.Error("request completed with error", zap.Any("request", requestFields))
 				} else {
-					logger.Info("", zap.Any("request", requestFields))
+					log.Info("", zap.Any("request", requestFields))
 				}
 			}()
 

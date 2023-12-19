@@ -1,11 +1,17 @@
-package filestorage
+package storage
 
 import (
 	"encoding/json"
 	"os"
-
-	"github.com/nextlag/shortenerURL/internal/usecase"
 )
+
+func NewFile(uuid, alias, url string) *Data {
+	return &Data{
+		UUID:  uuid,
+		Alias: alias,
+		URL:   url,
+	}
+}
 
 type Producer struct {
 	file    *os.File
@@ -24,8 +30,8 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteEvent(event *usecase.RequestEntity) error {
-	return p.encoder.Encode(&event)
+func (p *Producer) WriteEvent(event *Data) error {
+	return p.encoder.Encode(event)
 }
 
 func (p *Producer) Close() error {
@@ -49,8 +55,8 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadEvent() (usecase.RequestEntity, error) {
-	event := &usecase.CustomRequest{}
+func (c *Consumer) ReadEvent() (*Data, error) {
+	event := &Data{}
 	if err := c.decoder.Decode(&event); err != nil {
 		return nil, err
 	}
