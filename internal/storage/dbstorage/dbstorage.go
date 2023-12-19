@@ -83,7 +83,7 @@ func (s *DBStorage) CreateTable() error {
 }
 
 // Put - добавляет запись в базу данных
-func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, error) {
+func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, error) {
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем, является ли строка JSON
@@ -94,7 +94,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, userID int) (string, er
 	}
 
 	shortURL := ShortURL{
-		UUID:      userID,
+		UUID:      uuid,
 		URL:       url,
 		Alias:     alias,
 		CreatedAt: time.Now(),
@@ -151,7 +151,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	rows, err := db.NewSelect().
 		TableExpr("short_urls").
 		Column("url", "alias").
-		Where("user_id = ?", id).
+		Where("uuid = ?", id).
 		Rows(ctx)
 	if err != nil {
 		s.log.Error("Error getting data: ", zap.Error(err))
