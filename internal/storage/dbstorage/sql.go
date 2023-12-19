@@ -1,7 +1,10 @@
 package dbstorage
 
 import (
+	"database/sql"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -22,7 +25,9 @@ const (
 	// delete = `DELETE FROM short_urls WHERE id=$1;`
 )
 
-type ShortURL struct {
+type DBStorage struct {
+	db        *sql.DB
+	log       *zap.Logger
 	UUID      int       `json:"user_id,omitempty" `
 	URL       string    `json:"original_url,omitempty"`
 	Alias     string    `json:"short_url,omitempty"`

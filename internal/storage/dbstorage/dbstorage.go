@@ -25,10 +25,10 @@ const pingTimeout = time.Second * 3
 const createTablesTimeout = time.Second * 5
 
 // DBStorage - структура для взаимодействия с базой данных
-type DBStorage struct {
-	db  *sql.DB
-	log *zap.Logger
-}
+// type DBStorage struct {
+// 	db  *sql.DB
+// 	log *zap.Logger
+// }
 
 // ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
@@ -93,7 +93,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, erro
 		url = jsonData["url"]
 	}
 
-	shortURL := ShortURL{
+	shortURL := DBStorage{
 		UUID:      uuid,
 		URL:       url,
 		Alias:     alias,
@@ -130,7 +130,7 @@ func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, erro
 
 // Get - получает URL по алиасу
 func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
-	var url ShortURL
+	var url DBStorage
 	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -145,7 +145,7 @@ func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
 
 // GetAll - получает все URL конкретного пользователя
 func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
-	var urls []ShortURL
+	var urls []DBStorage
 	db := bun.NewDB(s.db, pgdialect.New())
 
 	rows, err := db.NewSelect().
@@ -165,7 +165,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	}
 
 	for rows.Next() {
-		var url ShortURL
+		var url DBStorage
 		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
 			s.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
