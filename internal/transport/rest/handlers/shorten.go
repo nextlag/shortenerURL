@@ -33,7 +33,7 @@ func NewShortenHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *Short
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
 func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req storage.Data
+	var req storage.FileStorage
 	// декодирование JSON-запроса из тела HTTP-запроса в структуру Data.
 	err := render.DecodeJSON(r.Body, &req)
 

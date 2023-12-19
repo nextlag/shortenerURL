@@ -18,9 +18,6 @@ type Data struct {
 	log   *zap.Logger
 	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
-	UUID  string     `json:"uuid"`                        // UUID, генерация uuid
-	Alias string     `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
-	URL   string     `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
 // New - конструктор для создания нового экземпляра Data
