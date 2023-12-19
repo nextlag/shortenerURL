@@ -1,12 +1,5 @@
 package dbstorage
 
-import (
-	"database/sql"
-	"time"
-
-	"go.uber.org/zap"
-)
-
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS short_urls (
     uuid INT,
@@ -24,12 +17,3 @@ const (
 	// update = `UPDATE short_urls SET url=$1, alias=$2, created_at=$3 WHERE id=$4;`
 	// delete = `DELETE FROM short_urls WHERE id=$1;`
 )
-
-type DBStorage struct {
-	db        *sql.DB
-	log       *zap.Logger
-	UUID      int       `json:"user_id,omitempty" `
-	URL       string    `json:"original_url,omitempty"`
-	Alias     string    `json:"short_url,omitempty"`
-	CreatedAt time.Time `json:"created_at,omitempty"`
-}
