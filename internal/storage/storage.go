@@ -18,9 +18,6 @@ type Data struct {
 	log   *zap.Logger
 	cfg   config.Args
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
-	UUID  string     `json:"uuid"`                        // UUID, генерация uuid
-	Alias string     `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
-	URL   string     `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
 }
 
 // New - конструктор для создания нового экземпляра Data
@@ -32,24 +29,28 @@ func New(log *zap.Logger, cfg config.Args) *Data {
 	}
 }
 
-func (s *Data) Get(_ context.Context, alias string) (string, error) {
+func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	// Получение из файла или памяти
 	url, ok := s.data[alias]
 	if !ok {
-		return "", fmt.Errorf("key '%s' not found", alias)
+		return "", false, fmt.Errorf("key '%s' not found", alias)
 	}
-	return url, nil
+	return url, false, nil
 }
 
-func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {
 	return []byte("Memory storage can't operate with user IDs"), nil
 }
 
-func (s *Data) CheckConnection() bool {
+func (s *Data) Healtcheck() bool {
 	return true
+}
+
+func (s *Data) Del(_ context.Context, _ int, _ []string) error {
+	return nil
 }
 
 // Put сохраняет значение по ключу
@@ -95,7 +96,7 @@ func Save(log *zap.Logger, file string, alias string, url string) error {
 	defer Producer.Close()
 
 	uuid := generatestring.GenerateUUID()
-	event := NewFile(uuid, alias, url)
+	event := NewFileStorage(uuid, alias, url)
 
 	if err := Producer.WriteEvent(event); err != nil {
 		return err
