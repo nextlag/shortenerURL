@@ -3,79 +3,76 @@ package main
 import (
 	"errors"
 	"flag"
-	"log"
+	stdLog "log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/service/app"
-	"github.com/nextlag/shortenerURL/internal/storage"
-	"github.com/nextlag/shortenerURL/internal/storage/dbstorage"
-	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
-	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
+	"github.com/nextlag/shortenerURL/internal/controllers"
+	"github.com/nextlag/shortenerURL/internal/middleware/logger"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 )
+
+// Время ожидания создания таблицы
 
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    app.New().Cfg.Host, // Получение адреса из настроек
+		Addr:    config.Cfg.Host, // Получение адреса из настроек
 		Handler: router,
 	}
 }
 
 func main() {
 	if err := config.MakeConfig(); err != nil {
-		log.Fatal(err)
+		stdLog.Fatal(err)
 	}
-	flag.Parse() // Парсинг флагов командной строки
-
-	var run = app.New()
-	var log = run.Log
-	var cfg = run.Cfg
-	var db app.Storage
-
-	if cfg.DSN != "" {
-		stor, err := dbstorage.New(cfg.DSN, log)
-		if err != nil {
-			log.Fatal("failed to connect in database", zap.Error(err))
-		}
-		defer func() {
-			if err := stor.Stop(); err != nil {
-				log.Error("error stopping DB", zap.Error(err))
-			}
-		}()
-		db = stor
-	} else {
-		db = storage.New(log, cfg)
-	}
-
-	log.Info("initialized flags",
-		zap.String("-a", cfg.Host),
-		zap.String("-b", cfg.BaseURL),
-		zap.String("-f", cfg.FileStorage),
-		zap.String("-d", cfg.DSN),
+	flag.Parse()
+	var (
+		log = logger.SetupLogger()
+		cfg = config.Cfg
+		uc  *usecase.UseCase
 	)
-
+	log.Info("initialized flags", zap.String("-a", cfg.Host), zap.String("-b", cfg.BaseURL), zap.String("-f", cfg.FileStorage), zap.String("-d", cfg.DSN))
 	// Создание хранилища данных в памяти
 	if cfg.FileStorage != "" {
-		data, err := storage.Load(cfg.FileStorage)
+		err := usecase.Load(cfg.FileStorage)
 		if err != nil {
 			log.Error("failed to load data from file", zap.Error(err))
 			os.Exit(1) // Завершаем программу при ошибке загрузки данных
 		}
-		db = data
+	}
+
+	if cfg.DSN != "" {
+		db, err := usecase.NewDB(cfg.DSN, log)
+		if err != nil {
+			log.Fatal("failed to connect in database", zap.Error(err))
+		}
+		defer func() {
+			if err := db.Stop(); err != nil {
+				log.Error("error stopping DB", zap.Error(err))
+			}
+		}()
+		uc = usecase.New(db, log, cfg)
+	} else {
+		db := usecase.NewData()
+		uc = usecase.New(db, log, cfg)
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	rout := router.SetupRouter(db, log, cfg)
-	mw := gzip.New(rout.ServeHTTP)
-	srv := setupServer(mw)
+	controller := controllers.New(uc, log, cfg)
+
+	r := chi.NewRouter()
+	r.Mount("/", controller.Router(r))
+
+	srv := setupServer(r)
 
 	log.Info("server starting",
 		zap.String("address", cfg.Host),

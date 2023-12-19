@@ -16,10 +16,26 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/service/app/mocks"
-	"github.com/nextlag/shortenerURL/internal/transport/rest/handlers"
-	gz "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
+	"github.com/nextlag/shortenerURL/internal/controllers"
+	"github.com/nextlag/shortenerURL/internal/controllers/mocks"
+	gz "github.com/nextlag/shortenerURL/internal/middleware/gzip"
+	"github.com/nextlag/shortenerURL/internal/middleware/logger"
+	"github.com/nextlag/shortenerURL/internal/usecase"
 )
+
+func controller(t *testing.T) (*controllers.Controller, *mocks.MockUseCase, *usecase.UseCase) {
+	t.Helper()
+	l := logger.SetupLogger()
+	var cfg config.HTTPServer
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+
+	db := mocks.NewMockUseCase(mockCtl)
+	repo := usecase.NewMockRepository(mockCtl)
+	uc := usecase.New(repo, l, cfg)
+	controller := controllers.New(db, l, cfg)
+	return controller, db, uc
+}
 
 func TestMain(m *testing.M) {
 	if err := config.MakeConfig(); err != nil {
@@ -34,11 +50,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	// Создаем фейковое хранилище
-	db := mocks.NewMockStorage(ctrl)
-
 	tests := []struct {
 		Name             string
 		RequestPath      string
@@ -60,18 +71,20 @@ func TestGetHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			ctrl, db, _ := controller(t)
 
 			if test.Name == "Valid ID" {
-				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return("", false, nil).Times(1)
 			} else {
-				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", errors.New("error")).Times(1)
+				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return("", false, errors.New("error")).Times(1)
 			}
 			// Создаем фейковый запрос
-			req := httptest.NewRequest("GET", test.RequestPath, nil)
+			r := httptest.NewRequest("GET", test.RequestPath, nil)
 			w := httptest.NewRecorder()
+			handler := http.HandlerFunc(ctrl.Get)
+			handler(w, r)
 
 			// Создаем и вызываем handler для маршрута
-			handlers.NewGetHandler(db, nil, config.Config).ServeHTTP(w, req)
 			resp := w.Result()
 
 			// Проверяем статус кода
@@ -109,23 +122,16 @@ func TestTextPostHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Создаем фейковое хранилище
-			db := mocks.NewMockStorage(ctrl)
-			db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
-
-			// Создаем фейковый логгер
-			fakeLogger := zap.NewNop()
-
+			ctrl, db, _ := controller(t)
+			db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
 			reqBody := strings.NewReader(test.body)
 			// Создаем новый POST запрос с текстовым телом и Content-Type: text/plain
-			req := httptest.NewRequest("POST", "/", reqBody)
-			req.Header.Set("Content-Type", "text/plain")
-			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
+			r := httptest.NewRequest("POST", "/", reqBody)
+			r.Header.Set("Content-Type", "text/plain")
 			w := httptest.NewRecorder()
-
-			// Используем фейковый логгер при создании SaveHandler
-			handlers.NewSaveHandlers(db, fakeLogger, config.Config).ServeHTTP(w, req)
+			handler := http.HandlerFunc(ctrl.Save)
+			handler(w, r)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
@@ -160,26 +166,26 @@ func TestGzipMiddleware(t *testing.T) {
 	}
 
 	// Создаем тестовый HTTP-обработчик для тестирования middleware.
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Custom-Header", "TestHeader")
 		w.WriteHeader(http.StatusOK)
 	})
 
 	// Создаем экземпляр middleware с тестовым обработчиком.
-	middleware := gz.New(testHandler)
+	middleware := gz.New()
 
 	// Проходим по всем тестовым случаям.
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Создаем тестовый запрос с указанным заголовком Accept-Encoding.
-			req := httptest.NewRequest("GET", "http://example.com", nil)
-			req.Header.Set("Accept-Encoding", tc.acceptEncoding)
+			r := httptest.NewRequest("GET", "http://example.com", nil)
+			r.Header.Set("Accept-Encoding", tc.acceptEncoding)
 
 			// Создаем тестовую запись (Recorder) для записи ответа.
 			rr := httptest.NewRecorder()
 
 			// Запускаем middleware.
-			middleware.ServeHTTP(rr, req)
+			middleware(handler).ServeHTTP(rr, r)
 
 			// Проверяем, что middleware корректно обработал запрос.
 			if rr.Code != http.StatusOK {
@@ -225,14 +231,13 @@ func TestShorten(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Создаем фейковое хранилище
-			db := mocks.NewMockStorage(ctrl)
+			_, db, _ := controller(t)
 			// Если валидация завершается с ошибкой, то вызов Put не должен произойти
 			if !strings.Contains(test.name, "ValidRequest") {
-				db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			} else {
 				// Ожидаемый вызов Put
-				db.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
 			}
 			log := zap.NewNop()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.
@@ -243,8 +248,7 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			handlers.NewShortenHandlers(db, log, config.Config).ServeHTTP(w, req)
-			// Проверяем, что все ожидаемые вызовы были выполнены
+			controllers.New(db, log, config.Cfg).Shorten(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
