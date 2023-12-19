@@ -18,6 +18,15 @@ import (
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
+type DBStorage struct {
+	db        *sql.DB
+	log       *zap.Logger
+	UUID      int       `json:"user_id,omitempty" `
+	URL       string    `json:"original_url,omitempty"`
+	Alias     string    `json:"short_url,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
 // Время ожидания пинга для проверки подключения к базе данных
 const pingTimeout = time.Second * 3
 

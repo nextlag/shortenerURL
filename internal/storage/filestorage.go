@@ -5,8 +5,15 @@ import (
 	"os"
 )
 
-func NewFile(uuid, alias, url string) *Data {
-	return &Data{
+type FileStorage struct {
+	UUID  string `json:"uuid"`                        // UUID, генерация uuid
+	Alias string `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
+	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
+
+}
+
+func NewFileStorage(uuid, alias, url string) *FileStorage {
+	return &FileStorage{
 		UUID:  uuid,
 		Alias: alias,
 		URL:   url,
@@ -30,7 +37,7 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteEvent(event *Data) error {
+func (p *Producer) WriteEvent(event *FileStorage) error {
 	return p.encoder.Encode(event)
 }
 
@@ -55,8 +62,8 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadEvent() (*Data, error) {
-	event := &Data{}
+func (c *Consumer) ReadEvent() (*FileStorage, error) {
+	event := &FileStorage{}
 	if err := c.decoder.Decode(&event); err != nil {
 		return nil, err
 	}
