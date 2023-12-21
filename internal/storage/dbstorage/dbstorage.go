@@ -189,10 +189,9 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 }
 
 // Del - Удаление URL для пользователей с определенным ID
-func (s *DBStorage) Del(_ context.Context, id int, shortURLs []string) error {
-	context := context.Background()
-	inputCh := delGenerator(context, shortURLs)
-	s.bulkDeleteStatusUpdate(id, inputCh)
+func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
+	inputCh := delGenerator(ctx, shortURLs)
+	s.bulkDeleteStatusUpdate(ctx, id, inputCh)
 	return nil
 }
 
@@ -212,11 +211,11 @@ func delGenerator(ctx context.Context, URLs []string) chan string {
 	return URLsCh
 }
 
-func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
+func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputChs ...chan string) {
 	var wg sync.WaitGroup
 
 	deleteUpdate := func(ch chan string) {
-		defer wg.Done() // Помещаем wg.Done() в defer, чтобы он гарантированно выполнился при выходе из функции
+		defer wg.Done()
 		var deleteURL []string
 		for alias := range ch {
 			deleteURL = append(deleteURL, alias)
@@ -230,7 +229,7 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
 				return uq.Where("uuid = ?", id)
 			}).
-			Exec(context.Background())
+			Exec(ctx)
 		if err != nil {
 			s.log.Error("Can't exec update request: ", zap.Error(err))
 		}
@@ -241,7 +240,6 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	for _, c := range inputChs {
 		go deleteUpdate(c)
 	}
-	// Ожидаем завершения всех горутин до возврата из функции
 	wg.Wait()
 }
 
