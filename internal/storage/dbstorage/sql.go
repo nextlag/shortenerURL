@@ -11,7 +11,7 @@ const (
     UNIQUE (uuid, url)
 );`
 
-	insert      = `INSERT INTO short_urls (uuid, url, alias, created_at) VALUES ($1, $2, $3, $4);`
+	insert      = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
 	get         = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
 	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 	// getAll      = `SELECT url, alias FROM short_urls WHERE uuid = $1;`
