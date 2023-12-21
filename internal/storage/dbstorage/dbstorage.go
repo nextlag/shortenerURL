@@ -81,8 +81,8 @@ func (s *DBStorage) Healtcheck() bool {
 
 // CreateTable - создает таблицу в базе данных
 func (s *DBStorage) CreateTable(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
+	// defer cancel()
 
 	_, err := s.db.ExecContext(ctx, createTable)
 	if err != nil {
