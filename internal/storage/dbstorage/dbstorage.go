@@ -188,13 +188,13 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 }
 
 // Del - Удаление URL для пользователей с определенным ID
-func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
-	inputCh := deleteURLsGenerator(ctx, shortURLs)
+func (s *DBStorage) DeleteURLs(_ context.Context, id int, shortURLs []string) error {
+	context := context.Background()
+	inputCh := deleteURLsGenerator(context, shortURLs)
 	s.bulkDeleteStatusUpdate(id, inputCh)
 	return nil
 }
 
-// Генератор канала с ссылками
 func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
 	URLsCh := make(chan string)
 	go func() {
@@ -221,11 +221,11 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 		db := bun.NewDB(s.db, pgdialect.New())
 
 		_, err := db.NewUpdate().
-			TableExpr("short_urls").
-			Set("del = ?", "true").
-			Where("alias IN (?)", bun.In(linksToDelete)).
+			TableExpr("shorten_URLs").
+			Set("deleted = ?", "true").
+			Where("short_link IN (?)", bun.In(linksToDelete)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
-				return uq.Where("uuid = ?", id)
+				return uq.Where("user_id = ?", id)
 			}).
 			Exec(context.Background())
 		if err != nil {
@@ -239,7 +239,10 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	for _, c := range inputChs {
 		go deleteUpdate(c)
 	}
-	wg.Wait()
+
+	go func() {
+		wg.Wait()
+	}()
 }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)
