@@ -60,10 +60,14 @@ func (h *BatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, Error("failed to decode request"))
 		return
 	}
-	uid := auth.CheckCookie(w, r, h.log)
+	uuid, err := auth.CheckCookie(w, r, h.log)
+	if err != nil {
+		h.log.Error("Error getting cookie: ", zap.Error(err))
+		return
+	}
 
 	for _, url := range req {
-		alias, err := h.db.Put(r.Context(), url.OriginalURL, uid)
+		alias, err := h.db.Put(r.Context(), url.OriginalURL, uuid)
 		if err != nil {
 			h.log.Error("URL", zap.Error(err))
 			return

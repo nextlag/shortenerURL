@@ -17,6 +17,7 @@ type Handlers struct {
 	Save    http.HandlerFunc
 	Ping    http.HandlerFunc
 	Batch   http.HandlerFunc
+	Del     http.HandlerFunc
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
@@ -29,7 +30,8 @@ func New(db app.Storage, log *zap.Logger, cfg config.Args) *Handlers {
 		GetAll:  NewGetAllHandler(db, log, cfg).ServeHTTP,
 		Shorten: NewShortenHandlers(db, log, cfg).ServeHTTP,
 		Save:    NewSaveHandlers(db, log, cfg).ServeHTTP,
-		Ping:    NewHealCheck(db).ServeHTTP,
+		Ping:    NewHealtCheck(db).ServeHTTP,
 		Batch:   NewBatchHandler(db, log, cfg).ServeHTTP,
+		Del:     NewDelURL(db, log, cfg).ServeHTTP,
 	}
 }

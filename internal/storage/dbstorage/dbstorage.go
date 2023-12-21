@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -59,8 +60,8 @@ func (s *DBStorage) Stop() error {
 	return nil
 }
 
-// CheckConnection - проверяет подключение к базе данных
-func (s *DBStorage) CheckConnection() bool {
+// Healtcheck - проверяет подключение к базе данных
+func (s *DBStorage) Healtcheck() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
 
@@ -184,6 +185,62 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	}
 
 	return allURL, nil
+}
+
+// Del - Удаление URL для пользователей с определенным ID
+func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
+	ctx = context.Background()
+	inputCh := deleteURLsGenerator(ctx, shortURLs)
+	s.bulkDeleteStatusUpdate(id, inputCh)
+	return nil
+}
+
+// Генератор канала с ссылками
+func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
+	URLsCh := make(chan string)
+	go func() {
+		defer close(URLsCh)
+		for _, data := range URLs {
+			select {
+			case <-ctx.Done():
+				return
+			case URLsCh <- data:
+			}
+		}
+	}()
+	return URLsCh
+}
+
+func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
+	var wg sync.WaitGroup
+
+	deleteUpdate := func(c chan string) {
+		var linksToDelete []string
+		for shortenLink := range c {
+			linksToDelete = append(linksToDelete, shortenLink)
+		}
+		db := bun.NewDB(s.db, pgdialect.New())
+
+		_, err := db.NewUpdate().
+			TableExpr("shorten_URLs").
+			Set("deleted = ?", "true").
+			Where("short_link IN (?)", bun.In(linksToDelete)).
+			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
+				return uq.Where("user_id = ?", id)
+			}).
+			Exec(context.Background())
+		if err != nil {
+			s.log.Error("Can't exec update request: ", zap.Error(err))
+		}
+		wg.Done()
+	}
+
+	wg.Add(len(inputChs))
+
+	for _, c := range inputChs {
+		go deleteUpdate(c)
+	}
+	wg.Wait()
 }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)

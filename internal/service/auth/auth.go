@@ -17,7 +17,7 @@ type Claims struct {
 	UserID int `json:"user_id"`
 }
 
-func generateRandomID(limit int) int {
+func cryptoRandomID(limit int) int {
 	b := make([]byte, 8)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -27,7 +27,7 @@ func generateRandomID(limit int) int {
 }
 
 func buildJWTString() (string, error) {
-	id := generateRandomID(1000)
+	id := cryptoRandomID(1000)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// хранение токена по времени
@@ -61,25 +61,29 @@ func getUserID(tokenString string, log *zap.Logger) int {
 	return claims.UserID
 }
 
-func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) int {
+func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, error) {
 	var id int
 	userIDCookie, err := r.Cookie("UserID")
 	if err != nil {
 		if r.URL.Path == "/api/user/urls" {
-			return -1
+			return -1, err
 		}
 		jwt, err := buildJWTString()
 		if err != nil {
 			log.Error("Error making cookie", zap.Error(err))
-			return -1
+			return -1, err
 		}
-		cookie := http.Cookie{Name: "UserID", Value: jwt}
+		cookie := http.Cookie{
+			Name:  "UserID",
+			Value: jwt,
+		}
+
 		http.SetCookie(w, &cookie)
 		id = getUserID(jwt, log)
 		log.Info("Generate UserID and token:", zap.Int("UserID", id), zap.String("token key", jwt))
-		return id
+		return id, nil
 	}
 	id = getUserID(userIDCookie.Value, log)
 	log.Info("User ID after getting from cookie", zap.Int("UserID", id))
-	return id
+	return id, nil
 }

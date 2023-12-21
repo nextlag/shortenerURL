@@ -26,14 +26,18 @@ func NewGetAllHandler(db app.Storage, log *zap.Logger, cfg config.Args) *GetAllU
 
 func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cfg = app.New().Cfg
-	userID := auth.CheckCookie(w, r, h.log)
+	uuid, err := auth.CheckCookie(w, r, h.log)
+	if err != nil {
+		h.log.Error("Error getting cookie: ", zap.Error(err))
+		return
+	}
 
-	switch userID {
+	switch uuid {
 	case -1:
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 	default:
-		allURL, err := h.db.GetAll(r.Context(), userID, cfg.BaseURL)
+		allURL, err := h.db.GetAll(r.Context(), uuid, cfg.BaseURL)
 		if err != nil {
 			h.log.Error("Error getting URLs by ID", zap.Error(err))
 		}

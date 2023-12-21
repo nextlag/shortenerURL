@@ -32,21 +32,21 @@ func NewShortenHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *Short
 }
 
 // Shorten - это обработчик HTTP-запросов для сокращения URL.
-func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req storage.FileStorage
 	// декодирование JSON-запроса из тела HTTP-запроса в структуру Data.
 	err := render.DecodeJSON(r.Body, &req)
 
 	// Обработка случая, когда тело запроса пустое.
 	if errors.Is(err, io.EOF) {
-		s.log.Error("request body is empty", zap.Error(err))
+		h.log.Error("request body is empty", zap.Error(err))
 		render.JSON(w, r, Error("empty request"))
 		return
 	}
 
 	// Обработка ошибок декодирования тела запроса.
 	if err != nil {
-		s.log.Error("failed to decode request body", zap.Error(err))
+		h.log.Error("failed to decode request body", zap.Error(err))
 		render.JSON(w, r, Error("failed to decode request"))
 		return
 	}
@@ -55,18 +55,22 @@ func (s *ShortenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := validator.New().Struct(req); err != nil {
 		var validateErr validator.ValidationErrors
 		errors.As(err, &validateErr)
-		s.log.Error("invalid request")
+		h.log.Error("invalid request")
 		render.JSON(w, r, ValidationError(validateErr))
 		return
 	}
 
-	uid := auth.CheckCookie(w, r, s.log)
+	uuid, err := auth.CheckCookie(w, r, h.log)
+	if err != nil {
+		h.log.Error("Error getting cookie: ", zap.Error(err))
+		return
+	}
 
 	// Добавление URL в хранилище и получение идентификатора (id).
-	alias, err := s.db.Put(r.Context(), req.URL, uid)
+	alias, err := h.db.Put(r.Context(), req.URL, uuid)
 	if errors.Is(err, dbstorage.ErrConflict) {
 		// ошибка для случая конфликта оригинальных url
-		s.log.Error("trying to add a duplicate URL", zap.Error(err))
+		h.log.Error("trying to add a duplicate URL", zap.Error(err))
 		ResponseConflict(w, alias)
 		return
 	}

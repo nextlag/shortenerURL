@@ -41,12 +41,16 @@ func (s *Data) Get(_ context.Context, alias string) (string, error) {
 	return url, nil
 }
 
-func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {
 	return []byte("Memory storage can't operate with user IDs"), nil
 }
 
-func (s *Data) CheckConnection() bool {
+func (s *Data) Healtcheck() bool {
 	return true
+}
+
+func (s *Data) Del(context.Context, int, []string) error {
+	return nil
 }
 
 // Put сохраняет значение по ключу

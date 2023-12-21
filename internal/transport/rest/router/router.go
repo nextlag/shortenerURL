@@ -25,6 +25,7 @@ func SetupRouter(db app.Storage, log *zap.Logger, cfg config.Args) *chi.Mux {
 		r.Post("/api/shorten", h.Shorten)
 		r.Post("/api/shorten/batch", h.Batch)
 		r.Post("/", h.Save)
+		r.Delete("/api/user/urls", h.Del)
 	})
 	return router
 }

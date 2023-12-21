@@ -6,6 +6,7 @@ const (
     url VARCHAR(255) NOT NULL,
     alias VARCHAR(255) NOT NULL,
     created_at TIMESTAMP,
+    del BOOLEAN,
     PRIMARY KEY (uuid, alias),
     UNIQUE (uuid, url)
 );`

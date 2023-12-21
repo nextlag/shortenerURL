@@ -34,18 +34,18 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// CheckConnection mocks base method.
-func (m *MockStorage) CheckConnection() bool {
+// Del mocks base method.
+func (m *MockStorage) Del(arg0 context.Context, arg1 int, arg2 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckConnection")
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "Del", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CheckConnection indicates an expected call of CheckConnection.
-func (mr *MockStorageMockRecorder) CheckConnection() *gomock.Call {
+// Del indicates an expected call of Del.
+func (mr *MockStorageMockRecorder) Del(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConnection", reflect.TypeOf((*MockStorage)(nil).CheckConnection))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockStorage)(nil).Del), arg0, arg1, arg2)
 }
 
 // Get mocks base method.
@@ -76,6 +76,20 @@ func (m *MockStorage) GetAll(arg0 context.Context, arg1 int, arg2 string) ([]byt
 func (mr *MockStorageMockRecorder) GetAll(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockStorage)(nil).GetAll), arg0, arg1, arg2)
+}
+
+// Healtcheck mocks base method.
+func (m *MockStorage) Healtcheck() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Healtcheck")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Healtcheck indicates an expected call of Healtcheck.
+func (mr *MockStorageMockRecorder) Healtcheck() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Healtcheck", reflect.TypeOf((*MockStorage)(nil).Healtcheck))
 }
 
 // Put mocks base method.
