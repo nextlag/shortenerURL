@@ -29,7 +29,7 @@ func NewSaveHandlers(db app.Storage, log *zap.Logger, cfg config.Args) *SaveHand
 }
 
 // Save - обработчик POST-запросов для создания и сохранения URL в storage.
-func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Считываем тело запроса (оригинальный URL)
 	body, err := io.ReadAll(r.Body)
@@ -37,18 +37,22 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request 400", http.StatusBadRequest)
 		return
 	}
-	uid := auth.CheckCookie(w, r, s.log)
+	uuid, err := auth.CheckCookie(w, r, h.log)
+	if err != nil {
+		h.log.Error("Error getting cookie: ", zap.Error(err))
+		return
+	}
 
 	// Попытка сохранить short-URL и оригинальный URL в хранилище
-	alias, err := s.db.Put(r.Context(), string(body), uid)
+	alias, err := h.db.Put(r.Context(), string(body), uuid)
 
 	// Обработка конфликта дубликатов
 	if errors.Is(err, dbstorage.ErrConflict) {
-		s.log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
+		h.log.Error("duplicate url", zap.String("alias", alias), zap.String("url", string(body)))
 		w.WriteHeader(http.StatusConflict)
-		_, err = fmt.Fprintf(w, "%s/%s", s.cfg.BaseURL, alias)
+		_, err = fmt.Fprintf(w, "%s/%s", h.cfg.BaseURL, alias)
 		if err != nil {
-			s.log.Error("error sending short URL response", zap.Error(err))
+			h.log.Error("error sending short URL response", zap.Error(err))
 			return
 		}
 		return
@@ -56,7 +60,7 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Обработка других ошибок
 	if err != nil {
-		s.log.Error("failed to add URL", zap.Error(err), zap.String("path to filestorage", s.cfg.FileStorage))
+		h.log.Error("failed to add URL", zap.Error(err), zap.String("path to filestorage", h.cfg.FileStorage))
 		http.Error(w, fmt.Sprintf("failed to add URL: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -64,10 +68,10 @@ func (s *SaveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	// Отправляем short-URL в теле HTTP-ответа
-	_, err = fmt.Fprintf(w, "%s/%s", s.cfg.BaseURL, alias)
+	_, err = fmt.Fprintf(w, "%s/%s", h.cfg.BaseURL, alias)
 	if err != nil {
-		s.log.Error("error sending short URL response", zap.Error(err))
+		h.log.Error("error sending short URL response", zap.Error(err))
 		return
 	}
-	s.log.Info("alias added success", zap.String("alias", alias))
+	h.log.Info("alias added success", zap.String("alias", alias))
 }

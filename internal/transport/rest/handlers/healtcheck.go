@@ -6,20 +6,20 @@ import (
 	"github.com/nextlag/shortenerURL/internal/service/app"
 )
 
-type PingHandler struct {
+type HealtCheck struct {
 	db app.Storage
 }
 
-func NewHealCheck(db app.Storage) *PingHandler {
-	return &PingHandler{
+func NewHealtCheck(db app.Storage) *HealtCheck {
+	return &HealtCheck{
 		db: db,
 	}
 }
 
-func (h *PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HealtCheck) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if h.db == nil || !h.db.CheckConnection() {
+		if h.db == nil || !h.db.Healtcheck() {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			w.WriteHeader(http.StatusOK)

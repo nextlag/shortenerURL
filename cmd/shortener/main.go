@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
@@ -20,6 +22,9 @@ import (
 	"github.com/nextlag/shortenerURL/internal/transport/rest/middleware/gzip"
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
+
+// Время ожидания создания таблицы
+const createTablesTimeout = time.Second * 5
 
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
@@ -34,14 +39,15 @@ func main() {
 		log.Fatal(err)
 	}
 	flag.Parse() // Парсинг флагов командной строки
-
+	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
+	defer cancel()
 	var run = app.New()
 	var log = run.Log
 	var cfg = run.Cfg
 	var db app.Storage
 
 	if cfg.DSN != "" {
-		stor, err := dbstorage.New(cfg.DSN, log)
+		stor, err := dbstorage.New(ctx, cfg.DSN, log)
 		if err != nil {
 			log.Fatal("failed to connect in database", zap.Error(err))
 		}
@@ -73,7 +79,7 @@ func main() {
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	rout := router.SetupRouter(db, log, cfg)
+	rout := router.SetupRouter(ctx, db, log, cfg)
 	mw := gzip.New(rout.ServeHTTP)
 	srv := setupServer(mw)
 

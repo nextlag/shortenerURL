@@ -18,26 +18,39 @@ import (
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
+type DBStorage struct {
+	db          *sql.DB
+	log         *zap.Logger
+	UUID        int       `json:"user_id,omitempty" `
+	URL         string    `json:"original_url,omitempty"`
+	Alias       string    `json:"short_url,omitempty"`
+	DeletedFlag bool      `json:"deleted_flag"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+}
+
 // Время ожидания пинга для проверки подключения к базе данных
 const pingTimeout = time.Second * 3
-
-// Время ожидания создания таблицы
-const createTablesTimeout = time.Second * 5
 
 // ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
 
 // New - создает новый экземпляр DBStorage
-func New(cfg string, log *zap.Logger) (*DBStorage, error) {
+func New(ctx context.Context, cfg string, log *zap.Logger) (*DBStorage, error) {
+	// Создание подключения к базе данных с использованием контекста
 	db, err := sql.Open("pgx", cfg)
 	if err != nil {
 		return nil, fmt.Errorf("db connection err=%w", err)
+	}
+	// Проверка подключения к базе данных с использованием контекста
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf("db ping error: %w", err)
 	}
 	storage := &DBStorage{
 		db:  db,
 		log: log,
 	}
-	if err := storage.CreateTable(); err != nil {
+	// Создание таблицы с использованием контекста
+	if err := storage.CreateTable(ctx); err != nil {
 		return nil, fmt.Errorf("create table error: %w", err)
 	}
 	return storage, nil
@@ -50,8 +63,8 @@ func (s *DBStorage) Stop() error {
 	return nil
 }
 
-// CheckConnection - проверяет подключение к базе данных
-func (s *DBStorage) CheckConnection() bool {
+// Healtcheck - проверяет подключение к базе данных
+func (s *DBStorage) Healtcheck() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
 
@@ -64,10 +77,7 @@ func (s *DBStorage) CheckConnection() bool {
 }
 
 // CreateTable - создает таблицу в базе данных
-func (s *DBStorage) CreateTable() error {
-	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
-	defer cancel()
-
+func (s *DBStorage) CreateTable(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, createTable)
 	if err != nil {
 		return fmt.Errorf("exec create table query, err=%v", err)
@@ -123,18 +133,18 @@ func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, erro
 }
 
 // Get - получает URL по алиасу
-func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
+func (s *DBStorage) Get(ctx context.Context, alias string) (string, bool, error) {
 	var url DBStorage
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt)
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
-			return "", fmt.Errorf("no URL found for alias %s", alias)
+			return "", false, fmt.Errorf("no URL found for alias %s", alias)
 		}
 		// Обработка других ошибок базы данных
-		return "", err
+		return "", false, err
 	}
-	return url.URL, nil
+	return url.URL, url.DeletedFlag, nil
 }
 
 // GetAll - получает все URL конкретного пользователя
@@ -175,6 +185,67 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	}
 
 	return allURL, nil
+}
+
+// Del удаляет URL для пользователей с определенным ID.
+func (s *DBStorage) Del(ctx context.Context, id int, aliases []string) error {
+	inputCh := delGenerator(ctx, aliases)
+	if err := s.updateStatusDel(ctx, id, inputCh); err != nil {
+		return fmt.Errorf("failed to delete URLs: %w", err)
+	}
+	return nil
+}
+
+// Генератор канала для сбора alias'ов.
+func delGenerator(ctx context.Context, URLs []string) chan string {
+	URLCh := make(chan string)
+	go func() {
+		defer close(URLCh)
+		for _, data := range URLs {
+			select {
+			case <-ctx.Done():
+				return
+			case URLCh <- data:
+			}
+		}
+	}()
+	return URLCh
+}
+
+// updateStatusDel - выполняет пакетное обновление статуса удаления для заданных alias'ов и пользователя.
+func (s *DBStorage) updateStatusDel(ctx context.Context, id int, inputCh chan string) error {
+	var deleteURLs []string
+
+	// Канал для сигнализации об окончании работы каждой горутины.
+	aliasCollectionDoneCh := make(chan struct{})
+
+	// Запуск горутины для сбора alias'ов.
+	go func() {
+		defer close(aliasCollectionDoneCh)
+		for alias := range inputCh {
+			deleteURLs = append(deleteURLs, alias)
+		}
+	}()
+
+	// Ожидание окончания работы горутины по сбору alias'ов.
+	<-aliasCollectionDoneCh
+
+	db := bun.NewDB(s.db, pgdialect.New())
+
+	// Пакетное обновление.
+	_, err := db.NewUpdate().
+		TableExpr("short_urls").
+		Set("del = ?", true).
+		Where("alias IN (?)", bun.In(deleteURLs)).
+		Where("uuid = ?", id).
+		Exec(ctx)
+
+	if err != nil {
+		s.log.Error("Can't exec update request: ", zap.Error(err))
+		return fmt.Errorf("failed to update URLs: %w", err)
+	}
+
+	return nil
 }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)
