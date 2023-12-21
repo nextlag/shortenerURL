@@ -37,7 +37,7 @@ func (h *DelURL) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.log.Error("Failed to read json: ", zap.Error(err))
 	}
 
-	h.db.Del(r.Context(), uuid, URLs)
+	h.db.Del(uuid, URLs)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(202)
 	w.Write([]byte("Deleted"))
