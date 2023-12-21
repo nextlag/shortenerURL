@@ -49,12 +49,13 @@ func (mr *MockStorageMockRecorder) Del(arg0, arg1, arg2 interface{}) *gomock.Cal
 }
 
 // Get mocks base method.
-func (m *MockStorage) Get(arg0 context.Context, arg1 string) (string, error) {
+func (m *MockStorage) Get(arg0 context.Context, arg1 string) (string, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Get indicates an expected call of Get.

@@ -30,9 +30,15 @@ func (s *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	// Пытаемся найти оригинальный URL в хранилище
-	originalURL, err := s.db.Get(r.Context(), id)
+	originalURL, deleteStatus, err := s.db.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, "not found 400", http.StatusBadRequest)
+		return
+	}
+	if deleteStatus {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusGone)
+		w.Write([]byte("Deleted URL"))
 		return
 	}
 

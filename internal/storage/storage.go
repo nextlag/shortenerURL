@@ -29,16 +29,16 @@ func New(log *zap.Logger, cfg config.Args) *Data {
 	}
 }
 
-func (s *Data) Get(_ context.Context, alias string) (string, error) {
+func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	// Получение из файла или памяти
 	url, ok := s.data[alias]
 	if !ok {
-		return "", fmt.Errorf("key '%s' not found", alias)
+		return "", false, fmt.Errorf("key '%s' not found", alias)
 	}
-	return url, nil
+	return url, true, nil
 }
 
 func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {

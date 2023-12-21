@@ -13,7 +13,7 @@ import (
 //
 //go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/service/app Storage
 type Storage interface {
-	Get(context.Context, string) (string, error)
+	Get(context.Context, string) (string, bool, error)
 	GetAll(ctx context.Context, userID int, url string) ([]byte, error)
 	Put(context.Context, string, int) (string, error)
 	Del(context.Context, int, []string) error

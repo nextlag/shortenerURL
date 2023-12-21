@@ -20,12 +20,13 @@ import (
 )
 
 type DBStorage struct {
-	db        *sql.DB
-	log       *zap.Logger
-	UUID      int       `json:"user_id,omitempty" `
-	URL       string    `json:"original_url,omitempty"`
-	Alias     string    `json:"short_url,omitempty"`
-	CreatedAt time.Time `json:"created_at,omitempty"`
+	db          *sql.DB
+	log         *zap.Logger
+	UUID        int       `json:"user_id,omitempty" `
+	URL         string    `json:"original_url,omitempty"`
+	Alias       string    `json:"short_url,omitempty"`
+	DeletedFlag bool      `json:"deleted_flag"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
 }
 
 // Время ожидания пинга для проверки подключения к базе данных
@@ -133,18 +134,18 @@ func (s *DBStorage) Put(ctx context.Context, url string, uuid int) (string, erro
 }
 
 // Get - получает URL по алиасу
-func (s *DBStorage) Get(ctx context.Context, alias string) (string, error) {
+func (s *DBStorage) Get(ctx context.Context, alias string) (string, bool, error) {
 	var url DBStorage
-	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt)
+	err := s.db.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
-			return "", fmt.Errorf("no URL found for alias %s", alias)
+			return "", false, fmt.Errorf("no URL found for alias %s", alias)
 		}
 		// Обработка других ошибок базы данных
-		return "", err
+		return "", false, err
 	}
-	return url.URL, nil
+	return url.URL, url.DeletedFlag, nil
 }
 
 // GetAll - получает все URL конкретного пользователя
@@ -190,13 +191,13 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 // Del - Удаление URL для пользователей с определенным ID
 func (s *DBStorage) Del(_ context.Context, id int, shortURLs []string) error {
 	context := context.Background()
-	inputCh := deleteURLsGenerator(context, shortURLs)
+	inputCh := delGenerator(context, shortURLs)
 	s.bulkDeleteStatusUpdate(id, inputCh)
 	return nil
 }
 
 // Генератор канала с ссылками
-func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
+func delGenerator(ctx context.Context, URLs []string) chan string {
 	URLsCh := make(chan string)
 	go func() {
 		defer close(URLsCh)
