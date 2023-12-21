@@ -33,7 +33,7 @@ func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch uuid {
-	case -1:
+	case 0:
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 	default:

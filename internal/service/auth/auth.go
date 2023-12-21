@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -45,7 +46,7 @@ func buildJWTString() (string, error) {
 	return tokenString, nil
 }
 
-func getUserID(tokenString string, log *zap.Logger) int {
+func getUserID(tokenString string, log *zap.Logger) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -56,34 +57,51 @@ func getUserID(tokenString string, log *zap.Logger) int {
 	})
 	if err != nil || !token.Valid {
 		log.Error("Token is not valid", zap.Error(err))
-		return -1
+		return 0, err
 	}
-	return claims.UserID
+	return claims.UserID, nil
 }
 
 func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, error) {
 	var id int
-	userIDCookie, err := r.Cookie("UserID")
+	uuid, err := r.Cookie("UserID")
 	if err != nil {
 		if r.URL.Path == "/api/user/urls" {
-			return -1, err
+			// Возвращаем пользовательскую ошибку с информативным сообщением
+			return 0, fmt.Errorf("файл cookie UserID отсутствует")
 		}
+
 		jwt, err := buildJWTString()
 		if err != nil {
-			log.Error("Error making cookie", zap.Error(err))
-			return -1, err
+			log.Error("error making cookie", zap.Error(err))
+			return 0, err
 		}
+
 		cookie := http.Cookie{
 			Name:  "UserID",
 			Value: jwt,
+			Path:  "/",
 		}
 
+		// Возвращаем ошибку при установке куки, если она не удастся
 		http.SetCookie(w, &cookie)
-		id = getUserID(jwt, log)
-		log.Info("Generate UserID and token:", zap.Int("UserID", id), zap.String("token key", jwt))
+		if err != nil {
+			log.Error("ошибка установки куки", zap.Error(err))
+			return 0, err
+		}
+
+		id, err = getUserID(jwt, log)
+		if err != nil {
+			log.Error("ошибка создания файла cookie", zap.Error(err))
+		}
+		log.Info("generate UserID and token:", zap.Int("UserID", id), zap.String("token key", jwt))
 		return id, nil
 	}
-	id = getUserID(userIDCookie.Value, log)
-	log.Info("User ID after getting from cookie", zap.Int("UserID", id))
+
+	id, err = getUserID(uuid.Value, log)
+	if err != nil {
+		log.Error("ошибка создания файла cookie", zap.Error(err))
+	}
+	log.Info("ID пользователя после получения из cookie", zap.Int("UserID", id))
 	return id, nil
 }
