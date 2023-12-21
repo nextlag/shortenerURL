@@ -227,7 +227,7 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 			Set("del = ?", "true").
 			Where("alias IN (?)", bun.In(linksToDelete)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
-				return uq.Where("user_id = ?", id)
+				return uq.Where("uuid = ?", id)
 			}).
 			Exec(context.Background())
 		if err != nil {
