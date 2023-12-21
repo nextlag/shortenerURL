@@ -23,6 +23,9 @@ import (
 	"github.com/nextlag/shortenerURL/internal/transport/rest/router"
 )
 
+// Время ожидания создания таблицы
+const createTablesTimeout = time.Second * 5
+
 func setupServer(router http.Handler) *http.Server {
 	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
@@ -36,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 	flag.Parse() // Парсинг флагов командной строки
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
 	defer cancel()
 	var run = app.New()
 	var log = run.Log

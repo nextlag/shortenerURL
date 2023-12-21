@@ -31,9 +31,6 @@ type DBStorage struct {
 // Время ожидания пинга для проверки подключения к базе данных
 const pingTimeout = time.Second * 3
 
-// Время ожидания создания таблицы
-const createTablesTimeout = time.Second * 5
-
 // ErrConflict - ошибка конфликта данных
 var ErrConflict = errors.New("data conflict in DBStorage")
 
@@ -81,9 +78,6 @@ func (s *DBStorage) Healtcheck() bool {
 
 // CreateTable - создает таблицу в базе данных
 func (s *DBStorage) CreateTable(ctx context.Context) error {
-	// ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
-	// defer cancel()
-
 	_, err := s.db.ExecContext(ctx, createTable)
 	if err != nil {
 		return fmt.Errorf("exec create table query, err=%v", err)
@@ -221,6 +215,7 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	var wg sync.WaitGroup
 
 	deleteUpdate := func(c chan string) {
+		defer wg.Done() // Помещаем wg.Done() в defer, чтобы он гарантированно выполнился при выходе из функции
 		var linksToDelete []string
 		for shortenLink := range c {
 			linksToDelete = append(linksToDelete, shortenLink)
@@ -238,7 +233,6 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 		if err != nil {
 			s.log.Error("Can't exec update request: ", zap.Error(err))
 		}
-		wg.Done()
 	}
 
 	wg.Add(len(inputChs))
@@ -246,6 +240,7 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	for _, c := range inputChs {
 		go deleteUpdate(c)
 	}
+	// Ожидаем завершения всех горутин до возврата из функции
 	wg.Wait()
 }
 
