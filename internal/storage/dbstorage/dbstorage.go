@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -195,7 +194,7 @@ func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
 	return nil
 }
 
-// Генератор канала с ссылками
+// Генератор
 func delGenerator(ctx context.Context, URLs []string) chan string {
 	URLsCh := make(chan string)
 	go func() {
@@ -211,36 +210,36 @@ func delGenerator(ctx context.Context, URLs []string) chan string {
 	return URLsCh
 }
 
-func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputChs ...chan string) {
-	var wg sync.WaitGroup
+func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputCh chan string) {
+	var deleteURL []string
 
-	deleteUpdate := func(ch chan string) {
-		defer wg.Done()
-		var deleteURL []string
-		for alias := range ch {
+	// Канал для сигнализации об окончании работы каждой горутины
+	doneCh := make(chan struct{})
+
+	// Запуск горутины для сбора alias'ов
+	go func() {
+		defer close(doneCh)
+		for alias := range inputCh {
 			deleteURL = append(deleteURL, alias)
 		}
-		db := bun.NewDB(s.db, pgdialect.New())
+	}()
 
-		_, err := db.NewUpdate().
-			TableExpr("short_urls").
-			Set("del = ?", "true").
-			Where("alias IN (?)", bun.In(deleteURL)).
-			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
-				return uq.Where("uuid = ?", id)
-			}).
-			Exec(ctx)
-		if err != nil {
-			s.log.Error("Can't exec update request: ", zap.Error(err))
-		}
+	// Ожидание окончания работы горутины по сбору alias'ов
+	<-doneCh
+
+	db := bun.NewDB(s.db, pgdialect.New())
+
+	// Пакетное обновление
+	_, err := db.NewUpdate().
+		TableExpr("short_urls").
+		Set("del = ?", "true").
+		Where("alias IN (?)", bun.In(deleteURL)).
+		Where("uuid = ?", id).
+		Exec(ctx)
+
+	if err != nil {
+		s.log.Error("Can't exec update request: ", zap.Error(err))
 	}
-
-	wg.Add(len(inputChs))
-
-	for _, c := range inputChs {
-		go deleteUpdate(c)
-	}
-	wg.Wait()
 }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)
