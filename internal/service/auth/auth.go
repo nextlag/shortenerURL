@@ -85,11 +85,6 @@ func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, 
 
 		// Возвращаем ошибку при установке куки, если она не удастся
 		http.SetCookie(w, &cookie)
-		if err != nil {
-			log.Error("ошибка установки куки", zap.Error(err))
-			return 0, err
-		}
-
 		id, err = getUserID(jwt, log)
 		if err != nil {
 			log.Error("ошибка создания файла cookie", zap.Error(err))
