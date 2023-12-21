@@ -62,9 +62,9 @@ func TestGetHandler(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 
 			if test.Name == "Valid ID" {
-				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", false, nil).Times(1)
 			} else {
-				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", errors.New("error")).Times(1)
+				db.EXPECT().Get(gomock.Any(), gomock.Any()).Return("", false, errors.New("error")).Times(1)
 			}
 			// Создаем фейковый запрос
 			req := httptest.NewRequest("GET", test.RequestPath, nil)
