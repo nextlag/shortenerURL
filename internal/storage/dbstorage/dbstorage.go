@@ -214,18 +214,18 @@ func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
 func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	var wg sync.WaitGroup
 
-	deleteUpdate := func(c chan string) {
+	deleteUpdate := func(ch chan string) {
 		defer wg.Done() // Помещаем wg.Done() в defer, чтобы он гарантированно выполнился при выходе из функции
-		var linksToDelete []string
-		for shortenLink := range c {
-			linksToDelete = append(linksToDelete, shortenLink)
+		var deleteURL []string
+		for alias := range ch {
+			deleteURL = append(deleteURL, alias)
 		}
 		db := bun.NewDB(s.db, pgdialect.New())
 
 		_, err := db.NewUpdate().
 			TableExpr("short_urls").
 			Set("del = ?", "true").
-			Where("alias IN (?)", bun.In(linksToDelete)).
+			Where("alias IN (?)", bun.In(deleteURL)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
 				return uq.Where("uuid = ?", id)
 			}).
