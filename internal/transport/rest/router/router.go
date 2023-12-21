@@ -1,6 +1,8 @@
 package router
 
 import (
+	"context"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
@@ -11,11 +13,11 @@ import (
 	mwLogger "github.com/nextlag/shortenerURL/internal/transport/rest/middleware/zaplogger"
 )
 
-func SetupRouter(db app.Storage, log *zap.Logger, cfg config.Args) *chi.Mux {
+func SetupRouter(ctx context.Context, db app.Storage, log *zap.Logger, cfg config.Args) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID) // добавляем уникальный идентификатор
 
-	h := handlers.New(db, log, cfg)
+	h := handlers.New(ctx, db, log, cfg)
 
 	// Настройка маршрутов с использованием middleware
 	router.With(mwLogger.New(log, cfg)).Route("/", func(r chi.Router) {

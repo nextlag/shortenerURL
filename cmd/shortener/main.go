@@ -36,15 +36,14 @@ func main() {
 		log.Fatal(err)
 	}
 	flag.Parse() // Парсинг флагов командной строки
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	var run = app.New()
 	var log = run.Log
 	var cfg = run.Cfg
 	var db app.Storage
 
 	if cfg.DSN != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
 		stor, err := dbstorage.New(ctx, cfg.DSN, log)
 		if err != nil {
 			log.Fatal("failed to connect in database", zap.Error(err))
@@ -77,7 +76,7 @@ func main() {
 	}
 
 	// Создание и настройка маршрутов и HTTP-сервера
-	rout := router.SetupRouter(db, log, cfg)
+	rout := router.SetupRouter(ctx, db, log, cfg)
 	mw := gzip.New(rout.ServeHTTP)
 	srv := setupServer(mw)
 
