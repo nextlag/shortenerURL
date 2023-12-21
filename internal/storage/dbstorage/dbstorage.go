@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -212,7 +213,6 @@ func delGenerator(ctx context.Context, URLs []string) chan string {
 	return URLCh
 }
 
-// deleteStatusBatch выполняет пакетное обновление статуса удаления для заданных alias'ов и пользователя.
 func (s *DBStorage) deleteStatusBatch(ctx context.Context, id int, inputCh chan string) error {
 	var deleteURLs []string
 
@@ -230,15 +230,9 @@ func (s *DBStorage) deleteStatusBatch(ctx context.Context, id int, inputCh chan 
 	// Ожидание окончания работы горутины по сбору alias'ов.
 	<-aliasCollectionDoneCh
 
-	db := bun.NewDB(s.db, pgdialect.New())
-
 	// Пакетное обновление.
-	_, err := db.NewUpdate().
-		TableExpr("short_urls").
-		Set("del = ?", true).
-		Where("alias IN (?)", bun.In(deleteURLs)).
-		Where("uuid = ?", id).
-		Exec(ctx)
+	query := fmt.Sprintf(del, strings.Join(deleteURLs, ","))
+	_, err := s.db.ExecContext(ctx, query, id)
 
 	if err != nil {
 		s.log.Error("Can't exec update request: ", zap.Error(err))
@@ -247,6 +241,42 @@ func (s *DBStorage) deleteStatusBatch(ctx context.Context, id int, inputCh chan 
 
 	return nil
 }
+
+// deleteStatusBatch выполняет пакетное обновление статуса удаления для заданных alias'ов и пользователя.
+// func (s *DBStorage) deleteStatusBatch(ctx context.Context, id int, inputCh chan string) error {
+// 	var deleteURLs []string
+//
+// 	// Канал для сигнализации об окончании работы каждой горутины.
+// 	aliasCollectionDoneCh := make(chan struct{})
+//
+// 	// Запуск горутины для сбора alias'ов.
+// 	go func() {
+// 		defer close(aliasCollectionDoneCh)
+// 		for alias := range inputCh {
+// 			deleteURLs = append(deleteURLs, alias)
+// 		}
+// 	}()
+//
+// 	// Ожидание окончания работы горутины по сбору alias'ов.
+// 	<-aliasCollectionDoneCh
+//
+// 	db := bun.NewDB(s.db, pgdialect.New())
+//
+// 	// Пакетное обновление.
+// 	_, err := db.NewUpdate().
+// 		TableExpr("short_urls").
+// 		Set("del = ?", true).
+// 		Where("alias IN (?)", bun.In(deleteURLs)).
+// 		Where("uuid = ?", id).
+// 		Exec(ctx)
+//
+// 	if err != nil {
+// 		s.log.Error("Can't exec update request: ", zap.Error(err))
+// 		return fmt.Errorf("failed to update URLs: %w", err)
+// 	}
+//
+// 	return nil
+// }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)
 // func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
