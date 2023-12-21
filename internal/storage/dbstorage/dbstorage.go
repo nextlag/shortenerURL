@@ -38,16 +38,22 @@ const createTablesTimeout = time.Second * 5
 var ErrConflict = errors.New("data conflict in DBStorage")
 
 // New - создает новый экземпляр DBStorage
-func New(cfg string, log *zap.Logger) (*DBStorage, error) {
+func New(ctx context.Context, cfg string, log *zap.Logger) (*DBStorage, error) {
+	// Создание подключения к базе данных с использованием контекста
 	db, err := sql.Open("pgx", cfg)
 	if err != nil {
 		return nil, fmt.Errorf("db connection err=%w", err)
+	}
+	// Проверка подключения к базе данных с использованием контекста
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf("db ping error: %w", err)
 	}
 	storage := &DBStorage{
 		db:  db,
 		log: log,
 	}
-	if err := storage.CreateTable(); err != nil {
+	// Создание таблицы с использованием контекста
+	if err := storage.CreateTable(ctx); err != nil {
 		return nil, fmt.Errorf("create table error: %w", err)
 	}
 	return storage, nil
@@ -74,7 +80,7 @@ func (s *DBStorage) Healtcheck() bool {
 }
 
 // CreateTable - создает таблицу в базе данных
-func (s *DBStorage) CreateTable() error {
+func (s *DBStorage) CreateTable(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
 	defer cancel()
 
@@ -226,7 +232,7 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 			Set("del = ?", "true").
 			Where("alias IN (?)", bun.In(linksToDelete)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
-				return uq.Where("uuid = ?", id)
+				return uq.Where("user_id = ?", id)
 			}).
 			Exec(context.Background())
 		if err != nil {

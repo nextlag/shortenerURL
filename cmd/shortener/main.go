@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
@@ -41,7 +43,9 @@ func main() {
 	var db app.Storage
 
 	if cfg.DSN != "" {
-		stor, err := dbstorage.New(cfg.DSN, log)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		stor, err := dbstorage.New(ctx, cfg.DSN, log)
 		if err != nil {
 			log.Fatal("failed to connect in database", zap.Error(err))
 		}
