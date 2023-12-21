@@ -222,11 +222,11 @@ func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 		db := bun.NewDB(s.db, pgdialect.New())
 
 		_, err := db.NewUpdate().
-			TableExpr("shorten_URLs").
-			Set("deleted = ?", "true").
-			Where("short_link IN (?)", bun.In(linksToDelete)).
+			TableExpr("short_urls").
+			Set("del = ?", "true").
+			Where("alias IN (?)", bun.In(linksToDelete)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
-				return uq.Where("user_id = ?", id)
+				return uq.Where("uuid = ?", id)
 			}).
 			Exec(context.Background())
 		if err != nil {
