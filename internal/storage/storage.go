@@ -38,7 +38,7 @@ func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 	if !ok {
 		return "", false, fmt.Errorf("key '%s' not found", alias)
 	}
-	return url, true, nil
+	return url, false, nil
 }
 
 func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {
