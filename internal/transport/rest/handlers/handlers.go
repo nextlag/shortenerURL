@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -21,9 +22,9 @@ type Handlers struct {
 }
 
 // New создает экземпляр Handlers, инициализируя каждый хендлер
-func New(db app.Storage, log *zap.Logger, cfg config.Args) *Handlers {
+func New(ctx context.Context, db app.Storage, log *zap.Logger, cfg config.Args) *Handlers {
 	if db == nil {
-		db, _ = dbstorage.New(cfg.DSN, log)
+		db, _ = dbstorage.New(ctx, cfg.DSN, log)
 	}
 	return &Handlers{
 		Get:     NewGetHandler(db, log, cfg).ServeHTTP,
