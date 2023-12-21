@@ -187,59 +187,65 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 	return allURL, nil
 }
 
-// Del - Удаление URL для пользователей с определенным ID
-func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
-	inputCh := delGenerator(ctx, shortURLs)
-	s.bulkDeleteStatusUpdate(ctx, id, inputCh)
+// Del удаляет URL для пользователей с определенным ID.
+func (s *DBStorage) Del(ctx context.Context, id int, aliases []string) error {
+	inputCh := delGenerator(ctx, aliases)
+	if err := s.deleteStatusBatch(ctx, id, inputCh); err != nil {
+		return fmt.Errorf("failed to delete URLs: %w", err)
+	}
 	return nil
 }
 
-// Генератор
+// Генератор канала для сбора alias'ов.
 func delGenerator(ctx context.Context, URLs []string) chan string {
-	URLsCh := make(chan string)
+	URLCh := make(chan string)
 	go func() {
-		defer close(URLsCh)
+		defer close(URLCh)
 		for _, data := range URLs {
 			select {
 			case <-ctx.Done():
 				return
-			case URLsCh <- data:
+			case URLCh <- data:
 			}
 		}
 	}()
-	return URLsCh
+	return URLCh
 }
 
-func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputCh chan string) {
-	var deleteURL []string
+// deleteStatusBatch выполняет пакетное обновление статуса удаления для заданных alias'ов и пользователя.
+func (s *DBStorage) deleteStatusBatch(ctx context.Context, id int, inputCh chan string) error {
+	var deleteURLs []string
 
-	// Канал для сигнализации об окончании работы каждой горутины
-	doneCh := make(chan struct{})
+	// Канал для сигнализации об окончании работы каждой горутины.
+	aliasCollectionDoneCh := make(chan struct{})
 
-	// Запуск горутины для сбора alias'ов
+	// Запуск горутины для сбора alias'ов.
 	go func() {
-		defer close(doneCh)
+		defer close(aliasCollectionDoneCh)
 		for alias := range inputCh {
-			deleteURL = append(deleteURL, alias)
+			deleteURLs = append(deleteURLs, alias)
 		}
 	}()
 
-	// Ожидание окончания работы горутины по сбору alias'ов
-	<-doneCh
+	// Ожидание окончания работы горутины по сбору alias'ов.
+	<-aliasCollectionDoneCh
 
 	db := bun.NewDB(s.db, pgdialect.New())
 
-	// Пакетное обновление
+	// Пакетное обновление.
 	_, err := db.NewUpdate().
 		TableExpr("short_urls").
-		Set("del = ?", "true").
-		Where("alias IN (?)", bun.In(deleteURL)).
+		Set("del = ?", true).
+		Where("alias IN (?)", bun.In(deleteURLs)).
 		Where("uuid = ?", id).
 		Exec(ctx)
 
 	if err != nil {
 		s.log.Error("Can't exec update request: ", zap.Error(err))
+		return fmt.Errorf("failed to update URLs: %w", err)
 	}
+
+	return nil
 }
 
 // GetAll - получает все URL конкретного пользователя (вариант 2)
