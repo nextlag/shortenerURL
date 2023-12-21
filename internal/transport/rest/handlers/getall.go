@@ -26,29 +26,51 @@ func NewGetAllHandler(db app.Storage, log *zap.Logger, cfg config.Args) *GetAllU
 
 func (h *GetAllURLsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cfg = app.New().Cfg
-	uuid, err := auth.CheckCookie(w, r, h.log)
+	userID, err := auth.CheckCookie(w, r, h.log)
 	if err != nil {
-		h.log.Error("Error getting cookie: ", zap.Error(err))
+		h.log.Error("Unauthorized access : ", zap.Error(err))
+		w.WriteHeader(401)
+		w.Write([]byte("Unauthorized"))
 		return
 	}
+	userURLs, err := h.db.GetAll(r.Context(), userID, cfg.BaseURL)
+	if err != nil {
+		h.log.Error("Error getting URLs by ID", zap.Error(err))
+	}
 
-	switch uuid {
-	case 0:
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
-	default:
-		allURL, err := h.db.GetAll(r.Context(), uuid, cfg.BaseURL)
-		if err != nil {
-			h.log.Error("Error getting URLs by ID", zap.Error(err))
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if string(allURL) == "null" {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("No content"))
-		} else {
-			w.WriteHeader(http.StatusOK)
-			w.Write(allURL)
-		}
+	w.Header().Set("Content-Type", "application/json")
+	if string(userURLs) == "null" {
+		w.WriteHeader(200)
+		w.Write([]byte("No content"))
+	} else {
+		w.WriteHeader(200)
+		w.Write(userURLs)
 	}
 }
+
+// uuid, err := auth.CheckCookie(w, r, h.log)
+// if err != nil {
+// 	h.log.Error("Error getting cookie: ", zap.Error(err))
+// 	return
+// }
+//
+// switch uuid {
+// case 0:
+// 	w.WriteHeader(http.StatusUnauthorized)
+// 	w.Write([]byte("Unauthorized"))
+// default:
+// 	allURL, err := h.db.GetAll(r.Context(), uuid, cfg.BaseURL)
+// 	if err != nil {
+// 		h.log.Error("Error getting URLs by ID", zap.Error(err))
+// 	}
+//
+// 	w.Header().Set("Content-Type", "application/json")
+// 	if string(allURL) == "null" {
+// 		w.WriteHeader(http.StatusOK)
+// 		w.Write([]byte("No content"))
+// 	} else {
+// 		w.WriteHeader(http.StatusOK)
+// 		w.Write(allURL)
+// 	}
+// }
+// }
