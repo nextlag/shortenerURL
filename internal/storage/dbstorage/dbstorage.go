@@ -188,9 +188,9 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 }
 
 // Del - Удаление URL для пользователей с определенным ID
-func (s *DBStorage) Del(id int, shortURLs []string) error {
-	ctx := context.Background()
-	inputCh := deleteURLsGenerator(ctx, shortURLs)
+func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
+	context := context.Background()
+	inputCh := deleteURLsGenerator(context, shortURLs)
 	s.bulkDeleteStatusUpdate(id, inputCh)
 	return nil
 }

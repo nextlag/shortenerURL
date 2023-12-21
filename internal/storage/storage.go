@@ -49,7 +49,7 @@ func (s *Data) Healtcheck() bool {
 	return true
 }
 
-func (s *Data) Del(_ int, _ []string) error {
+func (s *Data) Del(_ context.Context, _ int, _ []string) error {
 	return nil
 }
 
