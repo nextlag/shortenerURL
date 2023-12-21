@@ -213,12 +213,22 @@ func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
 func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputChs ...chan string) {
 	var wg sync.WaitGroup
 
-	deleteUpdate := func(c chan string) {
+	deleteUpdate := func(c chan string, ctx context.Context) {
 		defer wg.Done()
 
 		var linksToDelete []string
-		for shortenLink := range c {
-			linksToDelete = append(linksToDelete, shortenLink)
+		for {
+			select {
+			case shortenLink, ok := <-c:
+				if !ok {
+					// Канал закрыт, завершаем выполнение
+					return
+				}
+				linksToDelete = append(linksToDelete, shortenLink)
+			case <-ctx.Done():
+				// Контекст завершен, завершаем выполнение
+				return
+			}
 		}
 
 		if len(linksToDelete) == 0 {
@@ -239,13 +249,13 @@ func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputChs
 
 		if err != nil {
 			s.log.Error("Can't exec update request: ", zap.Error(err))
-			// Рассмотрите варианты обработки ошибок ваших горутин, например, передача ошибки в канал ошибок
 		}
 	}
 
+	// Добавлен параметр ctx
 	for _, c := range inputChs {
 		wg.Add(1)
-		go deleteUpdate(c)
+		go deleteUpdate(c, ctx)
 	}
 
 	wg.Wait()
