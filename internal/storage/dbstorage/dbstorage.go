@@ -190,7 +190,7 @@ func (s *DBStorage) GetAll(ctx context.Context, id int, host string) ([]byte, er
 // Del - Удаление URL для пользователей с определенным ID
 func (s *DBStorage) Del(ctx context.Context, id int, shortURLs []string) error {
 	inputCh := deleteURLsGenerator(ctx, shortURLs)
-	s.bulkDeleteStatusUpdate(ctx, id, inputCh)
+	s.bulkDeleteStatusUpdate(id, inputCh)
 	return nil
 }
 
@@ -210,54 +210,35 @@ func deleteURLsGenerator(ctx context.Context, URLs []string) chan string {
 	return URLsCh
 }
 
-func (s *DBStorage) bulkDeleteStatusUpdate(ctx context.Context, id int, inputChs ...chan string) {
+func (s *DBStorage) bulkDeleteStatusUpdate(id int, inputChs ...chan string) {
 	var wg sync.WaitGroup
 
-	deleteUpdate := func(c chan string, ctx context.Context) {
-		defer wg.Done()
-
+	deleteUpdate := func(c chan string) {
 		var linksToDelete []string
-		for {
-			select {
-			case shortenLink, ok := <-c:
-				if !ok {
-					// Канал закрыт, завершаем выполнение
-					return
-				}
-				linksToDelete = append(linksToDelete, shortenLink)
-			case <-ctx.Done():
-				// Контекст завершен, завершаем выполнение
-				return
-			}
+		for shortenLink := range c {
+			linksToDelete = append(linksToDelete, shortenLink)
 		}
-
-		if len(linksToDelete) == 0 {
-			// Нет ссылок для удаления
-			return
-		}
-
 		db := bun.NewDB(s.db, pgdialect.New())
 
 		_, err := db.NewUpdate().
 			TableExpr("short_urls").
-			Set("del = ?", true).
+			Set("del = ?", "true").
 			Where("alias IN (?)", bun.In(linksToDelete)).
 			WhereGroup(" AND ", func(uq *bun.UpdateQuery) *bun.UpdateQuery {
 				return uq.Where("uuid = ?", id)
 			}).
-			Exec(ctx)
-
+			Exec(context.Background())
 		if err != nil {
 			s.log.Error("Can't exec update request: ", zap.Error(err))
 		}
+		wg.Done()
 	}
 
-	// Добавлен параметр ctx
+	wg.Add(len(inputChs))
+
 	for _, c := range inputChs {
-		wg.Add(1)
-		go deleteUpdate(c, ctx)
+		go deleteUpdate(c)
 	}
-
 	wg.Wait()
 }
 
