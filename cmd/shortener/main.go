@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	stdLog "log"
 	"net/http"
 	"os"
@@ -34,7 +33,7 @@ func main() {
 	if err := config.MakeConfig(); err != nil {
 		stdLog.Fatal(err)
 	}
-	flag.Parse()
+	// flag.Parse()
 	var (
 		log = logger.SetupLogger()
 		cfg = config.Cfg
