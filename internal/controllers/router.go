@@ -35,18 +35,17 @@ func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 	handler.Use(mwLogger.New(c.log, c.cfg))
 	handler.Use(middleware.Logger)
 	handler.Use(gzip.New())
-
-	h := New(c.uc, c.log, c.cfg)
+	handler.Use(middleware.Recoverer)
 
 	// Настройка маршрутов с использованием middleware
 	handler.Group(func(r chi.Router) {
-		r.Get("/{id}", h.Get)
-		r.Get("/api/user/urls", h.GetAll)
-		r.Get("/ping", h.HealthCheck)
-		r.Post("/api/shorten", h.Shorten)
-		r.Post("/api/shorten/batch", h.Batch)
-		r.Post("/", h.Save)
-		r.Delete("/api/user/urls", h.Del)
+		r.Get("/{id}", c.Get)
+		r.Get("/api/user/urls", c.GetAll)
+		r.Get("/ping", c.HealthCheck)
+		r.Post("/api/shorten", c.Shorten)
+		r.Post("/api/shorten/batch", c.Batch)
+		r.Post("/", c.Save)
+		r.Delete("/api/user/urls", c.Del)
 	})
 	return handler
 }

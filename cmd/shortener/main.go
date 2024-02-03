@@ -62,7 +62,7 @@ func main() {
 		}()
 		uc = usecase.New(db, log, cfg)
 	} else {
-		db := usecase.NewData()
+		db := usecase.NewData(log, cfg)
 		uc = usecase.New(db, log, cfg)
 	}
 

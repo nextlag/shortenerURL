@@ -6,19 +6,25 @@ import (
 	"io"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 type Data struct {
 	data  map[string]string
+	log   *zap.Logger
+	cfg   config.HTTPServer
 	mutex sync.Mutex // Мьютекс для синхронизации доступа к данным
 }
 
-// New - конструктор для создания нового экземпляра Data
-func NewData() *Data {
+// NewData - конструктор для создания нового экземпляра Data
+func NewData(log *zap.Logger, cfg config.HTTPServer) *Data {
 	return &Data{
 		data: make(map[string]string),
+		log:  log,
+		cfg:  cfg,
 	}
 }
 
@@ -50,12 +56,11 @@ func (s *Data) Del(_ context.Context, _ int, _ []string) error {
 func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	cfg := config.Cfg
 	alias := generatestring.NewRandomString(8)
 
 	// Проверяем существование ключа
 	if _, exists := s.data[alias]; exists {
-		return "", fmt.Errorf("alias '%s/%s' already exists", cfg.BaseURL, alias)
+		return "", fmt.Errorf("alias '%s/%s' already exists", s.cfg.BaseURL, alias)
 	}
 
 	// Проверяем существование значения
@@ -68,8 +73,8 @@ func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
 	s.data[alias] = url
 
 	// Проверка на существование флага -f, если есть - сохранить результат запроса в файл
-	if cfg.FileStorage != "" {
-		err := Save(cfg.FileStorage, alias, url)
+	if s.cfg.FileStorage != "" {
+		err := Save(s.cfg.FileStorage, alias, url)
 		if err != nil {
 			return alias, err
 		}
