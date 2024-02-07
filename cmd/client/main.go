@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 	flag.Parse() // Парсинг флагов командной строки
-	endpoint := config.Config.BaseURL
+	endpoint := config.Cfg.BaseURL
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли
