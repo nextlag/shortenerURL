@@ -33,26 +33,21 @@ func New(r Repository, l *zap.Logger, cfg config.HTTPServer) *UseCase {
 }
 
 func (uc *UseCase) DoGet(ctx context.Context, alias string) (string, bool, error) {
-	url, deletedFlag, err := uc.repo.Get(ctx, alias)
-	return url, deletedFlag, err
+	return uc.repo.Get(ctx, alias)
 }
 
 func (uc *UseCase) DoGetAll(ctx context.Context, userID int, url string) ([]byte, error) {
-	allURL, err := uc.repo.GetAll(ctx, userID, url)
-	return allURL, err
+	return uc.repo.GetAll(ctx, userID, url)
 }
 
 func (uc *UseCase) DoPut(ctx context.Context, url string, uuid int) (string, error) {
-	alias, err := uc.repo.Put(ctx, url, uuid)
-	return alias, err
+	return uc.repo.Put(ctx, url, uuid)
 }
 
 func (uc *UseCase) DoDel(ctx context.Context, id int, aliases []string) error {
-	err := uc.repo.Del(ctx, id, aliases)
-	return err
+	return uc.repo.Del(ctx, id, aliases)
 }
 
 func (uc *UseCase) DoHealthcheck() (bool, error) {
-	ping, err := uc.repo.Healthcheck()
-	return ping, err
+	return uc.repo.Healthcheck()
 }
