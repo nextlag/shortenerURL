@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,6 +22,7 @@ type UseCase interface {
 	DoDel(ctx context.Context, id int, aliases []string) error
 	DoHealthcheck() (bool, error)
 }
+
 type Controller struct {
 	uc  UseCase
 	log *zap.Logger
@@ -47,5 +50,15 @@ func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 		r.Post("/", c.Save)
 		r.Delete("/api/user/urls", c.Del)
 	})
+
+	// Добавление маршрутов pprof
+	handler.Route("/debug/pprof", func(r chi.Router) {
+		r.Handle("/", http.HandlerFunc(pprof.Index))
+		r.Handle("/cmdline", http.HandlerFunc(pprof.Cmdline))
+		r.Handle("/profile", http.HandlerFunc(pprof.Profile))
+		r.Handle("/symbol", http.HandlerFunc(pprof.Symbol))
+		r.Handle("/trace", http.HandlerFunc(pprof.Trace))
+	})
+
 	return handler
 }

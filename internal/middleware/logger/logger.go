@@ -53,7 +53,7 @@ func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Ha
 				if requestFields.Status >= http.StatusInternalServerError {
 					log.Error("request error: ", zap.Any("error", requestFields))
 				} else {
-					log.Info("", zap.Any("request", requestFields))
+					log.Info("mw", zap.Any("request", requestFields))
 				}
 			}()
 
