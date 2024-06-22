@@ -124,7 +124,7 @@ func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			// In case of a conflict, we perform an additional request to obtain the alias.
 			var existingAlias string
-			err := uc.DB.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
+			err = uc.DB.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					// Handling the situation when a URL match is not found.
@@ -177,7 +177,7 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 
 	for rows.Next() {
 		var url entity.DBStorage
-		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
+		if err = rows.Scan(&url.URL, &url.Alias); err != nil {
 			uc.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}

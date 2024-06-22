@@ -18,7 +18,7 @@ docker_run:
 test:
 	docker-compose -f ./Docker-Compose.yaml up --build --abort-on-container-exit
 	docker-compose -f ./Docker-Compose.yaml down --volumes
-linter:
-	staticcheck ./...
+lint:
+	go run ./cmd/staticlint ./...
 
-.PHONY: shorten db_create run runF build docker_run test linter
+.PHONY: shorten db_create run runF build docker_run test lint
