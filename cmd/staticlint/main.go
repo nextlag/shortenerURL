@@ -13,7 +13,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/structtag"
 	"honnef.co/go/tools/staticcheck"
 
-	"github.com/nextlag/shortenerURL/cmd/staticlint/os_exit_analyzer"
+	"github.com/nextlag/shortenerURL/cmd/staticlint/analyzer"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 		shadow.Analyzer,
 		structtag.Analyzer,
 		errcheck.Analyzer,
-		os_exit_analyzer.OSExitAnalyzer,
+		analyzer.OSExitAnalyzer,
 	)
 
 	multichecker.Main(

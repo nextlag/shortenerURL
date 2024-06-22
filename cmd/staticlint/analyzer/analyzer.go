@@ -1,4 +1,4 @@
-package os_exit_analyzer
+package analyzer
 
 import (
 	"go/ast"
