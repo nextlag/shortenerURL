@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -100,7 +100,7 @@ func TestController(t *testing.T) {
 
 			res := w.Result()
 			defer res.Body.Close()
-			_, err := ioutil.ReadAll(res.Body)
+			_, err := io.ReadAll(res.Body)
 			if err != nil {
 				t.Fatalf("could not read response body: %v", err)
 			}
