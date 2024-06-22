@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -97,7 +98,14 @@ func TestController(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
+			res := w.Result()
+			defer res.Body.Close()
+			_, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Fatalf("could not read response body: %v", err)
+			}
+
+			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 		})
 	}
 }
