@@ -30,8 +30,13 @@ const (
     UNIQUE (uuid, url)
 );`
 
-	Insert      = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
-	Get         = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
+	// Insert SQL query to insert a new short URL record into the short_urls table
+	Insert = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
+
+	// Get SQL query to retrieve a short URL record by alias from the short_urls table
+	Get = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
+
+	// GetConflict SQL query to check for conflicts by retrieving alias for a given URL from the short_urls table
 	GetConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 )
 
