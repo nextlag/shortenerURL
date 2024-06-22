@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -101,13 +100,7 @@ func TestController_HealthCheck(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		res := w.Result()
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				t.Errorf("failed to close response body: %v", err)
-			}
-		}(res.Body)
-
+		defer res.Body.Close()
 		if res.StatusCode != test.statusCode {
 			t.Errorf("expected status %d, got %d", test.statusCode, res.StatusCode)
 		}
