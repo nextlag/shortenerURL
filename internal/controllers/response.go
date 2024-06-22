@@ -1,3 +1,4 @@
+// Package controllers provides the handlers for managing URL shortening operations.
 package controllers
 
 import (
@@ -11,20 +12,20 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-// Response представляет JSON-ответ с полем для сообщения об ошибке.
+// Response represents a JSON response with a field for error messages and the result as a shortened URL.
 type Response struct {
 	Error  string `json:"error,omitempty"`
-	Result string `json:"result"` // Результат - сокращенная ссылка.
+	Result string `json:"result"` // Result - shortened URL.
 }
 
-// Error создает JSON-ответ с заданным сообщением об ошибке.
+// Error creates a JSON response with the given error message.
 func Error(msg string) Response {
 	return Response{
 		Error: msg,
 	}
 }
 
-// ValidationError создает JSON-ответ с сообщениями об ошибках валидации.
+// ValidationError creates a JSON response with validation error messages.
 func ValidationError(errs validator.ValidationErrors) Response {
 	var errMsgs []string
 
@@ -42,7 +43,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 	}
 }
 
-// ResponseConflict обрабатывает конфликтный запрос
+// ResponseConflict handles a conflict request and returns the existing shortened URL.
 func ResponseConflict(w http.ResponseWriter, alias string) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
@@ -52,12 +53,12 @@ func ResponseConflict(w http.ResponseWriter, alias string) {
 	w.WriteHeader(http.StatusConflict)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// Обработка ошибки кодирования JSON.
+		// Handle JSON encoding error.
 		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
 	}
 }
 
-// ResponseCreated отправляет успешный ответ с сокращенной ссылкой в JSON-формате.
+// ResponseCreated sends a successful response with the shortened URL in JSON format.
 func ResponseCreated(w http.ResponseWriter, alias string) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
@@ -67,7 +68,7 @@ func ResponseCreated(w http.ResponseWriter, alias string) {
 	w.WriteHeader(http.StatusCreated)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// Обработка ошибки кодирования JSON.
+		// Handle JSON encoding error.
 		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
 	}
 }
