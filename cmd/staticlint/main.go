@@ -1,7 +1,7 @@
-// Пакет multichecker включает в себя следующие анализаторы:
-// exitanalyzer (проверка наличия os.Exit() в функции и файле main),
-// errcheck (проверка обработки ошибок),
-// analysis (стандартный пакет линтеров).
+// Package main includes the following analyzers:
+// exitanalyzer - checks for the presence of os.Exit() in functions and the main file,
+// errcheck - checks for error handling,
+// analysis - a standard package of linters.
 package main
 
 import (
@@ -19,19 +19,22 @@ import (
 func main() {
 	var checks []*analysis.Analyzer
 
+	// Add all analyzers from the staticcheck package.
 	for _, v := range staticcheck.Analyzers {
 		checks = append(checks, v.Analyzer)
 	}
 
+	// Add additional analyzers.
 	checks = append(
 		checks,
-		printf.Analyzer,
-		shadow.Analyzer,
-		structtag.Analyzer,
-		errcheck.Analyzer,
-		analyzer.OSExitAnalyzer,
+		printf.Analyzer,         // Check for printf-like functions for correct formatting directives.
+		shadow.Analyzer,         // Check for shadowed variables.
+		structtag.Analyzer,      // Check for struct tags.
+		errcheck.Analyzer,       // Check for error handling.
+		analyzer.OSExitAnalyzer, // Custom analyzer to check for os.Exit() calls.
 	)
 
+	// Run the multichecker with the specified analyzers.
 	multichecker.Main(
 		checks...,
 	)

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-// OSExitAnalyzer проверяет наличие os.Exit() в файле и функции main.
+// OSExitAnalyzer checks for the presence of os.Exit() in the file and the main function.
 var OSExitAnalyzer = &analysis.Analyzer{
 	Name: "osexitanalyzer",
 	Doc:  "Checks for os.Exit calls in the main function of package main",
