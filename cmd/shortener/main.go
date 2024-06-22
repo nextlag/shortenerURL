@@ -66,7 +66,7 @@ func main() {
 	controller := controllers.New(uc, log, cfg)
 
 	r := chi.NewRouter()
-	r.Mount("/", controller.Router(r))
+	r.Mount("/", controller.Controller(r))
 
 	srv := setupServer(r)
 

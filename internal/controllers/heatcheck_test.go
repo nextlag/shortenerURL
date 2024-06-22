@@ -44,7 +44,7 @@ func ExampleController_HealthCheck() {
 
 	ctrl := controllers.New(uc, log, cfg)
 	r := chi.NewRouter()
-	ctrl.Router(r)
+	ctrl.Controller(r)
 
 	// Example request to the /ping endpoint
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
@@ -84,7 +84,7 @@ func TestController_HealthCheck(t *testing.T) {
 	})
 
 	// Setup routes with the controller
-	ctrl.Router(r)
+	ctrl.Controller(r)
 
 	tests := []struct {
 		method     string

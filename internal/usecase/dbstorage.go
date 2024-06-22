@@ -41,6 +41,8 @@ const (
 	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 )
 
+var ErrConflict = errors.New("data conflict in DBStorage")
+
 // NewDB - creates a new DBStorage instance
 func NewDB(cfg string, log *zap.Logger) (*UseCase, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)

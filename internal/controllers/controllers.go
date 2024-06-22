@@ -38,8 +38,8 @@ func New(uc UseCase, log *zap.Logger, cfg config.HTTPServer) *Controller {
 	return &Controller{uc: uc, log: log, cfg: cfg}
 }
 
-// Router sets up the application's HTTP routing and middleware.
-func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
+// Controller sets up the application's HTTP routing and middleware.
+func (c *Controller) Controller(handler *chi.Mux) *chi.Mux {
 	handler.Use(middleware.RequestID)
 	handler.Use(mwLogger.New(c.log, c.cfg))
 	handler.Use(middleware.Logger)
