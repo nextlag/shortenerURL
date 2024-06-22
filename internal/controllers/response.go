@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers for URL shortening service.
 package controllers
 
 import (
@@ -11,29 +12,29 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-// Response представляет JSON-ответ с полем для сообщения об ошибке.
+// Response represents a JSON response with a field for an error message.
 type Response struct {
-	Error  string `json:"error,omitempty"`
-	Result string `json:"result"` // Результат - сокращенная ссылка.
+	Error  string `json:"error,omitempty"` // Error message.
+	Result string `json:"result"`          // Result message.
 }
 
-// Error создает JSON-ответ с заданным сообщением об ошибке.
+// Error creates a JSON response with the given error message.
 func Error(msg string) Response {
 	return Response{
 		Error: msg,
 	}
 }
 
-// ValidationError создает JSON-ответ с сообщениями об ошибках валидации.
+// ValidationError creates a JSON response with validation error messages.
 func ValidationError(errs validator.ValidationErrors) Response {
 	var errMsgs []string
 
 	for _, err := range errs {
 		switch err.ActualTag() {
 		case "required":
-			errMsgs = append(errMsgs, fmt.Sprintf("поле %s обязательно для заполнения", err.Field()))
+			errMsgs = append(errMsgs, fmt.Sprintf("field %s is required", err.Field()))
 		case "url":
-			errMsgs = append(errMsgs, fmt.Sprintf("поле %s не является допустимым URL", err.Field()))
+			errMsgs = append(errMsgs, fmt.Sprintf("field %s is not a valid URL", err.Field()))
 		}
 	}
 
@@ -42,7 +43,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 	}
 }
 
-// ResponseConflict обрабатывает конфликтный запрос
+// ResponseConflict handles a conflicting request by sending a JSON response with the conflicting URL.
 func ResponseConflict(w http.ResponseWriter, alias string) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
@@ -52,12 +53,11 @@ func ResponseConflict(w http.ResponseWriter, alias string) {
 	w.WriteHeader(http.StatusConflict)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// Обработка ошибки кодирования JSON.
 		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
 	}
 }
 
-// ResponseCreated отправляет успешный ответ с сокращенной ссылкой в JSON-формате.
+// ResponseCreated sends a successful response with the shortened URL in JSON format.
 func ResponseCreated(w http.ResponseWriter, alias string) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
@@ -67,7 +67,6 @@ func ResponseCreated(w http.ResponseWriter, alias string) {
 	w.WriteHeader(http.StatusCreated)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// Обработка ошибки кодирования JSON.
 		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
 	}
 }

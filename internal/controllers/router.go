@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers for URL shortening service.
 package controllers
 
 import (
@@ -14,7 +15,7 @@ import (
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
 
-//go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/controllers UseCase
+// UseCase defines the interface for the use case layer.
 type UseCase interface {
 	DoGet(ctx context.Context, alias string) (string, bool, error)
 	DoGetAll(ctx context.Context, userID int, url string) ([]byte, error)
@@ -23,16 +24,19 @@ type UseCase interface {
 	DoHealthcheck() (bool, error)
 }
 
+// Controller is the main handler for HTTP requests.
 type Controller struct {
 	uc  UseCase
 	log *zap.Logger
 	cfg config.HTTPServer
 }
 
+// New creates a new Controller instance.
 func New(uc UseCase, log *zap.Logger, cfg config.HTTPServer) *Controller {
 	return &Controller{uc: uc, log: log, cfg: cfg}
 }
 
+// Router sets up the HTTP routes and middleware for the server.
 func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 	handler.Use(middleware.RequestID)
 	handler.Use(mwLogger.New(c.log, c.cfg))
@@ -40,7 +44,7 @@ func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 	handler.Use(gzip.New())
 	handler.Use(middleware.Recoverer)
 
-	// Настройка маршрутов с использованием middleware
+	// Set up routes with middleware
 	handler.Group(func(r chi.Router) {
 		r.Get("/{id}", c.Get)
 		r.Get("/api/user/urls", c.GetAll)
@@ -51,7 +55,7 @@ func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 		r.Delete("/api/user/urls", c.Del)
 	})
 
-	// Добавление маршрутов pprof
+	// Add pprof routes
 	handler.Route("/debug/pprof", func(r chi.Router) {
 		r.Handle("/", http.HandlerFunc(pprof.Index))
 		r.Handle("/cmdline", http.HandlerFunc(pprof.Cmdline))

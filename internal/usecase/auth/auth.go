@@ -1,3 +1,4 @@
+// Package auth provides authentication functionalities using JWT tokens and cookies.
 package auth
 
 import (
@@ -10,14 +11,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// const tokenExp = time.Hour * 3
+// tokenKey is the secret key used to sign the JWT tokens.
 const tokenKey = "nextbug"
 
+// Claims defines the structure of the JWT claims.
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int `json:"user_id"`
 }
 
+// cryptoRandomID generates a cryptographically secure random ID within the given limit.
 func cryptoRandomID(limit int) int {
 	b := make([]byte, 8)
 	_, err := rand.Read(b)
@@ -27,15 +30,14 @@ func cryptoRandomID(limit int) int {
 	return int(binary.BigEndian.Uint64(b) % uint64(limit))
 }
 
+// buildJWTString generates a new JWT token string with a random user ID.
 func buildJWTString() (string, error) {
 	id := cryptoRandomID(1000)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			// хранение токена по времени
+			// Token expiration time can be set here if needed.
 			// ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
-
-			// хранение токена бессрочно
-			ExpiresAt: nil,
+			ExpiresAt: nil, // Token does not expire.
 		},
 		UserID: id,
 	})
@@ -46,6 +48,7 @@ func buildJWTString() (string, error) {
 	return tokenString, nil
 }
 
+// getUserID extracts the user ID from the JWT token string.
 func getUserID(tokenString string, log *zap.Logger) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -62,13 +65,14 @@ func getUserID(tokenString string, log *zap.Logger) (int, error) {
 	return claims.UserID, nil
 }
 
+// CheckCookie checks for a UserID cookie, creates one if it doesn't exist, and returns the user ID.
 func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, error) {
 	var id int
 	uuid, err := r.Cookie("UserID")
 	if err != nil {
 		if r.URL.Path == "/api/user/urls" {
-			// Возвращаем пользовательскую ошибку с информативным сообщением
-			return 0, fmt.Errorf("файл cookie UserID отсутствует")
+			// Return a custom error with an informative message if the UserID cookie is missing.
+			return 0, fmt.Errorf("cookie UserID is missing")
 		}
 
 		jwt, err := buildJWTString()
@@ -83,20 +87,20 @@ func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, 
 			Path:  "/",
 		}
 
-		// Возвращаем ошибку при установке куки, если она не удастся
+		// Set the cookie and return an error if it fails.
 		http.SetCookie(w, &cookie)
 		id, err = getUserID(jwt, log)
 		if err != nil {
-			log.Error("ошибка создания файла cookie", zap.Error(err))
+			log.Error("error creating cookie", zap.Error(err))
 		}
-		log.Info("generate UserID and token:", zap.Int("UserID", id), zap.String("token key", jwt))
+		log.Info("generated UserID and token", zap.Int("UserID", id), zap.String("token key", jwt))
 		return id, nil
 	}
 
 	id, err = getUserID(uuid.Value, log)
 	if err != nil {
-		log.Error("ошибка создания файла cookie", zap.Error(err))
+		log.Error("error parsing cookie", zap.Error(err))
 	}
-	log.Info("ID пользователя после получения из cookie", zap.Int("UserID", id))
+	log.Info("user ID retrieved from cookie", zap.Int("UserID", id))
 	return id, nil
 }

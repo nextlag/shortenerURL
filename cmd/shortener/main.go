@@ -21,6 +21,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 
+// setupServer initializes and returns a new HTTP server configured with the provided router.
 func setupServer(router http.Handler) *http.Server {
 	return &http.Server{
 		Addr:    config.Cfg.Host,
@@ -28,17 +29,30 @@ func setupServer(router http.Handler) *http.Server {
 	}
 }
 
+// main is the entry point of the application.
 func main() {
+	// Load configuration
 	if err := config.MakeConfig(); err != nil {
 		stdLog.Fatal(err)
 	}
 	flag.Parse()
+
 	var (
 		log = logger.SetupLogger()
 		cfg = config.Cfg
 		uc  *usecase.UseCase
 	)
-	log.Info("initialized flags", zap.String("-a", cfg.Host), zap.String("-b", cfg.BaseURL), zap.String("-f", cfg.FileStorage), zap.String("-d", cfg.DSN))
+
+	// Log initialization details
+	log.Info(
+		"initialized flags",
+		zap.String("-a", cfg.Host),
+		zap.String("-b", cfg.BaseURL),
+		zap.String("-f", cfg.FileStorage),
+		zap.String("-d", cfg.DSN),
+	)
+
+	// Load data from file storage if specified
 	if cfg.FileStorage != "" {
 		err := usecase.Load(cfg.FileStorage)
 		if err != nil {
@@ -47,10 +61,11 @@ func main() {
 		}
 	}
 
+	// Initialize database or in-memory data storage
 	if cfg.DSN != "" {
 		db, err := usecase.NewDB(cfg.DSN, log)
 		if err != nil {
-			log.Fatal("failed to connect in database", zap.Error(err))
+			log.Fatal("failed to connect to database", zap.Error(err))
 		}
 		defer func() {
 			if err := db.Stop(); err != nil {
@@ -63,20 +78,22 @@ func main() {
 		uc = usecase.New(db, log, cfg)
 	}
 
+	// Initialize controllers
 	controller := controllers.New(uc, log, cfg)
 
+	// Setup router
 	r := chi.NewRouter()
 	r.Mount("/", controller.Router(r))
 
+	// Setup and start the server
 	srv := setupServer(r)
+	log.Info("server starting", zap.String("address", cfg.Host), zap.String("url", cfg.BaseURL))
 
-	log.Info("server starting",
-		zap.String("address", cfg.Host),
-		zap.String("url", cfg.BaseURL))
-
+	// Setup signal handling for graceful shutdown
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	// Start the server in a goroutine
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Error("failed to start server", zap.Error(err))
@@ -85,9 +102,12 @@ func main() {
 	}()
 	log.Info("server started")
 
+	// Wait for shutdown signal
 	<-sigs
 	ctxTime, cancelShutdown := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancelShutdown()
+
+	// Attempt to gracefully shutdown the server
 	if err := srv.Shutdown(ctxTime); err != nil {
 		log.Error("server shutdown error", zap.Error(err))
 	}

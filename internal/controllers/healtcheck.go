@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers for URL shortening service.
 package controllers
 
 import (
@@ -6,14 +7,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// HealthCheck handles HTTP requests to perform a health check on the service.
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		// Выполняем healthcheck
 		ok, err := c.uc.DoHealthcheck()
 
 		if err != nil {
-			c.log.Error("Ошибка при выполнении healthcheck", zap.Error(err))
+			c.log.Error("Error performing health check", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

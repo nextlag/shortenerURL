@@ -1,3 +1,4 @@
+// Package gzip provides middleware and utility functions for handling gzip compression in HTTP responses and requests.
 package gzip
 
 import (
@@ -5,31 +6,32 @@ import (
 	"strings"
 )
 
+// New creates a middleware handler for gzip compression and decompression.
 func New() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			ow := w // Создаем переменную ow и инициализируем ее с rest.ResponseWriter из входящих параметров.
+			ow := w // Initialize a variable ow with the incoming http.ResponseWriter.
 
-			// Получаем значение заголовка "Accept-Encoding" из запроса.
+			// Get the value of the "Accept-Encoding" header from the request.
 			acceptEncoding := r.Header.Get("Accept-Encoding")
 
-			// Проверяем поддержку сжатия gzip. Если заголовок "Accept-Encoding" содержит "gzip", устанавливаем флаг supportGzip.
+			// Check for gzip support. If "Accept-Encoding" contains "gzip", set the supportGzip flag.
 			supportGzip := strings.Contains(acceptEncoding, "gzip")
 
-			// Если поддержка gzip обнаружена, создаем новый gzip.Writer (cw) и устанавливаем ow на него.
+			// If gzip support is detected, create a new gzip.Writer (cw) and set ow to it.
 			if supportGzip {
 				cw := NewCompressWriter(w)
 				ow = cw
-				defer cw.Close() // Отложенное закрытие gzip.Writer после завершения обработки.
+				defer cw.Close() // Defer closing the gzip.Writer after processing.
 			}
 
-			// Получаем значение заголовка "Content-Encoding" из запроса.
+			// Get the value of the "Content-Encoding" header from the request.
 			contentEncoding := r.Header.Get("Content-Encoding")
 
-			// Проверяем, был ли отправлен контент с использованием сжатия gzip. Если "Content-Encoding" содержит "gzip", устанавливаем флаг sendGzip.
+			// Check if the content was sent using gzip compression. If "Content-Encoding" contains "gzip", set the sendGzip flag.
 			sendGzip := strings.Contains(contentEncoding, "gzip")
 
-			// Если контент был отправлен с использованием gzip, создаем новый gzip.Reader (cr) и устанавливаем r.Body на него.
+			// If the content was sent using gzip, create a new gzip.Reader (cr) and set r.Body to it.
 			if sendGzip {
 				cr, err := NewCompressReader(r.Body)
 				if err != nil {
@@ -37,10 +39,10 @@ func New() func(next http.Handler) http.Handler {
 					return
 				}
 				r.Body = cr
-				defer cr.Close() // Отложенное закрытие gzip.Reader после завершения обработки.
+				defer cr.Close() // Defer closing the gzip.Reader after processing.
 			}
 
-			// Вызываем оригинальный обработчик (h) с модифицированным rest.ResponseWriter (ow) и исходным запросом (r).
+			// Call the original handler (next) with the modified http.ResponseWriter (ow) and the original request (r).
 			next.ServeHTTP(ow, r)
 		}
 		return http.HandlerFunc(fn)

@@ -1,10 +1,13 @@
 package logger_test
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -108,4 +111,55 @@ func (rw *fakeResponseWriter) Write(b []byte) (int, error) {
 
 func (rw *fakeResponseWriter) WriteHeader(statusCode int) {
 	rw.code = statusCode
+}
+
+// Example of using the logging middleware in an HTTP server.
+func ExampleNew() {
+	// Initialize the logger
+	log := logger.SetupLogger()
+
+	// Define a simple handler that returns a plain text response.
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, logged world!"))
+	})
+
+	// Create a new router and add the logging middleware.
+	r := chi.NewRouter()
+	r.Use(logger.New(log, config.HTTPServer{
+		FileStorage: "/tmp/data",
+	}))
+
+	// Add the handler to the router.
+	r.Get("/", handler)
+
+	// Create a new HTTP request.
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	w := httptest.NewRecorder()
+
+	// Serve the HTTP request using the router with logging middleware.
+	r.ServeHTTP(w, req)
+
+	// Get the recorded response.
+	res := w.Result()
+	defer res.Body.Close()
+
+	// Print the response status and body.
+	fmt.Println("Status:", res.StatusCode)
+	body, _ := io.ReadAll(res.Body)
+	fmt.Println("Body:", string(body))
+
+	// Output:
+	// Status: 200
+	// Body: Hello, logged world!
+}
+
+func ExampleSetupLogger() {
+	// Initialize the logger
+	log := logger.SetupLogger()
+
+	// Log a simple info message
+	log.Info("example log message", zap.String("exampleKey", "exampleValue"))
+
+	// Output:
+	// {"level":"info","ts":...,"msg":"example log message","exampleKey":"exampleValue"}
 }

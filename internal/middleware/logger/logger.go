@@ -1,3 +1,4 @@
+// Package logger provides middleware for logging HTTP requests and responses.
 package logger
 
 import (
@@ -10,25 +11,24 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-// RequestFields содержит поля запроса для логгера.
+// RequestFields contains fields for logging HTTP requests.
 type RequestFields struct {
-	Method         string `json:"method"`
-	Path           string `json:"path"`
-	RemoteAddr     string `json:"remote_addr"`
-	UserAgent      string `json:"user_agent"`
-	RequestID      string `json:"request_id"`
-	DataStorageLoc string `json:"data_storage_location,omitempty"`
-	ContentType    string `json:"content_type,omitempty"`
-	Status         int    `json:"status"`
-	Bytes          int    `json:"bytes,omitempty"`
-	Duration       string `json:"duration"`
+	Method         string `json:"method"`                          // HTTP method (GET, POST, etc.)
+	Path           string `json:"path"`                            // URL path
+	RemoteAddr     string `json:"remote_addr"`                     // Remote address of the client
+	UserAgent      string `json:"user_agent"`                      // User agent string
+	RequestID      string `json:"request_id"`                      // Request ID for tracing
+	DataStorageLoc string `json:"data_storage_location,omitempty"` // Location of data storage
+	ContentType    string `json:"content_type,omitempty"`          // Content type of the request
+	Status         int    `json:"status"`                          // HTTP status code of the response
+	Bytes          int    `json:"bytes,omitempty"`                 // Number of bytes in the response
+	Duration       string `json:"duration"`                        // Duration of the request
 }
 
-// New создает и возвращает новый middleware для логирования HTTP запросов.
+// New creates and returns a new middleware for logging HTTP requests.
 func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// Создаем логгер запроса
 			requestFields := RequestFields{
 				Method:         r.Method,
 				Path:           r.URL.Path,
@@ -39,17 +39,17 @@ func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Ha
 				DataStorageLoc: cfg.FileStorage,
 			}
 
-			// Создаем WrapResponseWriter для перехвата статуса ответа и количества байтов.
+			// Create a WrapResponseWriter to capture the status and byte count of the response.
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-			t1 := time.Now() // Запускаем таймер для измерения продолжительности запроса.
+			t1 := time.Now() // Start the timer to measure request duration.
 
 			defer func() {
-				// После выполнения запроса, логируем информацию о запросе, включая статус ответа, количество байтов и продолжительность.
+				// After the request is handled, log the request information including status, byte count, and duration.
 				requestFields.Status = ww.Status()
 				requestFields.Bytes = ww.BytesWritten()
 				requestFields.Duration = time.Since(t1).String()
 
-				// Добавляем логирование, только если статус запроса - ошибка
+				// Log only if the request resulted in an error status.
 				if requestFields.Status >= http.StatusInternalServerError {
 					log.Error("request error: ", zap.Any("error", requestFields))
 				} else {
@@ -57,23 +57,22 @@ func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Ha
 				}
 			}()
 
-			// Передаем запрос следующему обработчику.
+			// Pass the request to the next handler.
 			next.ServeHTTP(ww, r)
 		}
 		return http.HandlerFunc(fn)
 	}
 }
 
+// SetupLogger initializes and returns a new zap.Logger instance.
 func SetupLogger() *zap.Logger {
-	// Настраиваем конфигурацию логгера
 	cfg := zap.NewDevelopmentConfig()
-	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Уровень логирования
+	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Set the logging level
 
-	// Создаем логгер
 	logger, err := cfg.Build()
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync() // Отложенное закрытие логгера
+	defer logger.Sync() // Defer the logger sync
 	return logger
 }

@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers for URL shortening service.
 package controllers
 
 import (
@@ -6,12 +7,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Get обработчик GET-запросов для перенаправления на исходный URL. Принимает storage (database) для поиска сокращенных URL.
+// Get handles GET requests for redirecting to the original URL. Accepts a storage (database) to look up shortened URLs.
 func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем параметр "id" из URL, который представляет собой сокращенную версию URL
+	// Extract the "id" parameter from the URL, which represents the shortened version of the URL.
 	id := chi.URLParam(r, "id")
 
-	// Пытаемся найти оригинальный URL в хранилище
+	// Attempt to find the original URL in the storage.
 	originalURL, deleteStatus, err := c.uc.DoGet(r.Context(), id)
 	if err != nil {
 		http.Error(w, "not found 400", http.StatusBadRequest)
@@ -24,9 +25,9 @@ func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Задаем заголовок Location с оригинальным URL
+	// Set the Location header to the original URL.
 	w.Header().Set("Location", originalURL)
 
-	// Устанавливаем статус HTTP 307 Temporary Redirect и выполняем перенаправление
+	// Set the HTTP status to 307 Temporary Redirect and perform the redirect.
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

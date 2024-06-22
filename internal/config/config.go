@@ -1,3 +1,4 @@
+// Package config provides configuration structures and initialization functions for the HTTP server.
 package config
 
 import (
@@ -6,23 +7,23 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// HTTPServer структура для хранения конфигурации HTTP-сервера.
+// HTTPServer is a structure for storing HTTP server configuration.
 type HTTPServer struct {
-	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL     string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
-	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""` // "postgres://postgres:Xer_0101@localhost/shorten?sslmode=disable"
+	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`                 // Server address.
+	BaseURL     string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`  // Base URL.
+	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""` // Path to the data storage file.
+	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`               // Database connection string.
 }
 
-// Cfg - переменная с конфигурацией
+// Cfg is the variable holding the server configuration.
 var Cfg HTTPServer
 
-// MakeConfig инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
+// MakeConfig initializes the configuration by reading command-line flags and environment variables.
 func MakeConfig() error {
-	// Определение флагов командной строки для настройки конфигурации.
-	flag.StringVar(&Cfg.Host, "a", Cfg.Host, "Host HTTP-server")
-	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "Base URL")
-	flag.StringVar(&Cfg.FileStorage, "f", Cfg.FileStorage, "Storage in data.json")
-	flag.StringVar(&Cfg.DSN, "d", Cfg.DSN, "Connect to database")
-	return env.Parse(&Cfg)
+	// Define command-line flags for configuration.
+	flag.StringVar(&Cfg.Host, "a", Cfg.Host, "Host HTTP-server")                   // Flag for setting the server address.
+	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "Base URL")                     // Flag for setting the base URL.
+	flag.StringVar(&Cfg.FileStorage, "f", Cfg.FileStorage, "Storage in data.json") // Flag for setting the path to the data storage file.
+	flag.StringVar(&Cfg.DSN, "d", Cfg.DSN, "Connect to database")                  // Flag for setting the database connection string.
+	return env.Parse(&Cfg)                                                         // Parse environment variables and assign them to the respective fields of the structure.
 }
