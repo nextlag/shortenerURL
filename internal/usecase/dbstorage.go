@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	// CreateTable SQL queries
-	CreateTable = `CREATE TABLE IF NOT EXISTS short_urls (
+	// createTable - creating a table
+	createTable = `CREATE TABLE IF NOT EXISTS short_urls (
     uuid INT,
     url VARCHAR NOT NULL,
     alias VARCHAR(255) NOT NULL,
@@ -30,14 +30,14 @@ const (
     UNIQUE (uuid, url)
 );`
 
-	// Insert SQL query to insert a new short URL record into the short_urls table
-	Insert = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
+	// insert SQL query to insert a new short URL record into the short_urls table
+	insert = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
 
-	// Get SQL query to retrieve a short URL record by alias from the short_urls table
-	Get = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
+	// get SQL query to retrieve a short URL record by alias from the short_urls table
+	get = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
 
-	// GetConflict SQL query to check for conflicts by retrieving alias for a given URL from the short_urls table
-	GetConflict = `SELECT alias FROM short_urls WHERE url = $1;`
+	// getConflict SQL query to check for conflicts by retrieving alias for a given URL from the short_urls table
+	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 )
 
 const createTablesTimeout = time.Second * 5
@@ -67,7 +67,7 @@ func NewDB(cfg string, log *zap.Logger) (*UseCase, error) {
 	return storage, nil
 }
 
-// Ping timeout to check database connection.
+// pingTimeout to check database connection.
 const pingTimeout = time.Second * 3
 
 // Stop - closes the connection to the database.
@@ -89,9 +89,9 @@ func (uc *UseCase) Healthcheck() (bool, error) {
 	return true, nil
 }
 
-// CreateTable - creates a table in the database.
+// createTable - creates a table in the database.
 func (uc *UseCase) CreateTable(ctx context.Context) error {
-	_, err := uc.DB.ExecContext(ctx, CreateTable)
+	_, err := uc.DB.ExecContext(ctx, createTable)
 	if err != nil {
 		return fmt.Errorf("exec create table query, err=%v", err)
 	}
@@ -116,13 +116,13 @@ func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error
 		CreatedAt: time.Now(),
 	}
 
-	_, err := uc.DB.ExecContext(ctx, Insert, shortURL.UUID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := uc.DB.ExecContext(ctx, insert, shortURL.UUID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			// In case of a conflict, we perform an additional request to obtain the alias.
 			var existingAlias string
-			err := uc.DB.QueryRowContext(ctx, GetConflict, url).Scan(&existingAlias)
+			err := uc.DB.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					// Handling the situation when a URL match is not found.
@@ -140,7 +140,7 @@ func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error
 // Get - gets a URL by alias.
 func (uc *UseCase) Get(ctx context.Context, alias string) (string, bool, error) {
 	var url entity.DBStorage
-	err := uc.DB.QueryRowContext(ctx, Get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
+	err := uc.DB.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// This is an expected error when there are no rows matching the query.
