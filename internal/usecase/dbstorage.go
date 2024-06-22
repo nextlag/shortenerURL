@@ -41,6 +41,7 @@ const (
 	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 )
 
+// ErrConflict - data conflict in data base storage
 var ErrConflict = errors.New("data conflict in DBStorage")
 
 // NewDB - creates a new DBStorage instance
