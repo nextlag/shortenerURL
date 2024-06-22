@@ -1,3 +1,4 @@
+// Package controllers provides the handlers for managing URL shortening operations.
 package controllers
 
 import (
@@ -14,27 +15,29 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase/auth"
 )
 
-// Shorten - это обработчик HTTP-запросов для сокращения URL.
+// Shorten handles HTTP requests for shortening URLs.
+// It decodes the JSON request body, validates the input, checks the user's authentication,
+// attempts to save the URL in the storage, and returns the shortened URL or appropriate error messages.
 func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	var req usecase.FileStorage
-	// декодирование JSON-запроса из тела HTTP-запроса в структуру Data.
+	// Decode the JSON request body into the Data structure
 	err := render.DecodeJSON(r.Body, &req)
 
-	// Обработка случая, когда тело запроса пустое.
+	// Handle empty request body
 	if errors.Is(err, io.EOF) {
 		c.log.Error("request body is empty", zap.Error(err))
 		render.JSON(w, r, Error("empty request"))
 		return
 	}
 
-	// Обработка ошибок декодирования тела запроса.
+	// Handle request body decoding errors
 	if err != nil {
 		c.log.Error("failed to decode request body", zap.Error(err))
 		render.JSON(w, r, Error("failed to decode request"))
 		return
 	}
 
-	// Валидация входных данных с использованием библиотеки валидатора.
+	// Validate input data using the validator library
 	if err = validator.New().Struct(req); err != nil {
 		var validateErr validator.ValidationErrors
 		errors.As(err, &validateErr)
@@ -49,21 +52,21 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Добавление URL в хранилище и получение идентификатора (id).
+	// Add URL to storage and get the identifier (alias)
 	alias, err := c.uc.DoPut(r.Context(), req.URL, uuid)
 	if errors.Is(err, usecase.ErrConflict) {
-		// ошибка для случая конфликта оригинальных url
+		// Handle conflict error for duplicate URLs
 		c.log.Error("trying to add a duplicate URL", zap.Error(err))
 		ResponseConflict(w, alias)
 		return
 	}
 
-	// Обработка ошибки при добавлении URL в хранилище.
+	// Handle errors when adding URL to storage
 	if err != nil {
 		er := fmt.Sprintf("failed to add URL: %s", err)
 		render.JSON(w, r, Error(er))
 		return
 	}
-	// Отправка ответа клиенту с сокращенной ссылкой.
+	// Send the shortened URL to the client
 	ResponseCreated(w, alias)
 }
