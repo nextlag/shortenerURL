@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// NewRandomString генерирует случайную строку заданной длины.
+// NewRandomString generates a random string of a given length.
 func NewRandomString(length int) string {
 	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
@@ -16,6 +16,7 @@ func NewRandomString(length int) string {
 	return string(result)
 }
 
+// GenerateUUID - generates a UUID.
 func GenerateUUID() string {
 	uuidObj := uuid.New()
 	return uuidObj.String()

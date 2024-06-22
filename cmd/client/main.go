@@ -1,3 +1,4 @@
+// Package main provides the command-line tool to shorten URLs using the shortenerURL service.
 package main
 
 import (
@@ -14,54 +15,63 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
+// Setup initializes the configuration, reads a long URL from the console input,
+// sends a POST request to the shortenerURL service, and prints the response.
 func Setup() {
 	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse() // Парсинг флагов командной строки
+	flag.Parse() // Parsing command-line flags
 	endpoint := config.Cfg.BaseURL
-	// контейнер данных для запроса
+
+	// Data container for the request
 	data := url.Values{}
-	// приглашение в консоли
 	fmt.Println("Введите длинный URL")
-	// открываем потоковое чтение из консоли
+
+	// Open a stream for reading from the console
 	reader := bufio.NewReader(os.Stdin)
-	// читаем строку из консоли
+
+	// Read a line from the console
 	long, err := reader.ReadString('\n')
 	if err != nil {
 		panic(err)
 	}
 	long = strings.TrimSuffix(long, "\n")
-	// заполняем контейнер данными
+
+	// Fill the data container with the long URL
 	data.Set("service", long)
-	// добавляем HTTP-клиент
+
+	// Create an HTTP client
 	client := &http.Client{}
-	// пишем запрос
-	// запрос методом POST должен, помимо заголовков, содержать тело
-	// тело должно быть источником потокового чтения io.Reader
+
+	// Create a POST request with the long URL in the body
 	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		panic(err)
 	}
-	// в заголовках запроса указываем кодировку
+
+	// Set the content type header
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	// отправляем запрос и получаем ответ
+
+	// Send the request and get the response
 	response, err := client.Do(request)
 	if err != nil {
 		panic(err)
 	}
-	// выводим код ответа
-	fmt.Println("Статус-код ", response.Status)
 	defer response.Body.Close()
-	// читаем поток из тела ответа
+
+	// Print the response status code
+	fmt.Println("Статус-код ", response.Status)
+
+	// Read and print the response body
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		panic(err)
 	}
-	// и печатаем его
 	fmt.Println(string(body))
 }
 
+// main is the entry point of the application.
 func main() {
 	Setup()
 }
