@@ -36,6 +36,7 @@ func (m *mockUsecase) DoHealthcheck() (bool, error) {
 	return true, nil
 }
 
+// ExampleController_HealthCheck demonstrates how to use the HealthCheck endpoint.
 func ExampleController_HealthCheck() {
 	// Setup
 	log := zap.NewNop()
@@ -64,6 +65,7 @@ func ExampleController_HealthCheck() {
 	// Output:
 }
 
+// TestController_HealthCheck tests the HealthCheck endpoint of the Controller.
 func TestController_HealthCheck(t *testing.T) {
 	log := zap.NewNop()
 	cfg := config.HTTPServer{}
@@ -102,7 +104,7 @@ func TestController_HealthCheck(t *testing.T) {
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-				return
+				t.Errorf("failed to close response body: %v", err)
 			}
 		}(res.Body)
 
