@@ -64,8 +64,8 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]interface{}{
-		"deleted": successfulURLs,
+	response := map[string]any{
+		"aliases sent for deletion": successfulURLs,
 	}
 
 	if len(failedURLs) > 0 {
@@ -74,11 +74,10 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		response["failed"] = failedURLs
 	} else {
 		w.WriteHeader(http.StatusAccepted)
-		response["message"] = "All URLs deleted successfully"
 	}
 
 	if err = json.NewEncoder(w).Encode(response); err != nil {
 		c.log.Error("Failed to write response: ", zap.Error(err))
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		http.Error(w, "failed to write response", http.StatusInternalServerError)
 	}
 }
