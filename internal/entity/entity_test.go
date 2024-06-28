@@ -11,7 +11,7 @@ func TestDBStorage(t *testing.T) {
 		UUID:        1,
 		URL:         "https://example.com",
 		Alias:       "example",
-		DeletedFlag: false,
+		DeletedFlag: true,
 		CreatedAt:   time.Now(),
 	}
 

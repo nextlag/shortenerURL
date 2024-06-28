@@ -22,6 +22,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	var req usecase.FileStorage
 	// Decode the JSON request body into the Data structure
 	err := render.DecodeJSON(r.Body, &req)
+	c.log.Info("body", zap.String("URL", req.URL))
 
 	// Handle empty request body
 	if errors.Is(err, io.EOF) {
@@ -53,7 +54,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add URL to storage and get the identifier (alias)
-	alias, err := c.uc.DoPut(r.Context(), req.URL, uuid)
+	alias, err := c.uc.DoPut(r.Context(), req.URL, req.Alias, uuid)
 	if errors.Is(err, usecase.ErrConflict) {
 		// Handle conflict error for duplicate URLs
 		c.log.Error("trying to add a duplicate URL", zap.Error(err))

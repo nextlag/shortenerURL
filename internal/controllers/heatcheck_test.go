@@ -23,7 +23,7 @@ func (m *mockUsecase) DoGetAll(ctx context.Context, userID int, url string) ([]b
 	return []byte(`[{"short_url": "http://example.com/short1", "original_url": "http://example.com/original1"}]`), nil
 }
 
-func (m *mockUsecase) DoPut(ctx context.Context, url string, uuid int) (string, error) {
+func (m *mockUsecase) DoPut(ctx context.Context, url string, alias string, uuid int) (string, error) {
 	return "shortened_url", nil
 }
 

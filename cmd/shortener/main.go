@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	stdLog "log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,39 +20,38 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 
-func setupServer(router http.Handler) *http.Server {
-	return &http.Server{
-		Addr:    config.Cfg.Host,
-		Handler: router,
-	}
-}
-
 func main() {
+	log := logger.SetupLogger()
 	if err := config.MakeConfig(); err != nil {
-		stdLog.Fatal(err)
+		log.Fatal("failed to init config", zap.Error(err))
 	}
+
 	flag.Parse()
-	var (
-		log = logger.SetupLogger()
-		cfg = config.Cfg
-		uc  *usecase.UseCase
+	cfg := config.Cfg
+
+	log.Debug(
+		"initialized flags",
+		zap.String("-a", cfg.Host),
+		zap.String("-b", cfg.BaseURL),
+		zap.String("-f", cfg.FileStorage),
+		zap.String("-d", cfg.DSN),
 	)
-	log.Info("initialized flags", zap.String("-a", cfg.Host), zap.String("-b", cfg.BaseURL), zap.String("-f", cfg.FileStorage), zap.String("-d", cfg.DSN))
+
 	if cfg.FileStorage != "" {
 		err := usecase.Load(cfg.FileStorage)
 		if err != nil {
-			log.Error("failed to load data from file", zap.Error(err))
-			os.Exit(1)
+			log.Fatal("failed to load data from file", zap.Error(err))
 		}
 	}
 
+	var uc *usecase.UseCase
 	if cfg.DSN != "" {
 		db, err := usecase.NewDB(cfg.DSN, log)
 		if err != nil {
 			log.Fatal("failed to connect in database", zap.Error(err))
 		}
 		defer func() {
-			if err := db.Stop(); err != nil {
+			if err = db.Stop(); err != nil {
 				log.Error("error stopping DB", zap.Error(err))
 			}
 		}()
@@ -68,11 +66,16 @@ func main() {
 	r := chi.NewRouter()
 	r.Mount("/", controller.Controller(r))
 
-	srv := setupServer(r)
+	srv := &http.Server{
+		Addr:    config.Cfg.Host,
+		Handler: r,
+	}
 
-	log.Info("server starting",
+	log.Info(
+		"server starting",
 		zap.String("address", cfg.Host),
-		zap.String("url", cfg.BaseURL))
+		zap.String("url", cfg.BaseURL),
+	)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -86,7 +89,7 @@ func main() {
 	log.Info("server started")
 
 	<-sigs
-	ctxTime, cancelShutdown := context.WithTimeout(context.Background(), time.Second*10)
+	ctxTime, cancelShutdown := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancelShutdown()
 	if err := srv.Shutdown(ctxTime); err != nil {
 		log.Error("server shutdown error", zap.Error(err))

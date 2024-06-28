@@ -26,7 +26,10 @@ func TestSetupServer(t *testing.T) {
 	router := http.NewServeMux()
 
 	// Инициализируем сервер
-	srv := setupServer(router)
+	srv := &http.Server{
+		Addr:    config.Cfg.Host,
+		Handler: router,
+	}
 
 	// Проверяем, что адрес сервера устанавливается правильно
 	expectedAddr := config.Cfg.Host

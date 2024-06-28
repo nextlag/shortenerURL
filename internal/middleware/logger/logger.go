@@ -70,7 +70,7 @@ func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Ha
 func SetupLogger() *zap.Logger {
 	// Configure the logger
 	cfg := zap.NewDevelopmentConfig()
-	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel) // Set log level
+	cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel) // Set log level
 
 	// Create the logger
 	logger, err := cfg.Build()

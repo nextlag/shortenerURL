@@ -21,7 +21,7 @@ import (
 type UseCase interface {
 	DoGet(ctx context.Context, alias string) (string, bool, error)
 	DoGetAll(ctx context.Context, userID int, url string) ([]byte, error)
-	DoPut(ctx context.Context, url string, uuid int) (string, error)
+	DoPut(ctx context.Context, url string, alias string, uuid int) (string, error)
 	DoDel(ctx context.Context, id int, aliases []string) error
 	DoHealthcheck() (bool, error)
 }
