@@ -44,10 +44,10 @@ func TestShorten(t *testing.T) {
 			_, db, _ := Ctrl(t)
 			// Если валидация завершается с ошибкой, то вызов Put не должен произойти
 			if !strings.Contains(test.name, "ValidRequest") {
-				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			} else {
 				// Ожидаемый вызов Put
-				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("example", nil).Times(1)
 			}
 			log := zap.NewNop()
 			// Создаем объект reqBody, который реализует интерфейс io.Reader и будет представлять тело запроса.

@@ -31,7 +31,7 @@ func (c *Controller) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Attempt to save the short URL and the original URL in the storage
-	alias, err := c.uc.DoPut(r.Context(), string(body), uuid)
+	alias, err := c.uc.DoPut(r.Context(), string(body), "", uuid)
 
 	// Handle duplicate conflict
 	if errors.Is(err, usecase.ErrConflict) {

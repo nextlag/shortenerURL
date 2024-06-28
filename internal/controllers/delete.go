@@ -19,18 +19,15 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	uuid, err := auth.CheckCookie(w, r, c.log)
 	if err != nil {
 		c.log.Error("Error getting cookie: ", zap.Error(err))
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("You have no links to delete"))
+		http.Error(w, "You have no links to delete", http.StatusUnauthorized)
 		return
 	}
 
 	var URLs []string
 
-	err = json.NewDecoder(r.Body).Decode(&URLs)
-	if err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&URLs); err != nil {
 		c.log.Error("Failed to read json: ", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid request body"))
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -40,8 +37,8 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := make(chan result, len(URLs))
-
 	var wg sync.WaitGroup
+
 	for _, url := range URLs {
 		wg.Add(1)
 		go func(url string) {
@@ -56,10 +53,7 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		close(results)
 	}()
 
-	var (
-		successfulURLs []string
-		failedURLs     []string
-	)
+	var successfulURLs, failedURLs []string
 	for res := range results {
 		if res.Err != nil {
 			c.log.Error("Error deleting user URL", zap.String("url", res.URL), zap.Error(res.Err))
@@ -83,5 +77,8 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		response["message"] = "All URLs deleted successfully"
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err = json.NewEncoder(w).Encode(response); err != nil {
+		c.log.Error("Failed to write response: ", zap.Error(err))
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+	}
 }

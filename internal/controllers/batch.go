@@ -53,7 +53,7 @@ func (c *Controller) Batch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, url := range req {
-		alias, err := c.uc.DoPut(r.Context(), url.OriginalURL, uuid)
+		alias, err := c.uc.DoPut(r.Context(), url.OriginalURL, "", uuid)
 		if err != nil {
 			c.log.Error("URL", zap.Error(err))
 			return

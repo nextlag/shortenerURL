@@ -71,7 +71,7 @@ func TestController(t *testing.T) {
 			contentType:    "application/json",
 			expectedStatus: http.StatusCreated,
 			mockSetup: func() {
-				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Return("shortened_url", nil).Times(1)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("shortened_url", nil).Times(1)
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestController(t *testing.T) {
 			contentType:    "text/plain",
 			expectedStatus: http.StatusCreated,
 			mockSetup: func() {
-				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any()).Return("shortened_url", nil).Times(1)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("shortened_url", nil).Times(1)
 			},
 		},
 	}

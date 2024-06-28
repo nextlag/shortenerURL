@@ -60,10 +60,12 @@ func (s *Data) Del(_ context.Context, _ int, _ []string) error {
 }
 
 // Put saves a URL with a generated alias in the in-memory storage.
-func (s *Data) Put(_ context.Context, url string, _ int) (string, error) {
+func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	alias := generatestring.NewRandomString(8)
+	if alias == "" {
+		alias = generatestring.NewRandomString(8)
+	}
 
 	// Check for alias existence
 	if _, exists := s.data[alias]; exists {

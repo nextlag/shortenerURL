@@ -95,16 +95,16 @@ func (mr *MockUseCaseMockRecorder) DoHealthcheck() *gomock.Call {
 }
 
 // DoPut mocks base method.
-func (m *MockUseCase) DoPut(arg0 context.Context, arg1 string, arg2 int) (string, error) {
+func (m *MockUseCase) DoPut(arg0 context.Context, arg1, arg2 string, arg3 int) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoPut", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DoPut", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DoPut indicates an expected call of DoPut.
-func (mr *MockUseCaseMockRecorder) DoPut(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) DoPut(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoPut", reflect.TypeOf((*MockUseCase)(nil).DoPut), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoPut", reflect.TypeOf((*MockUseCase)(nil).DoPut), arg0, arg1, arg2, arg3)
 }
