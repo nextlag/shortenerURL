@@ -4,6 +4,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -18,7 +19,7 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	uuid, err := auth.CheckCookie(w, r, c.log)
 	if err != nil {
 		c.log.Error("Error getting cookie: ", zap.Error(err))
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("You have no links to delete"))
 		return
 	}
@@ -28,14 +29,59 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&URLs)
 	if err != nil {
 		c.log.Error("Failed to read json: ", zap.Error(err))
-	}
-
-	err = c.uc.DoDel(r.Context(), uuid, URLs)
-	if err != nil {
-		c.log.Error("error deleting user url", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid request body"))
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(202)
-	w.Write([]byte("Deleted"))
+
+	type result struct {
+		URL string
+		Err error
+	}
+
+	results := make(chan result, len(URLs))
+
+	var wg sync.WaitGroup
+	for _, url := range URLs {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			err = c.uc.DoDel(r.Context(), uuid, []string{url})
+			results <- result{URL: url, Err: err}
+		}(url)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var (
+		successfulURLs []string
+		failedURLs     []string
+	)
+	for res := range results {
+		if res.Err != nil {
+			c.log.Error("Error deleting user URL", zap.String("url", res.URL), zap.Error(res.Err))
+			failedURLs = append(failedURLs, res.URL)
+		} else {
+			successfulURLs = append(successfulURLs, res.URL)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"deleted": successfulURLs,
+	}
+
+	if len(failedURLs) > 0 {
+		w.WriteHeader(http.StatusInternalServerError)
+		response["message"] = "Some URLs could not be deleted"
+		response["failed"] = failedURLs
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+		response["message"] = "All URLs deleted successfully"
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

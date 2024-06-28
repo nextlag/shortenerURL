@@ -170,11 +170,6 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 	}
 	defer rows.Close()
 
-	if rows.Err() != nil {
-		uc.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
-		return nil, rows.Err()
-	}
-
 	for rows.Next() {
 		var url entity.DBStorage
 		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
@@ -183,6 +178,11 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 		}
 		url.Alias = fmt.Sprintf("%s/%s", host, url.Alias)
 		urls = append(urls, url)
+	}
+
+	if rows.Err() != nil {
+		uc.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
+		return nil, rows.Err()
 	}
 
 	allURL, err := json.Marshal(urls)
