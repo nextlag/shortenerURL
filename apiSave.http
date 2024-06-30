@@ -1,3 +1,11 @@
+### POST
+POST http://localhost:8080
+Host: localhost:8080
+Content-Type: text/plain
+
+https://google.com
+
+
 ### GET ping
 GET http://localhost:8080/ping
 
@@ -9,14 +17,19 @@ Content-Type: text/plain
 https://google.com
 
 
-### POST apiSave
+### POST request without cookies
+< {%
+    const rand = $random.alphabetic(5).toLowerCase()
+    request.variables.set("rand", rand)
+%}
+
 POST http://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
 
 {
-  "url": "https://zen.coms/",
-  "alias": "1234sad"
+  "url": "http:\/\/{{rand}}.com/",
+  "alias": ""
 }
 
 ### Get
@@ -24,18 +37,25 @@ Content-Type: application/json
 GET http://localhost:8080/rNLMBEJe
 
 
-### POST apiSave
+### POST request with cookie
+< {%
+    const srv = $random.alphabetic(8).toLowerCase()
+    const alias = $random.alphanumeric(5)
+    request.variables.set("srv", srv)
+    request.variables.set("alias", alias)
+%}
+
 POST http://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
 
 {
-  "url": "https://practicum.yandex.usa/",
-  "alias": "123df23"
+  "url": "http:\/\/{{srv}}.com/",
+  "alias": "{{alias}}"
 }
 
-### GET request with cookie passed through headers
+### GET all
 # @no-redirect
 GET http://localhost:8080/api/user/urls
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM

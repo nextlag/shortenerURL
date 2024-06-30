@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1
-	github.com/go-chi/chi/v5 v5.0.13
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/render v1.0.3
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -36,7 +36,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect

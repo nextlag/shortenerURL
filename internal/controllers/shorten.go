@@ -22,6 +22,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	var req usecase.FileStorage
 	// Decode the JSON request body into the Data structure
 	err := render.DecodeJSON(r.Body, &req)
+	c.log.Info("body", zap.String("URL", req.URL))
 
 	// Handle empty request body
 	if errors.Is(err, io.EOF) {
