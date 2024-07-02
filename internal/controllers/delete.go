@@ -1,4 +1,3 @@
-// Package controllers provides the handlers for managing URL shortening operations.
 package controllers
 
 import (
@@ -11,10 +10,20 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase/auth"
 )
 
+// DeletionRequest represents the data needed to perform URL deletion.
+type DeletionRequest struct {
+	Req  *http.Request
+	UUID int
+	URLs []string
+}
+
+// DeletionResult holds the result of a deletion attempt.
+type DeletionResult struct {
+	SuccessfulURLs []string
+	FailedURLs     []string
+}
+
 // Del handles the HTTP request for deleting URLs associated with a user.
-// It checks the user's authentication, decodes the request body to get the list of URLs to delete,
-// and calls the use case layer to perform the deletion. If any error occurs, it logs the error and responds
-// with an appropriate message.
 func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	uuid, err := auth.CheckCookie(w, r, c.log)
 	if err != nil {
@@ -24,26 +33,54 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var URLs []string
-
 	if err = json.NewDecoder(r.Body).Decode(&URLs); err != nil {
 		c.log.Error("Failed to read json: ", zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	delReq := DeletionRequest{
+		Req:  r,
+		UUID: uuid,
+		URLs: URLs,
+	}
+
+	delRes := c.generateResults(delReq)
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]any{
+		"aliases sent for deletion": delRes.SuccessfulURLs,
+	}
+
+	if len(delRes.FailedURLs) > 0 {
+		w.WriteHeader(http.StatusInternalServerError)
+		response["message"] = "Some URLs could not be deleted"
+		response["failed"] = delRes.FailedURLs
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+	}
+
+	if err = json.NewEncoder(w).Encode(response); err != nil {
+		c.log.Error("Failed to write response: ", zap.Error(err))
+		http.Error(w, "failed to write response", http.StatusInternalServerError)
+	}
+}
+
+// generateResults processes the deletion of URLs and returns the results.
+func (c *Controller) generateResults(delReq DeletionRequest) DeletionResult {
 	type result struct {
 		URL string
 		Err error
 	}
 
-	results := make(chan result, len(URLs))
+	results := make(chan result, len(delReq.URLs))
 	var wg sync.WaitGroup
 
-	for _, url := range URLs {
+	for _, url := range delReq.URLs {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			err = c.uc.DoDel(r.Context(), uuid, []string{url})
+			err := c.uc.DoDel(delReq.Req.Context(), delReq.UUID, []string{url})
 			results <- result{URL: url, Err: err}
 		}(url)
 	}
@@ -63,21 +100,8 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{
-		"aliases sent for deletion": successfulURLs,
-	}
-
-	if len(failedURLs) > 0 {
-		w.WriteHeader(http.StatusInternalServerError)
-		response["message"] = "Some URLs could not be deleted"
-		response["failed"] = failedURLs
-	} else {
-		w.WriteHeader(http.StatusAccepted)
-	}
-
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		c.log.Error("Failed to write response: ", zap.Error(err))
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+	return DeletionResult{
+		SuccessfulURLs: successfulURLs,
+		FailedURLs:     failedURLs,
 	}
 }
