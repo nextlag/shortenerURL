@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/nextlag/shortenerURL/internal/usecase/auth"
 )
@@ -48,7 +48,7 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 	delRes := c.generateResults(delReq)
 
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{
+	response := map[string]interface{}{
 		"aliases sent for deletion": delRes.SuccessfulURLs,
 	}
 
@@ -68,36 +68,30 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 
 // generateResults processes the deletion of URLs and returns the results.
 func (c *Controller) generateResults(delReq DeletionRequest) DeletionResult {
-	type result struct {
-		URL string
-		Err error
-	}
+	var (
+		successfulURLs []string
+		failedURLs     []string
+	)
 
-	results := make(chan result, len(delReq.URLs))
-	var wg sync.WaitGroup
+	var eg errgroup.Group
 
 	for _, url := range delReq.URLs {
-		wg.Add(1)
-		go func(url string) {
-			defer wg.Done()
+		url := url // копируем переменную в замыкание каждой горутины
+		eg.Go(func() error {
 			err := c.uc.DoDel(delReq.Req.Context(), delReq.UUID, []string{url})
-			results <- result{URL: url, Err: err}
-		}(url)
+			if err != nil {
+				c.log.Error("Error deleting user URL", zap.String("url", url), zap.Error(err))
+				failedURLs = append(failedURLs, url)
+			} else {
+				successfulURLs = append(successfulURLs, url)
+			}
+			return err
+		})
 	}
 
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var successfulURLs, failedURLs []string
-	for res := range results {
-		if res.Err != nil {
-			c.log.Error("Error deleting user URL", zap.String("url", res.URL), zap.Error(res.Err))
-			failedURLs = append(failedURLs, res.URL)
-		} else {
-			successfulURLs = append(successfulURLs, res.URL)
-		}
+	// Ожидаем завершения всех горутин
+	if err := eg.Wait(); err != nil {
+		c.log.Error("Error in one or more deletion goroutines", zap.Error(err))
 	}
 
 	return DeletionResult{
