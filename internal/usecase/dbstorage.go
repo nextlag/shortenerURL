@@ -14,8 +14,9 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/entity"
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
+
+	"github.com/nextlag/shortenerURL/internal/entity"
 )
 
 const (
