@@ -21,30 +21,28 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var URLs []string
-	if err = json.NewDecoder(r.Body).Decode(&URLs); err != nil {
+	var aliases []string
+	if err = json.NewDecoder(r.Body).Decode(&aliases); err != nil {
 		c.log.Error("Failed to read json: ", zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	go c.deleteURLs(uuid, URLs)
+	// Запуск удаления URL в горутине
+	go func() {
+		for _, alias := range aliases {
+			c.uc.DoDel(uuid, []string{alias})
+		}
+	}()
 
-	// Responding to the client immediately
+	// ответ клиенту, какие алиасы отправлены на удаление
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{
-		"aliases sent for deletion": URLs,
+	response := map[string]interface{}{
+		"aliases sent for deletion": aliases,
 	}
 	w.WriteHeader(http.StatusAccepted)
 	if err = json.NewEncoder(w).Encode(response); err != nil {
 		c.log.Error("Failed to write response: ", zap.Error(err))
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-	}
-}
-
-// deleteURLs performs the deletion of URLs
-func (c *Controller) deleteURLs(uuid int, URLs []string) {
-	for _, url := range URLs {
-		c.uc.DoDel(uuid, []string{url}) // Passing nil as context
 	}
 }
