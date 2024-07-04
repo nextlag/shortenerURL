@@ -27,9 +27,7 @@ func (m *mockUsecase) DoPut(ctx context.Context, url string, alias string, uuid 
 	return "shortened_url", nil
 }
 
-func (m *mockUsecase) DoDel(ctx context.Context, id int, aliases []string) error {
-	return nil
-}
+func (m *mockUsecase) DoDel(id int, aliases []string) {}
 
 func (m *mockUsecase) DoHealthcheck() (bool, error) {
 	return true, nil

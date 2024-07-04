@@ -55,7 +55,7 @@ func (s *Data) Healthcheck() (bool, error) {
 }
 
 // Del does nothing for in-memory storage as delete operations are not implemented.
-func (s *Data) Del(_ context.Context, _ int, _ []string) error {
+func (s *Data) Del(_ int, _ []string) error {
 	return nil
 }
 

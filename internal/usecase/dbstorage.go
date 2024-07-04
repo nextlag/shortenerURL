@@ -197,56 +197,15 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 }
 
 // Del removes URLs for users with a specific ID.
-func (uc *UseCase) Del(ctx context.Context, id int, aliases []string) error {
-	inputCh := delGenerator(ctx, aliases)
-	if err := uc.updateStatusDel(ctx, id, inputCh); err != nil {
-		return fmt.Errorf("failed to delete URLs: %w", err)
-	}
-	return nil
-}
-
-// delGenerator - channel generator for collecting aliases.
-func delGenerator(ctx context.Context, URLs []string) chan string {
-	URLCh := make(chan string)
-	go func() {
-		defer close(URLCh)
-		for _, data := range URLs {
-			select {
-			case <-ctx.Done():
-				return
-			case URLCh <- data:
-			}
-		}
-	}()
-	return URLCh
-}
-
-// updateStatusDel - performs a batch update of the deletion status for the specified aliases and user.
-func (uc *UseCase) updateStatusDel(ctx context.Context, id int, inputCh chan string) error {
-	var deleteURLs []string
-
-	// a channel for signaling the end of each goroutine.
-	aliasCollectionDoneCh := make(chan struct{})
-
-	// launching a goroutine to collect aliases
-	go func() {
-		defer close(aliasCollectionDoneCh)
-		for alias := range inputCh {
-			deleteURLs = append(deleteURLs, alias)
-		}
-	}()
-
-	// waiting for the goroutine to finish collecting aliases.
-	<-aliasCollectionDoneCh
-
+func (uc *UseCase) Del(id int, aliases []string) error {
 	DB := bun.NewDB(uc.DB, pgdialect.New())
 
 	_, err := DB.NewUpdate().
 		TableExpr("short_urls").
 		Set("del = ?", true).
-		Where("alias IN (?)", bun.In(deleteURLs)).
+		Where("alias IN (?)", bun.In(aliases)).
 		Where("uuid = ?", id).
-		Exec(ctx)
+		Exec(context.Background())
 
 	if err != nil {
 		uc.log.Error("Can't exec update request: ", zap.Error(err))
