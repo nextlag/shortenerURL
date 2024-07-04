@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
+	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
 // Data represents the in-memory data storage structure.
