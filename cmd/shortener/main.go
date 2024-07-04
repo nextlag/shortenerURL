@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +21,12 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	log := logger.SetupLogger()
 	if err := config.MakeConfig(); err != nil {
@@ -28,6 +35,13 @@ func main() {
 
 	flag.Parse()
 	cfg := config.Cfg
+
+	fmt.Printf(
+		"Build version: %s,\nBuild date: %s,\nBuild commit: %s,\n",
+		buildVersion,
+		buildDate,
+		buildCommit,
+	)
 
 	log.Debug(
 		"initialized flags",
