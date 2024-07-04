@@ -40,7 +40,7 @@ GET http://localhost:8080/rNLMBEJe
 ### POST request with cookie
 < {%
     const srv = $random.alphabetic(8).toLowerCase()
-    const alias = $random.alphanumeric(5)
+    const alias = $random.alphanumeric(5).toLowerCase()
     request.variables.set("srv", srv)
     request.variables.set("alias", alias)
 %}

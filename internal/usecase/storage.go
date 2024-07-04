@@ -102,7 +102,7 @@ func Save(file string, alias string, url string) error {
 	uuid := generatestring.GenerateUUID()
 	event := NewFileStorage(uuid, alias, url)
 
-	if err := producer.WriteEvent(event); err != nil {
+	if err = producer.WriteEvent(event); err != nil {
 		return err
 	}
 	return nil
