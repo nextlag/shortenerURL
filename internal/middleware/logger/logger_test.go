@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
 
@@ -39,8 +39,8 @@ func TestLoggerMiddleware(t *testing.T) {
 			testLogger := zap.NewExample()
 
 			// Настраиваем middleware логгера
-			cfg := config.HTTPServer{FileStorage: "/path/to/storage"}
-			mw := logger.New(testLogger, cfg)
+			cfg := configuration.Config{ServerHTTP: configuration.ServerHTTP{FileStorage: "/path/to/storage"}}
+			mw := logger.New(testLogger, &cfg)
 
 			// Создаем тестовый сервер с middleware логгера
 			handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func BenchmarkNewLoggerMiddleware(b *testing.B) {
 	testLogger := zap.NewNop()
 
 	// Создаем конфигурацию HTTP сервера
-	cfg := config.HTTPServer{FileStorage: "/path/to/storage"}
+	cfg := configuration.Config{ServerHTTP: configuration.ServerHTTP{FileStorage: "/path/to/storage"}}
 
 	// Настраиваем запрос и обработчик для бенчмарка
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
@@ -81,7 +81,7 @@ func BenchmarkNewLoggerMiddleware(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Создаем middleware
-		mw := logger.New(testLogger, cfg)
+		mw := logger.New(testLogger, &cfg)
 
 		// Запускаем middleware
 		rr := &fakeResponseWriter{}

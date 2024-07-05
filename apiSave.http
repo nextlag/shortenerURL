@@ -3,7 +3,7 @@ POST http://localhost:8080
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.com
+https://google.ru
 
 
 ### GET ping
@@ -34,7 +34,7 @@ Content-Type: application/json
 
 ### Get
 # @no-redirect
-GET http://localhost:8080/rNLMBEJe
+GET http://localhost:8080/0CF75HmO
 
 
 ### POST request with cookie
@@ -45,7 +45,7 @@ GET http://localhost:8080/rNLMBEJe
     request.variables.set("alias", alias)
 %}
 
-POST http://localhost:8080/api/shorten
+POST https://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
@@ -64,4 +64,4 @@ Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9Jql
 DELETE http://localhost:8080/api/user/urls
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
 
-["NbR67nGW","sktVb"]
+["6i2NVBw5"]

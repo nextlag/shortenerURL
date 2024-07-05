@@ -3,7 +3,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -12,17 +11,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 // Setup initializes the configuration, reads a long URL from the console input,
 // sends a POST request to the shortenerURL service, and prints the response.
 func Setup() {
-	if err := config.MakeConfig(); err != nil {
+	if _, err := configuration.Load(); err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse() // Parsing command-line flags
-	endpoint := config.Cfg.BaseURL
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
+	}
+	endpoint := cfg.BaseURL
 
 	// Data container for the request
 	data := url.Values{}

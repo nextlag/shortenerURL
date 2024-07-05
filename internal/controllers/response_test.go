@@ -2,20 +2,25 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 func TestResponseConflict(t *testing.T) {
-	config.Cfg = config.HTTPServer{
-		Host: "http://localhost",
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
 	}
 
+	cfg.Host = "http://localhost"
+
 	w := httptest.NewRecorder()
-	ResponseConflict(w, "abc123")
+	ResponseConflict(w, "abc123", cfg)
 
 	res := w.Result()
 	defer res.Body.Close()
@@ -25,23 +30,27 @@ func TestResponseConflict(t *testing.T) {
 	}
 
 	var response Response
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
 		t.Errorf("failed to decode response: %v", err)
 	}
 
-	expectedResult := "/abc123"
+	expectedResult := "http://localhost:8080/abc123"
 	if response.Result != expectedResult {
 		t.Errorf("expected result %s, got %s", expectedResult, response.Result)
 	}
 }
 
 func TestResponseCreated(t *testing.T) {
-	config.Cfg = config.HTTPServer{
-		Host: "http://localhost",
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
 	}
 
+	cfg.Host = "http://localhost"
+
 	w := httptest.NewRecorder()
-	ResponseCreated(w, "xyz789")
+	ResponseCreated(w, "xyz789", cfg)
 
 	res := w.Result()
 	defer res.Body.Close()
@@ -51,11 +60,11 @@ func TestResponseCreated(t *testing.T) {
 	}
 
 	var response Response
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
 		t.Errorf("failed to decode response: %v", err)
 	}
 
-	expectedResult := "/xyz789"
+	expectedResult := "http://localhost:8080/xyz789"
 	if response.Result != expectedResult {
 		t.Errorf("expected result %s, got %s", expectedResult, response.Result)
 	}

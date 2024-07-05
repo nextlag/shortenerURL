@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
 
@@ -24,9 +24,8 @@ func ExampleNew() {
 
 	// Create a new router and add the logging middleware.
 	r := chi.NewRouter()
-	r.Use(logger.New(log, config.HTTPServer{
-		FileStorage: "/tmp/data",
-	}))
+	r.Use(logger.New(log, &configuration.Config{
+		ServerHTTP: configuration.ServerHTTP{FileStorage: "/tmp/data"}}))
 
 	// Add the handler to the router.
 	r.Get("/", handler)
