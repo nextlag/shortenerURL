@@ -10,7 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := config.MakeConfig(); err != nil {
+	if err := config.Load(); err != nil {
 		log.Fatal(err)
 	}
 

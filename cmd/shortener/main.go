@@ -15,6 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 
+	"github.com/nextlag/shortenerURL/internal/cert"
 	"github.com/nextlag/shortenerURL/internal/config"
 	"github.com/nextlag/shortenerURL/internal/controllers"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
@@ -29,7 +30,7 @@ var (
 
 func main() {
 	log := logger.SetupLogger()
-	if err := config.MakeConfig(); err != nil {
+	if err := config.Load(); err != nil {
 		log.Fatal("failed to init config", zap.Error(err))
 	}
 
@@ -42,13 +43,14 @@ func main() {
 		buildDate,
 		buildCommit,
 	)
-
 	log.Debug(
 		"initialized flags",
 		zap.String("-a", cfg.Host),
 		zap.String("-b", cfg.BaseURL),
 		zap.String("-f", cfg.FileStorage),
 		zap.String("-d", cfg.DSN),
+		zap.String("-c", cfg.ConfigPath),
+		zap.Bool("-s", cfg.EnableHTTPS),
 	)
 
 	if cfg.FileStorage != "" {
@@ -81,8 +83,16 @@ func main() {
 	r.Mount("/", controller.Controller(r))
 
 	srv := &http.Server{
-		Addr:    config.Cfg.Host,
+		Addr:    cfg.Host,
 		Handler: r,
+	}
+
+	if cfg.EnableHTTPS {
+		srv = &http.Server{
+			Addr:      cfg.Host,
+			Handler:   r,
+			TLSConfig: cert.NewCert("localhost").TLSConfig(),
+		}
 	}
 
 	log.Info(

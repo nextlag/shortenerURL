@@ -1,28 +1,76 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
+	"log"
+	"os"
+	"sync"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 )
+
+var (
+	Cfg        HTTPServer // Cfg - переменная с конфигурацией
+	once       sync.Once
+	configPath string
+)
+
+func init() {
+	configPath = os.Getenv("CONFIG_PATH")
+}
 
 // HTTPServer структура для хранения конфигурации HTTP-сервера.
 type HTTPServer struct {
 	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL     string `json:"url_short" env:"BASE_URL" envDefault:"http://localhost:8080"`
+	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
-	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""` // "postgres://postgres:Xer_0101@localhost/shorten?sslmode=disable"
+	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
+	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
+	ConfigPath  string `json:"config_path" env:"CONFIG_PATH" envDefault:"config.json"`
 }
 
-// Cfg - переменная с конфигурацией
-var Cfg HTTPServer
+// Load инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
+func Load() error {
+	once.Do(func() {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatal("error parsing .env: ", err)
+		}
 
-// MakeConfig инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
-func MakeConfig() error {
-	// Определение флагов командной строки для настройки конфигурации.
-	flag.StringVar(&Cfg.Host, "a", Cfg.Host, "Host HTTP-server")
-	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "Base URL")
-	flag.StringVar(&Cfg.FileStorage, "f", Cfg.FileStorage, "Storage in data.json")
-	flag.StringVar(&Cfg.DSN, "d", Cfg.DSN, "Connect to database")
+		if configPath != "" {
+			err = loadConfigFromJSON()
+			if err != nil {
+				return
+			}
+		}
+
+		// Определение флагов командной строки для настройки конфигурации.
+		flag.StringVar(&Cfg.Host, "a", Cfg.Host, "Host HTTP-server")
+		flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "Base URL")
+		flag.StringVar(&Cfg.FileStorage, "f", Cfg.FileStorage, "Storage in data.json")
+		flag.StringVar(&Cfg.DSN, "d", Cfg.DSN, "Connect to database")
+		flag.StringVar(&Cfg.ConfigPath, "c", Cfg.ConfigPath, "Config name file")
+		flag.BoolVar(&Cfg.EnableHTTPS, "s", Cfg.EnableHTTPS, "enabling HTTPS connection")
+	})
 	return env.Parse(&Cfg)
+}
+
+func loadConfigFromJSON() error {
+	if configPath == "" {
+		log.Println("the path to the config file is empty")
+		return nil
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if err = json.Unmarshal(data, &Cfg); err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
+	}
+	return nil
 }

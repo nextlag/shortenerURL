@@ -18,7 +18,7 @@ import (
 // Setup initializes the configuration, reads a long URL from the console input,
 // sends a POST request to the shortenerURL service, and prints the response.
 func Setup() {
-	if err := config.MakeConfig(); err != nil {
+	if err := config.Load(); err != nil {
 		log.Fatal(err)
 	}
 	flag.Parse() // Parsing command-line flags

@@ -45,7 +45,7 @@ GET http://localhost:8080/rNLMBEJe
     request.variables.set("alias", alias)
 %}
 
-POST http://localhost:8080/api/shorten
+POST https://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
