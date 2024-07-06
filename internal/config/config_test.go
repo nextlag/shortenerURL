@@ -10,14 +10,11 @@ import (
 )
 
 func TestMakeConfig(t *testing.T) {
-	// Используем assert для удобства проверок
 	ast := assert.New(t)
 
-	// Вызываем Load()
 	err := Load()
 	ast.NoError(err, "Load should not return an error")
 
-	// Парсим флаги после вызова Load()
 	flag.Parse()
 
 	// Сохраняем оригинальные значения переменных окружения

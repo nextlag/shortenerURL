@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/caarlos0/env/v6"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -35,13 +34,8 @@ type HTTPServer struct {
 // Load инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
 func Load() error {
 	once.Do(func() {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("error parsing .env: ", err)
-		}
-
 		if configPath != "" {
-			err = loadConfigFromJSON()
+			err := loadConfigFromJSON()
 			if err != nil {
 				return
 			}
