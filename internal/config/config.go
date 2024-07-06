@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	// Cfg - переменная с конфигурацией
-	Cfg        HTTPServer
 	once       sync.Once
 	configPath string
 )
@@ -22,7 +20,7 @@ func init() {
 	configPath = os.Getenv("CONFIG_PATH")
 }
 
-// HTTPServer структура для хранения конфигурации HTTP-сервера.
+// HTTPServer structure for storing HTTP server configuration.
 type HTTPServer struct {
 	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
 	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
@@ -32,7 +30,10 @@ type HTTPServer struct {
 	ConfigPath  string `json:"config_path" env:"CONFIG_PATH" envDefault:"config.json"`
 }
 
-// Load инициализирует конфигурацию, считывая флаги командной строки и переменные окружения.
+// Cfg - variable with HTTP server configuration
+var Cfg HTTPServer
+
+// Load initializes the configuration by reading command line flags and environment variables.
 func Load() error {
 	once.Do(func() {
 		if configPath != "" {
