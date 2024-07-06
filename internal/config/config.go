@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	Cfg        HTTPServer // Cfg - переменная с конфигурацией
+	// Cfg - переменная с конфигурацией
+	Cfg        HTTPServer
 	once       sync.Once
 	configPath string
 )
