@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/cert"
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/controllers"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/usecase"
@@ -30,12 +30,16 @@ var (
 
 func main() {
 	log := logger.SetupLogger()
-	if err := config.Load(); err != nil {
-		log.Fatal("failed to init config", zap.Error(err))
+	if _, err := configuration.Load(); err != nil {
+		log.Fatal("failed to init configuration", zap.Error(err))
 	}
 
 	flag.Parse()
-	cfg := config.Cfg
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
+	}
 
 	fmt.Printf(
 		"Build version: %s,\nBuild date: %s,\nBuild commit: %s,\n",

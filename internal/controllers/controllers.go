@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/middleware/gzip"
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
@@ -30,11 +30,11 @@ type UseCase interface {
 type Controller struct {
 	uc  UseCase
 	log *zap.Logger
-	cfg config.HTTPServer
+	cfg *configuration.Config
 }
 
 // New creates a new Controller.
-func New(uc UseCase, log *zap.Logger, cfg config.HTTPServer) *Controller {
+func New(uc UseCase, log *zap.Logger, cfg *configuration.Config) *Controller {
 	return &Controller{uc: uc, log: log, cfg: cfg}
 }
 

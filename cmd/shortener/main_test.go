@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 func TestMain(m *testing.M) {
-	if err := config.Load(); err != nil {
+	if _, err := configuration.Load(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -24,15 +24,20 @@ func TestMain(m *testing.M) {
 func TestSetupServer(t *testing.T) {
 	// Создаем экземпляр роутера (заменяем реальный роутер на фейковый)
 	router := http.NewServeMux()
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
+	}
 
 	// Инициализируем сервер
 	srv := &http.Server{
-		Addr:    config.Cfg.Host,
+		Addr:    cfg.Host,
 		Handler: router,
 	}
 
 	// Проверяем, что адрес сервера устанавливается правильно
-	expectedAddr := config.Cfg.Host
+	expectedAddr := cfg.Host
 	if srv.Addr != expectedAddr {
 		t.Errorf("expected address %s, got %s", expectedAddr, srv.Addr)
 	}

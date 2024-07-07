@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 func TestShorten(t *testing.T) {
@@ -24,8 +25,8 @@ func TestShorten(t *testing.T) {
 	}{
 		{
 			name:         "ValidRequest",
-			body:         `{"url": "https://example.com", "alias": "example"}`,
-			expectedJSON: `{"result":"/example"}`,
+			body:         `{"url": "http://example.com", "alias": "example"}`,
+			expectedJSON: `{"result":"http://localhost:8080/example"}`,
 		},
 		{
 			name:         "Empty Request Body1",
@@ -41,6 +42,12 @@ func TestShorten(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			cfg, err := configuration.Load()
+			if err != nil {
+				log.Fatal("Failed to get configuration")
+				return
+			}
+
 			_, db, _ := Ctrl(t)
 			// Если валидация завершается с ошибкой, то вызов Put не должен произойти
 			if !strings.Contains(test.name, "ValidRequest") {
@@ -58,14 +65,14 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			New(db, log, config.Cfg).Shorten(w, req)
+			New(db, log, cfg).Shorten(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()
 
 			// Чтобы сравнить JSON, сначала декодируем его из ответа сервера.
 			var responseJSON map[string]interface{}
-			err := json.NewDecoder(resp.Body).Decode(&responseJSON)
+			err = json.NewDecoder(resp.Body).Decode(&responseJSON)
 			require.NoError(t, err)
 
 			// Затем парсим ожидаемый JSON-ответ для сравнения.
