@@ -12,22 +12,9 @@ import (
 )
 
 var (
-	once       sync.Once
-	configPath string
-	cfg        Config
+	once sync.Once
+	cfg  Config
 )
-
-func init() {
-	// Регистрируем флаги командной строки
-	flag.StringVar(&cfg.Host, "a", cfg.Host, "Host HTTP-server")
-	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
-	flag.StringVar(&cfg.FileStorage, "f", cfg.FileStorage, "Storage in data.json")
-	flag.StringVar(&cfg.DSN, "d", cfg.DSN, "Connect to database")
-	flag.StringVar(&cfg.ConfigPath, "c", cfg.ConfigPath, "Config name file")
-	flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "enabling HTTPS connection")
-
-	configPath = os.Getenv("CONFIG_PATH")
-}
 
 // Config structure for configuration.
 type Config struct {
@@ -38,7 +25,7 @@ type Config struct {
 // ServerHTTP - structure for storing HTTP server configuration.
 type ServerHTTP struct {
 	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:""`
+	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
 	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:""`
@@ -48,8 +35,17 @@ type ServerHTTP struct {
 func Load() (*Config, error) {
 	var err error
 	once.Do(func() {
-		// Load configuration from JSON file if specified
-		if configPath != "" {
+		// Регистрируем флаги командной строки
+		flag.StringVar(&cfg.Host, "a", cfg.Host, "Host HTTP-server")
+		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
+		flag.StringVar(&cfg.FileStorage, "f", cfg.FileStorage, "Storage in data.json")
+		flag.StringVar(&cfg.DSN, "d", cfg.DSN, "Connect to database")
+		flag.StringVar(&cfg.ConfigPath, "c", cfg.ConfigPath, "Config name file")
+		flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "enabling HTTPS connection")
+
+		// Получаем путь к конфигурационному файлу из переменных окружения, если указан
+		if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+			cfg.ConfigPath = configPath
 			err = loadConfigFromJSON()
 			if err != nil {
 				return
@@ -69,12 +65,12 @@ func Load() (*Config, error) {
 }
 
 func loadConfigFromJSON() error {
-	if configPath == "" {
+	if cfg.ConfigPath == "" {
 		log.Println("the path to the configuration file is empty")
 		return nil
 	}
 
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
