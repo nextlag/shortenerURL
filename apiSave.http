@@ -3,7 +3,7 @@ POST http://localhost:8080
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.com
+https://google.ru
 
 
 ### GET ping
@@ -34,7 +34,7 @@ Content-Type: application/json
 
 ### Get
 # @no-redirect
-GET http://localhost:8080/rNLMBEJe
+GET http://localhost:8080/0CF75HmO
 
 
 ### POST request with cookie

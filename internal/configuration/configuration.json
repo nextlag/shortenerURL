@@ -1,6 +1,6 @@
 {
-  "host": ":8080",
-  "base_url": "http://localhost:8080",
+  "host": ":8191",
+  "base_url": "http://localhost:8191",
   "file_storage": "",
   "dsn": "",
   "enable_https": false

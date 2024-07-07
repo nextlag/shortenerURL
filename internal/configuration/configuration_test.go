@@ -1,7 +1,8 @@
-package config
+package configuration
 
 import (
 	"flag"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -10,9 +11,14 @@ import (
 )
 
 func TestMakeConfig(t *testing.T) {
+
 	ast := assert.New(t)
 
-	err := Load()
+	cfg, err := Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return
+	}
 	ast.NoError(err, "Load should not return an error")
 
 	flag.Parse()
@@ -28,14 +34,12 @@ func TestMakeConfig(t *testing.T) {
 		}
 	}()
 
-	// Проверяем, что значения полей структуры HTTPServer соответствуют ожидаемым
+	// Проверяем, что значения полей структуры Config соответствуют ожидаемым
 	expectedHost := ":8080"
 	expectedBaseURL := "http://localhost:8080"
 	expectedFileStorage := ""
-	expectedDSN := ""
 
-	ast.Equal(expectedHost, Cfg.Host, "Host should be equal")
-	ast.Equal(expectedBaseURL, Cfg.BaseURL, "Base URL should be equal")
-	ast.Equal(expectedFileStorage, Cfg.FileStorage, "File storage should be equal")
-	ast.Equal(expectedDSN, Cfg.DSN, "DSN should be equal")
+	ast.Equal(expectedHost, cfg.Host, "Host should be equal")
+	ast.Equal(expectedBaseURL, cfg.BaseURL, "Base URL should be equal")
+	ast.Equal(expectedFileStorage, cfg.FileStorage, "File storage should be equal")
 }

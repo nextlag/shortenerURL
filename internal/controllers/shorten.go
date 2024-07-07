@@ -58,7 +58,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, usecase.ErrConflict) {
 		// Handle conflict error for duplicate URLs
 		c.log.Error("trying to add a duplicate URL", zap.Error(err))
-		ResponseConflict(w, alias)
+		ResponseConflict(w, alias, c.cfg)
 		return
 	}
 
@@ -69,5 +69,5 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Send the shortened URL to the client
-	ResponseCreated(w, alias)
+	ResponseCreated(w, alias, c.cfg)
 }
