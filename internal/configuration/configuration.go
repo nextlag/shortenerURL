@@ -38,7 +38,7 @@ type Config struct {
 // ServerHTTP - structure for storing HTTP server configuration.
 type ServerHTTP struct {
 	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:""`
+	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
 	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:""`
