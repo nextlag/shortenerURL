@@ -3,7 +3,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -21,7 +20,6 @@ func Setup() {
 	if _, err := configuration.Load(); err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse() // Parsing command-line flags
 	cfg, err := configuration.Load()
 	if err != nil {
 		log.Fatal("Failed to get configuration")

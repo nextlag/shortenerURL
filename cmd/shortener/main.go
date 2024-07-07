@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -34,7 +33,6 @@ func main() {
 		log.Fatal("failed to init configuration", zap.Error(err))
 	}
 
-	flag.Parse()
 	cfg, err := configuration.Load()
 	if err != nil {
 		log.Fatal("Failed to get configuration")

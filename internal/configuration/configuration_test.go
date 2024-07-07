@@ -1,7 +1,6 @@
 package configuration
 
 import (
-	"flag"
 	"log"
 	"os"
 	"strings"
@@ -20,8 +19,6 @@ func TestMakeConfig(t *testing.T) {
 		return
 	}
 	ast.NoError(err, "Load should not return an error")
-
-	flag.Parse()
 
 	// Сохраняем оригинальные значения переменных окружения
 	originalEnv := os.Environ()
