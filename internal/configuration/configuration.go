@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/caarlos0/env/v6"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -19,24 +18,16 @@ var (
 )
 
 func init() {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-	envPath := fmt.Sprintf("%s/Documents/GoProjects/shortenerURL/.env", homeDir)
-	err = godotenv.Load(envPath)
-	if err != nil {
-		log.Fatal("error parsing .env: ", err)
-	}
 	configPath = os.Getenv("CONFIG_PATH")
 }
 
-// Config structure for storing HTTP server configuration.
+// Config structure for configuration.
 type Config struct {
 	ServerHTTP
 	ConfigPath string `json:"config_path" env:"CONFIG_PATH" envDefault:"configuration.json"`
 }
 
+// ServerHTTP - structure for storing HTTP server configuration.
 type ServerHTTP struct {
 	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
 	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
