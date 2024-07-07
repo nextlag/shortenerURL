@@ -29,14 +29,10 @@ var (
 
 func main() {
 	log := logger.SetupLogger()
-	if _, err := configuration.Load(); err != nil {
-		log.Fatal("failed to init configuration", zap.Error(err))
-	}
 
 	cfg, err := configuration.Load()
 	if err != nil {
-		log.Fatal("Failed to get configuration")
-		return
+		log.Fatal("failed to init configuration", zap.Error(err))
 	}
 
 	fmt.Printf(
@@ -56,7 +52,7 @@ func main() {
 	)
 
 	if cfg.FileStorage != "" {
-		err := usecase.Load(cfg.FileStorage)
+		err = usecase.Load(cfg.FileStorage)
 		if err != nil {
 			log.Fatal("failed to load data from file", zap.Error(err))
 		}
@@ -103,22 +99,35 @@ func main() {
 		zap.String("url", cfg.BaseURL),
 	)
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
-		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			log.Error("failed to start server", zap.Error(err))
-			sigs <- os.Interrupt
-		}
-	}()
-	log.Info("server started")
+		<-sigint
+		log.Info("shutting down server...")
 
-	<-sigs
-	ctxTime, cancelShutdown := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancelShutdown()
-	if err := srv.Shutdown(ctxTime); err != nil {
-		log.Error("server shutdown error", zap.Error(err))
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err = srv.Shutdown(ctx); err != nil {
+			log.Error("HTTP server Shutdown:", zap.Error(err))
+		}
+		close(idleConnsClosed)
+	}()
+
+	switch {
+	case cfg.EnableHTTPS:
+		if err = srv.ListenAndServeTLS(cfg.Cert, cfg.Key); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal("HTTPS server ListenAndServeTLS:", zap.Error(err))
+		}
+	default:
+		if err = srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal("HTTP server ListenAndServe:", zap.Error(err))
+		}
 	}
-	log.Info("server stopped")
+
+	<-idleConnsClosed
+
+	log.Info("Server Shutdown gracefully")
 }

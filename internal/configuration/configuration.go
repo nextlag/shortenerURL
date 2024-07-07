@@ -28,7 +28,9 @@ type ServerHTTP struct {
 	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
 	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
-	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:""`
+	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
+	Cert        string `json:"cert" env:"CERT" envDefault:"cert.pem"`
+	Key         string `json:"key" env:"KEY" envDefault:"key.pem"`
 }
 
 // Load initializes the configuration by reading command line flags and environment variables.
@@ -50,6 +52,13 @@ func Load() (*Config, error) {
 			if err != nil {
 				return
 			}
+		}
+
+		if certPath := os.Getenv("CERT"); certPath != "" {
+			cfg.Cert = certPath
+		}
+		if keyPath := os.Getenv("KEY"); keyPath != "" {
+			cfg.Key = keyPath
 		}
 
 		// override with environment variables
