@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 // RequestFields contains the fields for the logger to log HTTP request details.
@@ -27,7 +27,7 @@ type RequestFields struct {
 }
 
 // New creates and returns a new middleware for logging HTTP requests.
-func New(log *zap.Logger, cfg config.HTTPServer) func(next http.Handler) http.Handler {
+func New(log *zap.Logger, cfg *configuration.Config) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Create request logger

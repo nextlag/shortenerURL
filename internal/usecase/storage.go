@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
@@ -18,12 +18,12 @@ import (
 type Data struct {
 	data  map[string]string
 	log   *zap.Logger
-	cfg   config.HTTPServer
+	cfg   *configuration.Config
 	mutex sync.Mutex // Mutex for synchronizing access to data
 }
 
 // NewData creates a new instance of Data.
-func NewData(log *zap.Logger, cfg config.HTTPServer) *Data {
+func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
 	return &Data{
 		data: make(map[string]string),
 		log:  log,

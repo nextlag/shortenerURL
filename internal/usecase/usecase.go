@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 // Repository represents the interface for data storage.
@@ -24,14 +24,14 @@ type Repository interface {
 
 // UseCase provides the use cases for interacting with the repository.
 type UseCase struct {
-	repo Repository        // interface for the repository
-	log  *zap.Logger       // logger instance
-	cfg  config.HTTPServer // configuration for the HTTP server
-	DB   *sql.DB           // database connection
+	repo Repository            // interface for the repository
+	log  *zap.Logger           // logger instance
+	cfg  *configuration.Config // configuration for the HTTP server
+	DB   *sql.DB               // database connection
 }
 
 // New creates a new instance of UseCase.
-func New(r Repository, l *zap.Logger, cfg config.HTTPServer) *UseCase {
+func New(r Repository, l *zap.Logger, cfg *configuration.Config) *UseCase {
 	var db *sql.DB
 	return &UseCase{repo: r, log: l, cfg: cfg, DB: db}
 }
