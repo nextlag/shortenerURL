@@ -77,6 +77,21 @@ func (mr *MockUseCaseMockRecorder) DoGetAll(arg0, arg1, arg2 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoGetAll", reflect.TypeOf((*MockUseCase)(nil).DoGetAll), arg0, arg1, arg2)
 }
 
+// DoGetStats mocks base method.
+func (m *MockUseCase) DoGetStats(arg0 context.Context) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DoGetStats", arg0)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DoGetStats indicates an expected call of DoGetStats.
+func (mr *MockUseCaseMockRecorder) DoGetStats(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoGetStats", reflect.TypeOf((*MockUseCase)(nil).DoGetStats), arg0)
+}
+
 // DoHealthcheck mocks base method.
 func (m *MockUseCase) DoHealthcheck() (bool, error) {
 	m.ctrl.T.Helper()

@@ -33,6 +33,10 @@ func (m *mockUsecase) DoHealthcheck() (bool, error) {
 	return true, nil
 }
 
+func (m *mockUsecase) DoGetStats(ctx context.Context) ([]byte, error) {
+	return nil, nil
+}
+
 // ExampleController_HealthCheck demonstrates how to use the HealthCheck endpoint.
 func ExampleController_HealthCheck() {
 	// Setup

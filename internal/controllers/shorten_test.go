@@ -31,12 +31,12 @@ func TestShorten(t *testing.T) {
 		{
 			name:         "Empty Request Body1",
 			body:         `{}`,
-			expectedJSON: `{"error":"поле URL обязательно для заполнения", "result":""}`,
+			expectedJSON: `{"error":"поле URL обязательно для заполнения"}`,
 		},
 		{
 			name:         "Empty Request Body2",
 			body:         `{"url": "example.com"}`,
-			expectedJSON: `{"error":"поле URL не является допустимым URL", "result":""}`,
+			expectedJSON: `{"error":"поле URL не является допустимым URL"}`,
 		},
 	}
 

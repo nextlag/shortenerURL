@@ -40,6 +40,10 @@ const (
 
 	// getConflict SQL query to check for conflicts by retrieving alias for a given URL from the short_urls table
 	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
+
+	getUrlsStats = `SELECT COUNT(*) as urlsCount from short_urls`
+
+	getUserStats = `SELECT COUNT(DISTINCT uuid) as uniqueUsers from short_urls`
 )
 
 // ErrConflict - data conflict in data base storage
@@ -214,4 +218,36 @@ func (uc *UseCase) Del(id int, aliases []string) error {
 	}
 
 	return nil
+}
+
+// Stats - structure for obtaining statistics
+type stats struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}
+
+// GetStats - getting statistics on users and URLs
+func (uc *UseCase) GetStats(ctx context.Context) ([]byte, error) {
+	urlsStatRaw := uc.DB.QueryRowContext(ctx, getUrlsStats)
+	userStatRaw := uc.DB.QueryRowContext(ctx, getUserStats)
+
+	var urlsStat, usersStat int
+
+	if err := urlsStatRaw.Scan(&urlsStat); err != nil {
+		return nil, fmt.Errorf("error scanning urlsStat: %w", err)
+	}
+
+	if err := userStatRaw.Scan(&usersStat); err != nil {
+		return nil, fmt.Errorf("error scanning usersStat: %w", err)
+	}
+
+	resultStats, err := json.Marshal(stats{
+		URLs:  urlsStat,
+		Users: usersStat,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling stats: %w", err)
+	}
+
+	return resultStats, nil
 }
