@@ -20,7 +20,7 @@ func TestResponseConflict(t *testing.T) {
 	cfg.Host = "http://localhost"
 
 	w := httptest.NewRecorder()
-	ResponseConflict(w, "abc123", cfg)
+	responseConflict(w, "abc123", cfg)
 
 	res := w.Result()
 	defer res.Body.Close()
@@ -50,7 +50,7 @@ func TestResponseCreated(t *testing.T) {
 	cfg.Host = "http://localhost"
 
 	w := httptest.NewRecorder()
-	ResponseCreated(w, "xyz789", cfg)
+	responseCreated(w, "xyz789", cfg)
 
 	res := w.Result()
 	defer res.Body.Close()

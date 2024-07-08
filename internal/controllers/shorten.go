@@ -43,7 +43,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 		var validateErr validator.ValidationErrors
 		errors.As(err, &validateErr)
 		c.log.Error("invalid request", zap.Error(err))
-		render.JSON(w, r, ValidationError(validateErr))
+		render.JSON(w, r, validationError(validateErr))
 		return
 	}
 
@@ -58,7 +58,7 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, usecase.ErrConflict) {
 		// Handle conflict error for duplicate URLs
 		c.log.Error("trying to add a duplicate URL", zap.Error(err))
-		ResponseConflict(w, alias, c.cfg)
+		responseConflict(w, alias, c.cfg)
 		return
 	}
 
@@ -69,5 +69,5 @@ func (c *Controller) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Send the shortened URL to the client
-	ResponseCreated(w, alias, c.cfg)
+	responseCreated(w, alias, c.cfg)
 }

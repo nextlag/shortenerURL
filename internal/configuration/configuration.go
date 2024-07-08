@@ -24,13 +24,14 @@ type Config struct {
 
 // ServerHTTP - structure for storing HTTP server configuration.
 type ServerHTTP struct {
-	Host        string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL     string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
-	DSN         string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
-	EnableHTTPS bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
-	Cert        string `json:"cert" env:"CERT" envDefault:"cert.pem"`
-	Key         string `json:"key" env:"KEY" envDefault:"key.pem"`
+	Host          string `json:"host" env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL       string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStorage   string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
+	DSN           string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
+	EnableHTTPS   bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
+	Cert          string `json:"cert" env:"CERT" envDefault:"cert.pem"`
+	Key           string `json:"key" env:"KEY" envDefault:"key.pem"`
+	TrustedSubnet string `json:"trusted_subnet" envDefault:""`
 }
 
 // Load initializes the configuration by reading command line flags and environment variables.
@@ -44,6 +45,7 @@ func Load() (*Config, error) {
 		flag.StringVar(&cfg.DSN, "d", cfg.DSN, "Connect to database")
 		flag.StringVar(&cfg.ConfigPath, "c", cfg.ConfigPath, "Config name file")
 		flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "enabling HTTPS connection")
+		flag.StringVar(&cfg.TrustedSubnet, "t", cfg.TrustedSubnet, "trusted subnet address")
 
 		// Получаем путь к конфигурационному файлу из переменных окружения, если указан
 		if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {

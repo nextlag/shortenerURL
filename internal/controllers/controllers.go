@@ -24,6 +24,7 @@ type UseCase interface {
 	DoPut(ctx context.Context, url string, alias string, uuid int) (string, error)
 	DoDel(id int, aliases []string)
 	DoHealthcheck() (bool, error)
+	DoGetStats(ctx context.Context) ([]byte, error)
 }
 
 // Controller represents the application's HTTP controller.
@@ -51,6 +52,7 @@ func (c *Controller) Controller(handler *chi.Mux) *chi.Mux {
 		r.Get("/{id}", c.Get)
 		r.Get("/api/user/urls", c.GetAll)
 		r.Get("/ping", c.HealthCheck)
+		r.Get("/api/internal/stats", c.GetStatsHandler)
 		r.Post("/api/shorten", c.Shorten)
 		r.Post("/api/shorten/batch", c.Batch)
 		r.Post("/", c.Save)
