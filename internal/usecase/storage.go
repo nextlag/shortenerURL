@@ -4,6 +4,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"sync"
@@ -131,4 +132,16 @@ func Load(filename string) error {
 		d.data[item.Alias] = item.URL
 	}
 	return nil
+}
+
+// GetStats is not implemented in memory storage.
+func (s *Data) GetStats(ctx context.Context) ([]byte, error) {
+	readyStats, err := json.Marshal(stats{
+		URLs:  len(s.data),
+		Users: 0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return readyStats, nil
 }

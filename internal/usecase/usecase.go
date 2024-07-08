@@ -20,6 +20,7 @@ type Repository interface {
 	Put(ctx context.Context, url string, alias string, uuid int) (string, error)
 	Del(id int, aliases []string) error
 	Healthcheck() (bool, error)
+	GetStats(ctx context.Context) ([]byte, error)
 }
 
 // UseCase provides the use cases for interacting with the repository.
@@ -31,9 +32,9 @@ type UseCase struct {
 }
 
 // New creates a new instance of UseCase.
-func New(r Repository, l *zap.Logger, cfg *configuration.Config) *UseCase {
+func New(r Repository, log *zap.Logger, cfg *configuration.Config) *UseCase {
 	var db *sql.DB
-	return &UseCase{repo: r, log: l, cfg: cfg, DB: db}
+	return &UseCase{repo: r, log: log, cfg: cfg, DB: db}
 }
 
 // DoGet retrieves a URL by its alias.
@@ -62,4 +63,8 @@ func (uc *UseCase) DoDel(id int, aliases []string) {
 // DoHealthcheck checks the health of the repository.
 func (uc *UseCase) DoHealthcheck() (bool, error) {
 	return uc.repo.Healthcheck()
+}
+
+func (uc *UseCase) DoGetStats(ctx context.Context) ([]byte, error) {
+	return uc.repo.GetStats(ctx)
 }

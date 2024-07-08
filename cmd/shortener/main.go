@@ -49,6 +49,7 @@ func main() {
 		zap.String("-d", cfg.DSN),
 		zap.String("-c", cfg.ConfigPath),
 		zap.Bool("-s", cfg.EnableHTTPS),
+		zap.String("-t", cfg.TrustedSubnet),
 	)
 
 	if cfg.FileStorage != "" {
