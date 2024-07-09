@@ -68,4 +68,4 @@ Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9Jql
 
 ### GET stats
 GET http://localhost:8080/api/internal/stats
-X-Real-IP: 10.0.0.24
+X-Real-IP: 10.0.1.242
