@@ -1,5 +1,5 @@
 // Package controllers provides the handlers and routing for the URL shortening service.
-package controllers
+package http
 
 import (
 	"context"

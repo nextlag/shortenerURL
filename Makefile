@@ -20,5 +20,8 @@ test:
 	docker-compose -f ./Docker-Compose.yaml down --volumes
 lint:
 	go run ./cmd/staticlint ./...
+get:
+	grpcurl -plaintext -d '{"shortenLink": "0CF75HmO"}' localhost:3200 proto.Links/Get
 
-.PHONY: shorten db_create run runF build docker_run test lint
+
+.PHONY: shorten db_create run runF build docker_run test lint get getAll

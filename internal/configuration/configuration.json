@@ -4,5 +4,7 @@
   "file_storage": "",
   "dsn": "",
   "enable_https": false,
-  "trusted_subnet": "10.0.0.1/24"
+  "trusted_subnet": "10.0.0.1/24",
+  "enable_grpc": true,
+  "rpc_port": ":3200"
 }

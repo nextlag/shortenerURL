@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/nextlag/proto";
+
+message ShortenLink {
+string shortenLink = 1;
+}
+
+message LongLink {
+string longLink = 1;
+}
+
+message UserLinks {
+string LongLink = 1;
+string ShortLink = 2;
+}
+
+message ListShortenLinks {
+string userLinks = 1;
+}
+
+message ListShortenLinksToDelete {
+repeated string userLinks = 1;
+}
+
+message FindShortenLinkResponse {
+string longLink = 1;
+bool deleteStatus = 2;
+}
+
+message ShortenLinkResponse {
+string longLink = 1;
+bool deleteStatus = 2;
+}
+
+message LongLinkResponse {
+string shortenLink = 1;
+}
+
+message Empty {
+}
+
+service Links {
+rpc Get(ShortenLink) returns (ShortenLinkResponse);
+rpc Save(LongLink) returns (LongLinkResponse);
+rpc GetAll(Empty) returns (ListShortenLinks);
+rpc Del(ListShortenLinksToDelete) returns(Empty);
+}

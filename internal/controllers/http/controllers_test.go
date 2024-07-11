@@ -1,4 +1,4 @@
-package controllers
+package http
 
 import (
 	"io"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
-	"github.com/nextlag/shortenerURL/internal/controllers/mocks"
+	"github.com/nextlag/shortenerURL/internal/controllers/http/mocks"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )

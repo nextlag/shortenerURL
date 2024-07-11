@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,10 +14,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
+	grpcsrv "github.com/nextlag/shortenerURL/internal/controllers/grpc"
+	http2 "github.com/nextlag/shortenerURL/internal/controllers/http"
+	pb "github.com/nextlag/shortenerURL/proto"
 
 	"github.com/nextlag/shortenerURL/internal/cert"
 	"github.com/nextlag/shortenerURL/internal/configuration"
-	"github.com/nextlag/shortenerURL/internal/controllers"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
@@ -50,6 +56,8 @@ func main() {
 		zap.String("-c", cfg.ConfigPath),
 		zap.Bool("-s", cfg.EnableHTTPS),
 		zap.String("-t", cfg.TrustedSubnet),
+		zap.Bool("-g", cfg.EnableGRPC),
+		zap.String("-r", cfg.RPCPort),
 	)
 
 	if cfg.FileStorage != "" {
@@ -76,7 +84,7 @@ func main() {
 		uc = usecase.New(db, log, cfg)
 	}
 
-	controller := controllers.New(uc, log, cfg)
+	controller := http2.New(uc, log, cfg)
 
 	r := chi.NewRouter()
 	r.Mount("/", controller.Controller(r))
@@ -116,6 +124,39 @@ func main() {
 		}
 		close(idleConnsClosed)
 	}()
+
+	if cfg.EnableGRPC {
+		go func() {
+			listen, err := net.Listen("tcp", cfg.RPCPort)
+			if err != nil {
+				log.Fatal("failed to listen:", zap.Error(err))
+			}
+			log.Info("gRPC server starting", zap.String("address", cfg.RPCPort))
+
+			s := grpc.NewServer()
+
+			// Создаём экземпляр базы данных отдельно для gRPC сервера
+			db, err := usecase.NewDB(cfg.DSN, log)
+			uc = usecase.New(db, log, cfg)
+			if err != nil {
+				log.Fatal("failed to connect in database for gRPC server", zap.Error(err))
+			}
+			defer func() {
+				if err = db.Stop(); err != nil {
+					log.Error("error stopping DB for gRPC", zap.Error(err))
+				}
+			}()
+
+			pb.RegisterLinksServer(s, &grpcsrv.LinksServer{DB: uc})
+
+			// Enable reflection
+			reflection.Register(s)
+
+			if err := s.Serve(listen); err != nil {
+				log.Fatal("gRPC server failed", zap.Error(err))
+			}
+		}()
+	}
 
 	switch {
 	case cfg.EnableHTTPS:

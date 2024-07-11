@@ -1,4 +1,4 @@
-package controllers_test
+package http_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
-	"github.com/nextlag/shortenerURL/internal/controllers"
+	http2 "github.com/nextlag/shortenerURL/internal/controllers/http"
 )
 
 type mockUsecase struct{}
@@ -44,7 +44,7 @@ func ExampleController_HealthCheck() {
 	cfg := configuration.Config{}
 	uc := &mockUsecase{}
 
-	ctrl := controllers.New(uc, log, &cfg)
+	ctrl := http2.New(uc, log, &cfg)
 	r := chi.NewRouter()
 	ctrl.Controller(r)
 
@@ -72,7 +72,7 @@ func TestController_HealthCheck(t *testing.T) {
 	cfg := configuration.Config{}
 	uc := &mockUsecase{}
 
-	ctrl := controllers.New(uc, log, &cfg)
+	ctrl := http2.New(uc, log, &cfg)
 	r := chi.NewRouter()
 
 	// Handle not found routes
