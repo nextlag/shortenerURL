@@ -1,12 +1,13 @@
-// Package usecase provides use cases for managing short URLs,
-// including in-memory data storage and file-based storage operations.
 package usecase
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"sync"
 
 	"go.uber.org/zap"
@@ -15,18 +16,26 @@ import (
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
+type dataDel struct {
+	UserID    string
+	Alias     string
+	IsDeleted bool
+}
+
 // Data represents the in-memory data storage structure.
 type Data struct {
 	data  map[string]string
+	del   map[string]*dataDel
 	log   *zap.Logger
 	cfg   *configuration.Config
-	mutex sync.Mutex // Mutex for synchronizing access to data
+	mutex sync.Mutex
 }
 
 // NewData creates a new instance of Data.
 func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
 	return &Data{
 		data: make(map[string]string),
+		del:  make(map[string]*dataDel),
 		log:  log,
 		cfg:  cfg,
 	}
@@ -37,54 +46,90 @@ func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Retrieve from memory
 	url, ok := s.data[alias]
 	if !ok {
 		return "", false, fmt.Errorf("key '%s' not found", alias)
 	}
+
+	if delInfo, exists := s.del[alias]; exists && delInfo.IsDeleted {
+		return "", false, fmt.Errorf("key '%s' is deleted", alias)
+	}
+
 	return url, false, nil
 }
 
-// GetAll returns a message indicating that memory storage cannot operate with user IDs.
-func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {
-	return []byte("Memory storage can't operate with user IDs"), nil
+// GetAll retrieves all URLs for a given user.
+func (s *Data) GetAll(_ context.Context, userID int, _ string) ([]byte, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	userUrls := make(map[string]string)
+	for alias, urlData := range s.data {
+		if delInfo, exists := s.del[alias]; !exists || !delInfo.IsDeleted {
+			userUrls[alias] = urlData
+		}
+	}
+	return json.Marshal(userUrls)
 }
 
-// Healthcheck always returns true for in-memory storage.
+// Healthcheck checks if a file exists at the specified path.
 func (s *Data) Healthcheck() (bool, error) {
+	filePath := s.cfg.FileStorage
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, errors.New("file does not exist")
+		}
+		return false, err
+	}
 	return true, nil
 }
 
-// Del does nothing for in-memory storage as delete operations are not implemented.
-func (s *Data) Del(_ int, _ []string) error {
+// Del marks URLs as deleted in the in-memory storage.
+func (s *Data) Del(userID int, aliases []string) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	for _, alias := range aliases {
+		if _, exists := s.data[alias]; exists {
+			s.del[alias] = &dataDel{
+				UserID:    strconv.Itoa(userID),
+				Alias:     alias,
+				IsDeleted: true,
+			}
+		}
+	}
 	return nil
 }
 
 // Put saves a URL with a generated alias in the in-memory storage.
-func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, error) {
+func (s *Data) Put(_ context.Context, url string, alias string, userID int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if alias == "" {
 		alias = generatestring.NewRandomString(8)
 	}
 
-	// Check for alias existence
 	if _, exists := s.data[alias]; exists {
 		return "", fmt.Errorf("alias '%s/%s' already exists", s.cfg.BaseURL, alias)
 	}
 
-	// Check for URL existence
 	for k, v := range s.data {
 		if v == url {
 			return k, nil
 		}
 	}
-	// Store the URL
+
 	s.data[alias] = url
 
-	// Check for file storage flag, if present - save the request result to a file
+	s.del[alias] = &dataDel{
+		UserID:    strconv.Itoa(userID),
+		Alias:     alias,
+		IsDeleted: false,
+	}
+
 	if s.cfg.FileStorage != "" {
-		err := Save(s.cfg.FileStorage, alias, url)
+		err := save(s.cfg.FileStorage, alias, url, userID)
 		if err != nil {
 			return alias, err
 		}
@@ -92,15 +137,15 @@ func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, 
 	return alias, nil
 }
 
-// Save writes a URL record to the specified file.
-func Save(file string, alias string, url string) error {
+// save writes a URL record to the specified file.
+func save(file string, alias string, url string, userID int) error {
 	producer, err := NewProducer(file)
 	if err != nil {
 		return err
 	}
 	defer producer.Close()
 
-	uuid := generatestring.GenerateUUID()
+	uuid := strconv.Itoa(userID)
 	event := NewFileStorage(uuid, alias, url)
 
 	if err = producer.WriteEvent(event); err != nil {
@@ -110,11 +155,7 @@ func Save(file string, alias string, url string) error {
 }
 
 // Load reads URL records from the specified file and loads them into memory.
-func Load(filename string) error {
-	d := &Data{
-		data: make(map[string]string),
-	}
-
+func Load(filename string, db *Data) error {
 	consumer, err := NewConsumer(filename)
 	if err != nil {
 		return err
@@ -129,7 +170,7 @@ func Load(filename string) error {
 			}
 			return err
 		}
-		d.data[item.Alias] = item.URL
+		db.data[item.Alias] = item.URL
 	}
 	return nil
 }

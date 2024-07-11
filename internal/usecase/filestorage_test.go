@@ -11,9 +11,9 @@ import (
 )
 
 func TestNewFileStorage(t *testing.T) {
-	fs := usecase.NewFileStorage("12345", "alias", "http://example.com")
+	fs := usecase.NewFileStorage("243", "alias", "http://example.com")
 
-	assert.Equal(t, "12345", fs.UUID)
+	assert.Equal(t, "243", fs.UUID)
 	assert.Equal(t, "alias", fs.Alias)
 	assert.Equal(t, "http://example.com", fs.URL)
 }
@@ -27,7 +27,7 @@ func TestProducer_WriteEvent(t *testing.T) {
 	defer producer.Close()
 
 	event := &usecase.FileStorage{
-		UUID:  "12345",
+		UUID:  "243",
 		Alias: "alias",
 		URL:   "http://example.com",
 	}
