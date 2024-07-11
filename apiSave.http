@@ -3,18 +3,23 @@ POST http://localhost:8080
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.ru
+https://google.com
 
 
 ### GET ping
 GET http://localhost:8080/ping
 
-### POST save
+### POST request without cookies
+< {%
+    const rand = $random.alphabetic(5).toLowerCase()
+    request.variables.set("rand", rand)
+%}
+
 POST http://localhost:8080/
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.com
+http://{{rand}}.com/
 
 
 ### POST request without cookies
@@ -34,7 +39,7 @@ Content-Type: application/json
 
 ### Get
 # @no-redirect
-GET http://localhost:8080/0CF75HmO
+GET http://localhost:8080/dpvkbXUA
 
 
 ### POST request with cookie
@@ -48,7 +53,7 @@ GET http://localhost:8080/0CF75HmO
 POST http://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
-Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
+Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3MjZ9.IEDmvHbt4PcLvjtxrB5yzw4xXDCvQ_yk5lUtyqq2iJI
 
 {
   "url": "http:\/\/{{srv}}.com/",
@@ -58,13 +63,13 @@ Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9Jql
 ### GET all
 # @no-redirect
 GET http://localhost:8080/api/user/urls
-Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
+Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3MjZ9.IEDmvHbt4PcLvjtxrB5yzw4xXDCvQ_yk5lUtyqq2iJI
 
 ### DELETE
 DELETE http://localhost:8080/api/user/urls
-Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
+Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3MjZ9.IEDmvHbt4PcLvjtxrB5yzw4xXDCvQ_yk5lUtyqq2iJI
 
-["6i2NVBw5"]
+["e5rp7","hmcfw"]
 
 ### GET stats
 GET http://localhost:8080/api/internal/stats

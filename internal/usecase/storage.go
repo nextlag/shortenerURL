@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"sync"
 
 	"go.uber.org/zap"
@@ -61,7 +62,7 @@ func (s *Data) Del(_ int, _ []string) error {
 }
 
 // Put saves a URL with a generated alias in the in-memory storage.
-func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, error) {
+func (s *Data) Put(_ context.Context, url string, alias string, userID int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if alias == "" {
@@ -84,7 +85,7 @@ func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, 
 
 	// Check for file storage flag, if present - save the request result to a file
 	if s.cfg.FileStorage != "" {
-		err := Save(s.cfg.FileStorage, alias, url)
+		err := save(s.cfg.FileStorage, alias, url, userID)
 		if err != nil {
 			return alias, err
 		}
@@ -92,15 +93,16 @@ func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, 
 	return alias, nil
 }
 
-// Save writes a URL record to the specified file.
-func Save(file string, alias string, url string) error {
+// save writes a URL record to the specified file.
+func save(file string, alias string, url string, userId int) error {
 	producer, err := NewProducer(file)
 	if err != nil {
 		return err
 	}
 	defer producer.Close()
 
-	uuid := generatestring.GenerateUUID()
+	// uuid := generatestring.GenerateUUID()
+	uuid := strconv.Itoa(userId)
 	event := NewFileStorage(uuid, alias, url)
 
 	if err = producer.WriteEvent(event); err != nil {

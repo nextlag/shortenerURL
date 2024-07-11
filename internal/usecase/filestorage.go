@@ -15,9 +15,9 @@ type FileStorage struct {
 }
 
 // NewFileStorage creates a new instance of FileStorage.
-func NewFileStorage(uuid, alias, url string) *FileStorage {
+func NewFileStorage(alias, url string, userID string) *FileStorage {
 	return &FileStorage{
-		UUID:  uuid,
+		UUID:  userID,
 		Alias: alias,
 		URL:   url,
 	}
