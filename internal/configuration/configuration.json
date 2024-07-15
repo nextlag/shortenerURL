@@ -1,10 +1,10 @@
 {
   "host": ":8191",
   "base_url": "http://localhost:8191",
-  "file_storage": "",
+  "file_storage": "file.json",
   "dsn": "",
   "enable_https": false,
   "trusted_subnet": "10.0.0.1/24",
-  "enable_grpc": true,
+  "enable_grpc": false,
   "rpc_port": ":3200"
 }

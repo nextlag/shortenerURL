@@ -15,9 +15,16 @@ import (
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
+// UrlData represents the structure for storing URL data.
+type UrlData struct {
+	URL       string
+	IsDeleted bool
+	UserID    int
+}
+
 // Data represents the in-memory data storage structure.
 type Data struct {
-	data  map[string]string
+	data  map[string]UrlData
 	log   *zap.Logger
 	cfg   *configuration.Config
 	mutex sync.Mutex // Mutex for synchronizing access to data
@@ -26,7 +33,7 @@ type Data struct {
 // NewData creates a new instance of Data.
 func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
 	return &Data{
-		data: make(map[string]string),
+		data: make(map[string]UrlData),
 		log:  log,
 		cfg:  cfg,
 	}
@@ -42,12 +49,21 @@ func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 	if !ok {
 		return "", false, fmt.Errorf("key '%s' not found", alias)
 	}
-	return url, false, nil
+	return url.URL, false, nil
 }
 
-// GetAll returns a message indicating that memory storage cannot operate with user IDs.
-func (s *Data) GetAll(context.Context, int, string) ([]byte, error) {
-	return []byte("Memory storage can't operate with user IDs"), nil
+// GetAll retrieves all URLs for a given user.
+func (s *Data) GetAll(_ context.Context, userID int, _ string) ([]byte, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	userUrls := make(map[string]string)
+	for alias, urlData := range s.data {
+		if urlData.UserID == userID && !urlData.IsDeleted {
+			userUrls[alias] = urlData.URL
+		}
+	}
+	return json.Marshal(userUrls)
 }
 
 // Healthcheck always returns true for in-memory storage.
@@ -55,13 +71,8 @@ func (s *Data) Healthcheck() (bool, error) {
 	return true, nil
 }
 
-// Del does nothing for in-memory storage as delete operations are not implemented.
-func (s *Data) Del(_ int, _ []string) error {
-	return nil
-}
-
 // Put saves a URL with a generated alias in the in-memory storage.
-func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, error) {
+func (s *Data) Put(_ context.Context, url string, alias string, userID int) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if alias == "" {
@@ -75,16 +86,19 @@ func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, 
 
 	// Check for URL existence
 	for k, v := range s.data {
-		if v == url {
+		if v.URL == url {
 			return k, nil
 		}
 	}
 	// Store the URL
-	s.data[alias] = url
+	s.data[alias] = UrlData{
+		URL:       url,
+		UserID:    userID,
+		IsDeleted: false}
 
 	// Check for file storage flag, if present - save the request result to a file
 	if s.cfg.FileStorage != "" {
-		err := Save(s.cfg.FileStorage, alias, url)
+		err := Save(s.cfg.FileStorage, alias, url, userID)
 		if err != nil {
 			return alias, err
 		}
@@ -92,16 +106,30 @@ func (s *Data) Put(_ context.Context, url string, alias string, _ int) (string, 
 	return alias, nil
 }
 
+// Del marks URLs as deleted for a given user.
+func (s *Data) Del(userID int, aliases []string) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	for _, alias := range aliases {
+		if urlData, exists := s.data[alias]; exists && urlData.UserID == userID {
+			urlData.IsDeleted = true
+			s.data[alias] = urlData
+		}
+	}
+	return nil
+}
+
 // Save writes a URL record to the specified file.
-func Save(file string, alias string, url string) error {
+func Save(file string, alias string, url string, userID int) error {
 	producer, err := NewProducer(file)
 	if err != nil {
 		return err
 	}
 	defer producer.Close()
 
-	uuid := generatestring.GenerateUUID()
-	event := NewFileStorage(uuid, alias, url)
+	// uuid := generatestring.GenerateUUID()
+	event := NewFileStorage(alias, url, userID)
 
 	if err = producer.WriteEvent(event); err != nil {
 		return err
@@ -111,8 +139,9 @@ func Save(file string, alias string, url string) error {
 
 // Load reads URL records from the specified file and loads them into memory.
 func Load(filename string) error {
+	// Создаем Data без указания логгера и конфигурации
 	d := &Data{
-		data: make(map[string]string),
+		data: make(map[string]UrlData),
 	}
 
 	consumer, err := NewConsumer(filename)
@@ -125,11 +154,17 @@ func Load(filename string) error {
 		item, err := consumer.ReadEvent()
 		if err != nil {
 			if err == io.EOF {
-				break // End of file reached
+				break // Достигнут конец файла
 			}
 			return err
 		}
-		d.data[item.Alias] = item.URL
+
+		// Загружаем URL данные в память
+		d.data[item.Alias] = UrlData{
+			URL:       item.URL,
+			IsDeleted: false, // Предполагаем, что данные, загружаемые из файла, не удалены
+			UserID:    0,     // Предполагаем ID пользователя как 0, измените при необходимости
+		}
 	}
 	return nil
 }

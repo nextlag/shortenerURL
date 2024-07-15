@@ -5,6 +5,7 @@ package usecase
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 )
 
 // FileStorage represents the structure of a URL record for file storage.
@@ -15,9 +16,10 @@ type FileStorage struct {
 }
 
 // NewFileStorage creates a new instance of FileStorage.
-func NewFileStorage(uuid, alias, url string) *FileStorage {
+func NewFileStorage(alias, url string, userID int) *FileStorage {
+	id := strconv.Itoa(userID)
 	return &FileStorage{
-		UUID:  uuid,
+		UUID:  id,
 		Alias: alias,
 		URL:   url,
 	}
