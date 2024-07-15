@@ -162,8 +162,8 @@ func Load(filename string) error {
 		// Загружаем URL данные в память
 		d.data[item.Alias] = UrlData{
 			URL:       item.URL,
-			IsDeleted: false, // Предполагаем, что данные, загружаемые из файла, не удалены
-			UserID:    0,     // Предполагаем ID пользователя как 0, измените при необходимости
+			IsDeleted: false,
+			UserID:    0,
 		}
 	}
 	return nil

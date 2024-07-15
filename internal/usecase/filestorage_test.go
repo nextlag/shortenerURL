@@ -11,10 +11,10 @@ import (
 )
 
 func TestNewFileStorage(t *testing.T) {
-	fs := usecase.NewFileStorage("12345", "alias", "http://example.com")
+	fs := usecase.NewFileStorage("12345", "http://example.com", 1)
 
-	assert.Equal(t, "12345", fs.UUID)
-	assert.Equal(t, "alias", fs.Alias)
+	assert.Equal(t, "1", fs.UUID)
+	assert.Equal(t, "12345", fs.Alias)
 	assert.Equal(t, "http://example.com", fs.URL)
 }
 

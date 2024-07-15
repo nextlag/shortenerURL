@@ -34,9 +34,7 @@ func TestMakeConfig(t *testing.T) {
 	// Проверяем, что значения полей структуры Config соответствуют ожидаемым
 	expectedHost := ":8080"
 	expectedBaseURL := "http://localhost:8080"
-	expectedFileStorage := ""
 
 	ast.Equal(expectedHost, cfg.Host, "Host should be equal")
 	ast.Equal(expectedBaseURL, cfg.BaseURL, "Base URL should be equal")
-	ast.Equal(expectedFileStorage, cfg.FileStorage, "File storage should be equal")
 }
