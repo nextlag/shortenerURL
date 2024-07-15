@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -44,7 +45,8 @@ func ExampleController_HealthCheck() {
 	cfg := configuration.Config{}
 	uc := &mockUsecase{}
 
-	ctrl := http2.New(uc, log, &cfg)
+	wg := sync.WaitGroup{}
+	ctrl := http2.New(uc, &wg, &cfg, log)
 	r := chi.NewRouter()
 	ctrl.Controller(r)
 
@@ -71,8 +73,9 @@ func TestController_HealthCheck(t *testing.T) {
 	log := zap.NewNop()
 	cfg := configuration.Config{}
 	uc := &mockUsecase{}
+	wg := sync.WaitGroup{}
 
-	ctrl := http2.New(uc, log, &cfg)
+	ctrl := http2.New(uc, &wg, &cfg, log)
 	r := chi.NewRouter()
 
 	// Handle not found routes

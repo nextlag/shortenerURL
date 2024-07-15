@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -65,7 +66,8 @@ func TestShorten(t *testing.T) {
 			// Создаем записывающий ResponseRecorder, который будет использоваться для записи HTTP ответа.
 			w := httptest.NewRecorder()
 			// Вызываем обработчик для HTTP POST запроса
-			New(db, log, cfg).Shorten(w, req)
+			wg := sync.WaitGroup{}
+			New(db, &wg, cfg, log).Shorten(w, req)
 			// Получаем результат (HTTP-ответ) после выполнения запроса.
 			resp := w.Result()
 			defer resp.Body.Close()

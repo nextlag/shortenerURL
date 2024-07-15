@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -32,7 +33,8 @@ func Ctrl(t *testing.T) (*Controller, *mocks.MockUseCase, *usecase.UseCase) {
 	db := mocks.NewMockUseCase(mockCtl)
 	repo := usecase.NewMockRepository(mockCtl)
 	uc := usecase.New(repo, l, cfg)
-	controller := New(db, l, cfg)
+	wg := sync.WaitGroup{}
+	controller := New(db, &wg, cfg, l)
 	return controller, db, uc
 }
 
