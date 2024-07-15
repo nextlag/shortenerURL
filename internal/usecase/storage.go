@@ -15,8 +15,8 @@ import (
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
-// UrlData represents the structure for storing URL data.
-type UrlData struct {
+// URLData represents the structure for storing URL data.
+type URLData struct {
 	URL       string
 	IsDeleted bool
 	UserID    int
@@ -24,7 +24,7 @@ type UrlData struct {
 
 // Data represents the in-memory data storage structure.
 type Data struct {
-	data  map[string]UrlData
+	data  map[string]URLData
 	log   *zap.Logger
 	cfg   *configuration.Config
 	mutex sync.Mutex // Mutex for synchronizing access to data
@@ -33,7 +33,7 @@ type Data struct {
 // NewData creates a new instance of Data.
 func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
 	return &Data{
-		data: make(map[string]UrlData),
+		data: make(map[string]URLData),
 		log:  log,
 		cfg:  cfg,
 	}
@@ -91,7 +91,7 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 		}
 	}
 	// Store the URL
-	s.data[alias] = UrlData{
+	s.data[alias] = URLData{
 		URL:       url,
 		UserID:    userID,
 		IsDeleted: false}
@@ -141,7 +141,7 @@ func Save(file string, alias string, url string, userID int) error {
 func Load(filename string) error {
 	// Создаем Data без указания логгера и конфигурации
 	d := &Data{
-		data: make(map[string]UrlData),
+		data: make(map[string]URLData),
 	}
 
 	consumer, err := NewConsumer(filename)
@@ -160,7 +160,7 @@ func Load(filename string) error {
 		}
 
 		// Загружаем URL данные в память
-		d.data[item.Alias] = UrlData{
+		d.data[item.Alias] = URLData{
 			URL:       item.URL,
 			IsDeleted: false,
 			UserID:    0,
