@@ -97,6 +97,12 @@ func (s *Data) Del(userID int, aliases []string) error {
 				Alias:     alias,
 				IsDeleted: true,
 			}
+			if s.cfg.FileDel != "" {
+				err := save(s.cfg.FileDel, s.cfg.FileDel, alias, "", userID, s.del[alias].IsDeleted)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -128,8 +134,8 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 		IsDeleted: false,
 	}
 
-	if s.cfg.FileStorage != "" {
-		err := save(s.cfg.FileStorage, alias, url, userID)
+	if s.cfg.FileStorage != "" && s.cfg.FileDel != "" {
+		err := save(s.cfg.FileStorage, s.cfg.FileDel, alias, url, userID, s.del[alias].IsDeleted)
 		if err != nil {
 			return alias, err
 		}
@@ -138,30 +144,62 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 }
 
 // save writes a URL record to the specified file.
-func save(file string, alias string, url string, userID int) error {
-	producer, err := NewProducer(file)
+func save(file, fileDel, alias, url string, userID int, isDeleted bool) error {
+	uuid := strconv.Itoa(userID)
+	if url != "" {
+		producer, err := NewProducer(file)
+		if err != nil {
+			return err
+		}
+		defer producer.Close()
+		event := NewFileStorage(uuid, alias, url)
+		if err = producer.WriteEvent(event); err != nil {
+			return err
+		}
+	}
+	producerDel, err := NewProducer(fileDel)
 	if err != nil {
 		return err
 	}
-	defer producer.Close()
-
-	uuid := strconv.Itoa(userID)
-	event := NewFileStorage(uuid, alias, url)
-
-	if err = producer.WriteEvent(event); err != nil {
+	defer producerDel.Close()
+	eventDel := NewIsDeleted(uuid, alias, isDeleted)
+	if err := producerDel.WriteEventDel(eventDel); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Load reads URL records from the specified file and loads them into memory.
-func Load(filename string, db *Data) error {
+func Load(filename, fileDel string, db *Data) error {
 	consumer, err := NewConsumer(filename)
 	if err != nil {
 		return err
 	}
 	defer consumer.Close()
 
+	consumerDel, err := NewConsumer(fileDel)
+	if err != nil {
+		return err
+	}
+	defer consumerDel.Close()
+
+	delMap := make(map[string]bool)
+
+	// Чтение файла удалений и заполнение карты
+	for {
+		itemDel, err := consumerDel.ReadEventDel()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		if itemDel.StatusDel {
+			delMap[itemDel.Alias] = true
+		}
+	}
+
+	// Чтение основного файла и загрузка данных в память
 	for {
 		item, err := consumer.ReadEvent()
 		if err != nil {
@@ -170,8 +208,15 @@ func Load(filename string, db *Data) error {
 			}
 			return err
 		}
+
+		// Если для alias существует запись с status_del равным true, пропускаем его
+		if _, exists := delMap[item.Alias]; exists {
+			continue
+		}
+
 		db.data[item.Alias] = item.URL
 	}
+
 	return nil
 }
 

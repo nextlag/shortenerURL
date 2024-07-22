@@ -23,6 +23,20 @@ func NewFileStorage(userID, alias, url string) *FileStorage {
 	}
 }
 
+type IsDeleted struct {
+	UserID    string `json:"uuid"`
+	Alias     string `json:"alias"`
+	StatusDel bool   `json:"status_del"`
+}
+
+func NewIsDeleted(userID, alias string, del bool) *IsDeleted {
+	return &IsDeleted{
+		UserID:    userID,
+		Alias:     alias,
+		StatusDel: del,
+	}
+}
+
 // Producer is responsible for writing URL records to a file.
 type Producer struct {
 	file    *os.File
@@ -45,6 +59,10 @@ func NewProducer(fileName string) (*Producer, error) {
 // WriteEvent writes a URL record to the file.
 func (p *Producer) WriteEvent(event *FileStorage) error {
 	return p.encoder.Encode(event)
+}
+
+func (p *Producer) WriteEventDel(event *IsDeleted) error {
+	return p.encoder.Encode((event))
 }
 
 // Close closes the Producer's file.
@@ -74,6 +92,15 @@ func NewConsumer(fileName string) (*Consumer, error) {
 // ReadEvent reads a URL record from the file.
 func (c *Consumer) ReadEvent() (*FileStorage, error) {
 	event := &FileStorage{}
+	if err := c.decoder.Decode(event); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
+// ReadEventDel reads a URL record from the file.
+func (c *Consumer) ReadEventDel() (*IsDeleted, error) {
+	event := &IsDeleted{}
 	if err := c.decoder.Decode(event); err != nil {
 		return nil, err
 	}

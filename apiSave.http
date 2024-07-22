@@ -69,7 +69,7 @@ Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3MjZ9.IEDmvHb
 DELETE http://localhost:8080/api/user/urls
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3MjZ9.IEDmvHbt4PcLvjtxrB5yzw4xXDCvQ_yk5lUtyqq2iJI
 
-["iVvO69oH"]
+["rj8iu"]
 
 ### GET stats
 GET http://localhost:8080/api/internal/stats
