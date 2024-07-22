@@ -3,7 +3,7 @@ POST http://localhost:8080
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.com
+https://yandex.ru
 
 
 ### GET ping
