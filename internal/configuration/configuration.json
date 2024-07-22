@@ -2,7 +2,6 @@
   "host": ":8191",
   "base_url": "http://localhost:8191",
   "file_storage": "file.json",
-  "file_del": "del.json",
   "dsn": "",
   "enable_https": false,
   "trusted_subnet": "10.0.0.1/24",

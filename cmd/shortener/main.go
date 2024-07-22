@@ -77,7 +77,7 @@ func main() {
 		db := usecase.NewData(log, cfg)
 		uc = usecase.New(db, log, cfg)
 		if cfg.FileStorage != "" {
-			err = usecase.Load(cfg.FileStorage, cfg.FileDel, db)
+			err = usecase.Load(cfg.FileStorage, db)
 			if err != nil {
 				log.Fatal("failed to load data from file", zap.Error(err))
 			}

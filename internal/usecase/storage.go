@@ -16,6 +16,8 @@ import (
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
+const fileDel = "del.json"
+
 type dataDel struct {
 	UserID    string
 	Alias     string
@@ -28,7 +30,7 @@ type Data struct {
 	del   map[string]*dataDel
 	log   *zap.Logger
 	cfg   *configuration.Config
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 // NewData creates a new instance of Data.
@@ -43,8 +45,8 @@ func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
 
 // Get retrieves a URL by its alias from the in-memory storage.
 func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 
 	url, ok := s.data[alias]
 	if !ok {
@@ -59,9 +61,9 @@ func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
 }
 
 // GetAll retrieves all URLs for a given user.
-func (s *Data) GetAll(_ context.Context, userID int, _ string) ([]byte, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 
 	userUrls := make(map[string]string)
 	for alias, urlData := range s.data {
@@ -97,11 +99,9 @@ func (s *Data) Del(userID int, aliases []string) error {
 				Alias:     alias,
 				IsDeleted: true,
 			}
-			if s.cfg.FileDel != "" {
-				err := save(s.cfg.FileDel, s.cfg.FileDel, alias, "", userID, s.del[alias].IsDeleted)
-				if err != nil {
-					return err
-				}
+			err := save(s.cfg.FileStorage, alias, "", userID, s.del[alias].IsDeleted)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -134,8 +134,8 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 		IsDeleted: false,
 	}
 
-	if s.cfg.FileStorage != "" && s.cfg.FileDel != "" {
-		err := save(s.cfg.FileStorage, s.cfg.FileDel, alias, url, userID, s.del[alias].IsDeleted)
+	if s.cfg.FileStorage != "" {
+		err := save(s.cfg.FileStorage, alias, url, userID, s.del[alias].IsDeleted)
 		if err != nil {
 			return alias, err
 		}
@@ -144,7 +144,7 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 }
 
 // save writes a URL record to the specified file.
-func save(file, fileDel, alias, url string, userID int, isDeleted bool) error {
+func save(file, alias, url string, userID int, isDeleted bool) error {
 	uuid := strconv.Itoa(userID)
 	if url != "" {
 		producer, err := NewProducer(file)
@@ -170,58 +170,85 @@ func save(file, fileDel, alias, url string, userID int, isDeleted bool) error {
 }
 
 // Load reads URL records from the specified file and loads them into memory.
-func Load(filename, fileDel string, db *Data) error {
-	consumer, err := NewConsumer(filename)
-	if err != nil {
-		return err
-	}
-	defer consumer.Close()
+func Load(filename string, db *Data) error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, 2)
 
-	consumerDel, err := NewConsumer(fileDel)
-	if err != nil {
-		return err
-	}
-	defer consumerDel.Close()
+	wg.Add(2)
 
-	delMap := make(map[string]bool)
-
-	// Чтение файла удалений и заполнение карты
-	for {
-		itemDel, err := consumerDel.ReadEventDel()
+	go func() {
+		defer wg.Done()
+		consumerDel, err := NewConsumer(fileDel)
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
+			errChan <- err
+			return
 		}
-		if itemDel.StatusDel {
-			delMap[itemDel.Alias] = true
-		}
-	}
+		defer consumerDel.Close()
 
-	// Чтение основного файла и загрузка данных в память
-	for {
-		item, err := consumer.ReadEvent()
+		delMap := make(map[string]bool)
+
+		for {
+			itemDel, err := consumerDel.ReadEventDel()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				errChan <- err
+				return
+			}
+			if itemDel.StatusDel {
+				delMap[itemDel.Alias] = true
+			}
+		}
+
+		db.mutex.Lock()
+		for alias := range delMap {
+			db.del[alias] = &dataDel{
+				IsDeleted: true,
+			}
+		}
+		db.mutex.Unlock()
+	}()
+
+	go func() {
+		defer wg.Done()
+		consumer, err := NewConsumer(filename)
 		if err != nil {
-			if err == io.EOF {
-				break // End of file reached
+			errChan <- err
+			return
+		}
+		defer consumer.Close()
+
+		for {
+			item, err := consumer.ReadEvent()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				errChan <- err
+				return
 			}
-			return err
-		}
 
-		// Если для alias существует запись с status_del равным true, пропускаем его
-		if _, exists := delMap[item.Alias]; exists {
-			continue
+			db.mutex.Lock()
+			if _, exists := db.del[item.Alias]; !exists {
+				db.data[item.Alias] = item.URL
+			}
+			db.mutex.Unlock()
 		}
+	}()
 
-		db.data[item.Alias] = item.URL
+	wg.Wait()
+	close(errChan)
+
+	if len(errChan) > 0 {
+		return <-errChan
 	}
 
 	return nil
 }
 
 // GetStats is not implemented in memory storage.
-func (s *Data) GetStats(ctx context.Context) ([]byte, error) {
+func (s *Data) GetStats(_ context.Context) ([]byte, error) {
 	readyStats, err := json.Marshal(stats{
 		URLs:  len(s.data),
 		Users: 0,

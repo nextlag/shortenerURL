@@ -23,12 +23,14 @@ func NewFileStorage(userID, alias, url string) *FileStorage {
 	}
 }
 
+// IsDeleted represents a deletion status of a URL record.
 type IsDeleted struct {
 	UserID    string `json:"uuid"`
 	Alias     string `json:"alias"`
 	StatusDel bool   `json:"status_del"`
 }
 
+// NewIsDeleted creates a new instance of IsDeleted.
 func NewIsDeleted(userID, alias string, del bool) *IsDeleted {
 	return &IsDeleted{
 		UserID:    userID,
@@ -61,8 +63,9 @@ func (p *Producer) WriteEvent(event *FileStorage) error {
 	return p.encoder.Encode(event)
 }
 
+// WriteEventDel writes a deletion status to the file.
 func (p *Producer) WriteEventDel(event *IsDeleted) error {
-	return p.encoder.Encode((event))
+	return p.encoder.Encode(event)
 }
 
 // Close closes the Producer's file.
@@ -98,7 +101,7 @@ func (c *Consumer) ReadEvent() (*FileStorage, error) {
 	return event, nil
 }
 
-// ReadEventDel reads a URL record from the file.
+// ReadEventDel reads a deletion status from the file.
 func (c *Consumer) ReadEventDel() (*IsDeleted, error) {
 	event := &IsDeleted{}
 	if err := c.decoder.Decode(event); err != nil {
