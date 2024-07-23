@@ -1,9 +1,12 @@
+### GET ping
+GET http://localhost:8080/ping
+
 ### POST save
 POST http://localhost:8080/
 Host: localhost:8080
 Content-Type: text/plain
 
-https://google.ro
+https://google.com
 
 
 ### POST apiSave
@@ -12,8 +15,8 @@ Host: localhost:8080
 Content-Type: application/json
 
 {
-  "url": "https://practicum.yandex.com/",
-  "alias": "123df23"
+  "url": "https://zen.coms/",
+  "alias": "1234sad"
 }
 
 ### Get
@@ -25,14 +28,14 @@ GET http://localhost:8080/2qEhT1TF
 POST http://localhost:8080/api/shorten
 Host: localhost:8080
 Content-Type: application/json
-Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0NjJ9.F-iI0VyMryldEuPDYSSC8xzLbr8pZ211D1gTvrPcVUg
+Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
 
 {
-  "url": "https://practicum.yandex.com/",
+  "url": "https://practicum.yandex.ru/",
   "alias": "123df23"
 }
 
 ### GET request with cookie passed through headers
 # @no-redirect
 GET http://localhost:8080/api/user/urls
-Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0NjJ9.F-iI0VyMryldEuPDYSSC8xzLbr8pZ211D1gTvrPcVUg
+Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
