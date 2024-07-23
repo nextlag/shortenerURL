@@ -14,12 +14,14 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"go.uber.org/zap"
 
+	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
+
 	"github.com/nextlag/shortenerURL/internal/entity"
-	"github.com/nextlag/shortenerURL/internal/utils/generatestring"
 )
 
 const (
-	CreateTable = `CREATE TABLE IF NOT EXISTS short_urls (
+	// createTable - creating a table
+	createTable = `CREATE TABLE IF NOT EXISTS short_urls (
     uuid INT,
     url VARCHAR NOT NULL,
     alias VARCHAR(255) NOT NULL,
@@ -28,25 +30,32 @@ const (
     PRIMARY KEY (uuid, alias),
     UNIQUE (uuid, url)
 );`
+	createTablesTimeout = time.Second * 5
 
-	Insert      = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
-	Get         = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
-	GetConflict = `SELECT alias FROM short_urls WHERE url = $1;`
+	// insert SQL query to insert a new short URL record into the short_urls table
+	insert = `INSERT INTO short_urls (uuid, url, alias, created_at, del) VALUES ($1, $2, $3, $4, false);`
+
+	// get SQL query to retrieve a short URL record by alias from the short_urls table
+	get = `SELECT uuid, url, alias, created_at, del FROM short_urls WHERE alias = $1;`
+
+	// getConflict SQL query to check for conflicts by retrieving alias for a given URL from the short_urls table
+	getConflict = `SELECT alias FROM short_urls WHERE url = $1;`
 )
 
-const createTablesTimeout = time.Second * 5
+// ErrConflict - data conflict in data base storage
+var ErrConflict = errors.New("data conflict in DBStorage")
 
-// NewDB - создает новый экземпляр DBStorage
+// NewDB - creates a new DBStorage instance
 func NewDB(cfg string, log *zap.Logger) (*UseCase, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), createTablesTimeout)
 	defer cancel()
-	// Создание подключения к базе данных с использованием контекста
+	// Creating a Database Connection Using Context.
 	DB, err := sql.Open("pgx", cfg)
 	if err != nil {
 		log.Error("error when opening a connection to the database", zap.Error(err))
 		return nil, fmt.Errorf("DB connection err=%w", err)
 	}
-	// Проверка подключения к базе данных с использованием контекста
+	// Testing database connection using context.
 	if err := DB.PingContext(ctx); err != nil {
 		log.Error("error when checking database connection", zap.Error(err))
 		return nil, fmt.Errorf("DB ping error: %w", err)
@@ -54,39 +63,38 @@ func NewDB(cfg string, log *zap.Logger) (*UseCase, error) {
 	storage := &UseCase{
 		DB: DB,
 	}
-	// Создание таблицы с использованием контекста
+	// create a table using context.
 	if err := storage.CreateTable(ctx); err != nil {
 		return nil, fmt.Errorf("create table error: %w", err)
 	}
 	return storage, nil
 }
 
-// Время ожидания пинга для проверки подключения к базе данных
+// pingTimeout to check database connection.
 const pingTimeout = time.Second * 3
 
-// Stop - закрывает соединение с базой данных
+// Stop - closes the connection to the database.
 func (uc *UseCase) Stop() error {
 	uc.DB.Close()
 	return nil
 }
 
-// Healthcheck - проверяет подключение к базе данных
+// Healthcheck - checks the connection to the database.
 func (uc *UseCase) Healthcheck() (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
 
 	if err := uc.DB.PingContext(ctx); err != nil {
-		// Обработка ошибки подключения, например, вывод в лог или возврат false
+		// Handling a connection error, for example logging or returning false.
 		uc.log.Error("Ошибка подключения к базе данных", zap.Error(err))
 		return false, err
 	}
-	// Подключение успешно
 	return true, nil
 }
 
-// CreateTable - создает таблицу в базе данных
+// createTable - creates a table in the database.
 func (uc *UseCase) CreateTable(ctx context.Context) error {
-	_, err := uc.DB.ExecContext(ctx, CreateTable)
+	_, err := uc.DB.ExecContext(ctx, createTable)
 	if err != nil {
 		return fmt.Errorf("exec create table query, err=%v", err)
 	}
@@ -94,14 +102,15 @@ func (uc *UseCase) CreateTable(ctx context.Context) error {
 	return nil
 }
 
-// Put - добавляет запись в базу данных
-func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error) {
-	alias := generatestring.NewRandomString(8)
+// Put - adds an entry to the database.
+func (uc *UseCase) Put(ctx context.Context, url string, alias string, uuid int) (string, error) {
+	if alias == "" {
+		alias = generatestring.NewRandomString(8)
+	}
 
-	// Проверяем, является ли строка JSON
 	var jsonData map[string]string
 	if err := json.Unmarshal([]byte(url), &jsonData); err == nil {
-		// Если декодирование прошло успешно, используем значение "url"
+		// If decoding was successful, use the value "url".
 		url = jsonData["url"]
 	}
 
@@ -112,16 +121,16 @@ func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error
 		CreatedAt: time.Now(),
 	}
 
-	_, err := uc.DB.ExecContext(ctx, Insert, shortURL.UUID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
+	_, err := uc.DB.ExecContext(ctx, insert, shortURL.UUID, shortURL.URL, shortURL.Alias, shortURL.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			// В случае конфликта выполняем дополнительный запрос для получения алиаса
+			// In case of a conflict, we perform an additional request to obtain the alias.
 			var existingAlias string
-			err := uc.DB.QueryRowContext(ctx, GetConflict, url).Scan(&existingAlias)
+			err = uc.DB.QueryRowContext(ctx, getConflict, url).Scan(&existingAlias)
 			if err != nil {
 				if err == sql.ErrNoRows {
-					// Обработка ситуации, когда не найдено совпадение по URL
+					// Handling the situation when a URL match is not found.
 					return alias, ErrConflict
 				}
 				return alias, fmt.Errorf("failed to query existing alias: %w", err)
@@ -133,29 +142,29 @@ func (uc *UseCase) Put(ctx context.Context, url string, uuid int) (string, error
 	return alias, nil
 }
 
-// Get - получает URL по алиасу
+// Get - gets a URL by alias.
 func (uc *UseCase) Get(ctx context.Context, alias string) (string, bool, error) {
 	var url entity.DBStorage
-	err := uc.DB.QueryRowContext(ctx, Get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
+	err := uc.DB.QueryRowContext(ctx, get, alias).Scan(&url.UUID, &url.URL, &url.Alias, &url.CreatedAt, &url.DeletedFlag)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// Это ожидаемая ошибка, когда нет строк, соответствующих запросу.
+			// This is an expected error when there are no rows matching the query.
 			return "", false, fmt.Errorf("no URL found for alias %s", alias)
 		}
-		// Обработка других ошибок базы данных
+		// Handling other database errors.
 		return "", false, err
 	}
 	return url.URL, url.DeletedFlag, nil
 }
 
-// GetAll - получает все URL конкретного пользователя
+// GetAll - Gets all URLs for a specific user.
 func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, error) {
 	var urls []entity.DBStorage
 	DB := bun.NewDB(uc.DB, pgdialect.New())
 
 	rows, err := DB.NewSelect().
 		TableExpr("short_urls").
-		Column("url", "alias").
+		Column("url", "alias", "del", "created_at").
 		Where("uuid = ?", id).
 		Rows(ctx)
 	if err != nil {
@@ -164,19 +173,19 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 	}
 	defer rows.Close()
 
-	if rows.Err() != nil {
-		uc.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
-		return nil, rows.Err()
-	}
-
 	for rows.Next() {
 		var url entity.DBStorage
-		if err := rows.Scan(&url.URL, &url.Alias); err != nil {
+		if err = rows.Scan(&url.URL, &url.Alias, &url.DeletedFlag, &url.CreatedAt); err != nil {
 			uc.log.Error("Error scanning data: ", zap.Error(err))
 			return nil, err
 		}
 		url.Alias = fmt.Sprintf("%s/%s", host, url.Alias)
 		urls = append(urls, url)
+	}
+
+	if rows.Err() != nil {
+		uc.log.Error("Error iterating over rows: ", zap.Error(rows.Err()))
+		return nil, rows.Err()
 	}
 
 	allURL, err := json.Marshal(urls)
@@ -188,58 +197,16 @@ func (uc *UseCase) GetAll(ctx context.Context, id int, host string) ([]byte, err
 	return allURL, nil
 }
 
-// Del удаляет URL для пользователей с определенным ID.
-func (uc *UseCase) Del(ctx context.Context, id int, aliases []string) error {
-	inputCh := delGenerator(ctx, aliases)
-	if err := uc.updateStatusDel(ctx, id, inputCh); err != nil {
-		return fmt.Errorf("failed to delete URLs: %w", err)
-	}
-	return nil
-}
-
-// Генератор канала для сбора alias'ов.
-func delGenerator(ctx context.Context, URLs []string) chan string {
-	URLCh := make(chan string)
-	go func() {
-		defer close(URLCh)
-		for _, data := range URLs {
-			select {
-			case <-ctx.Done():
-				return
-			case URLCh <- data:
-			}
-		}
-	}()
-	return URLCh
-}
-
-// updateStatusDel - выполняет пакетное обновление статуса удаления для заданных alias'ов и пользователя.
-func (uc *UseCase) updateStatusDel(ctx context.Context, id int, inputCh chan string) error {
-	var deleteURLs []string
-
-	// Канал для сигнализации об окончании работы каждой горутины.
-	aliasCollectionDoneCh := make(chan struct{})
-
-	// Запуск горутины для сбора alias'ов.
-	go func() {
-		defer close(aliasCollectionDoneCh)
-		for alias := range inputCh {
-			deleteURLs = append(deleteURLs, alias)
-		}
-	}()
-
-	// Ожидание окончания работы горутины по сбору alias'ов.
-	<-aliasCollectionDoneCh
-
+// Del removes URLs for users with a specific ID.
+func (uc *UseCase) Del(id int, aliases []string) error {
 	DB := bun.NewDB(uc.DB, pgdialect.New())
 
-	// Пакетное обновление.
 	_, err := DB.NewUpdate().
 		TableExpr("short_urls").
 		Set("del = ?", true).
-		Where("alias IN (?)", bun.In(deleteURLs)).
+		Where("alias IN (?)", bun.In(aliases)).
 		Where("uuid = ?", id).
-		Exec(ctx)
+		Exec(context.Background())
 
 	if err != nil {
 		uc.log.Error("Can't exec update request: ", zap.Error(err))

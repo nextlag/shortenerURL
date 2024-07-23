@@ -1,3 +1,5 @@
+// Package usecase provides use cases for managing short URLs,
+// including file-based storage for reading and writing URL records.
 package usecase
 
 import (
@@ -5,13 +7,14 @@ import (
 	"os"
 )
 
+// FileStorage represents the structure of a URL record for file storage.
 type FileStorage struct {
-	UUID  string `json:"uuid"`                        // UUID, генерация uuid
-	Alias string `json:"alias,omitempty"`             // Alias, пользовательский псевдоним для короткой ссылки (необязательный).
-	URL   string `json:"url" validate:"required,url"` // URL, который нужно сократить, должен быть валидным URL.
-
+	UUID  string `json:"uuid"`                        // UUID, a unique identifier
+	Alias string `json:"alias,omitempty"`             // Alias, a custom alias for the shortened URL (optional)
+	URL   string `json:"url" validate:"required,url"` // URL, the URL to be shortened, must be a valid URL
 }
 
+// NewFileStorage creates a new instance of FileStorage.
 func NewFileStorage(uuid, alias, url string) *FileStorage {
 	return &FileStorage{
 		UUID:  uuid,
@@ -20,11 +23,13 @@ func NewFileStorage(uuid, alias, url string) *FileStorage {
 	}
 }
 
+// Producer is responsible for writing URL records to a file.
 type Producer struct {
 	file    *os.File
 	encoder *json.Encoder
 }
 
+// NewProducer creates a new Producer for the given file name.
 func NewProducer(fileName string) (*Producer, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -37,19 +42,23 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
+// WriteEvent writes a URL record to the file.
 func (p *Producer) WriteEvent(event *FileStorage) error {
 	return p.encoder.Encode(event)
 }
 
+// Close closes the Producer's file.
 func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
+// Consumer is responsible for reading URL records from a file.
 type Consumer struct {
 	file    *os.File
 	decoder *json.Decoder
 }
 
+// NewConsumer creates a new Consumer for the given file name.
 func NewConsumer(fileName string) (*Consumer, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -62,14 +71,16 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
+// ReadEvent reads a URL record from the file.
 func (c *Consumer) ReadEvent() (*FileStorage, error) {
 	event := &FileStorage{}
-	if err := c.decoder.Decode(&event); err != nil {
+	if err := c.decoder.Decode(event); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
+// Close closes the Consumer's file.
 func (c *Consumer) Close() error {
 	return c.file.Close()
 }

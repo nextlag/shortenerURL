@@ -35,17 +35,17 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Del mocks base method.
-func (m *MockRepository) Del(arg0 context.Context, arg1 int, arg2 []string) error {
+func (m *MockRepository) Del(arg0 int, arg1 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Del", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Del", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Del indicates an expected call of Del.
-func (mr *MockRepositoryMockRecorder) Del(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Del(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockRepository)(nil).Del), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockRepository)(nil).Del), arg0, arg1)
 }
 
 // Get mocks base method.
@@ -95,16 +95,16 @@ func (mr *MockRepositoryMockRecorder) Healthcheck() *gomock.Call {
 }
 
 // Put mocks base method.
-func (m *MockRepository) Put(arg0 context.Context, arg1 string, arg2 int) (string, error) {
+func (m *MockRepository) Put(arg0 context.Context, arg1, arg2 string, arg3 int) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Put", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockRepositoryMockRecorder) Put(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Put(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockRepository)(nil).Put), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockRepository)(nil).Put), arg0, arg1, arg2, arg3)
 }

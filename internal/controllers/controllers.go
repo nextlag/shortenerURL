@@ -1,3 +1,4 @@
+// Package controllers provides the handlers and routing for the URL shortening service.
 package controllers
 
 import (
@@ -14,33 +15,38 @@ import (
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
 
+// UseCase defines the interface for the application's use case layer.
+//
 //go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/controllers UseCase
 type UseCase interface {
 	DoGet(ctx context.Context, alias string) (string, bool, error)
 	DoGetAll(ctx context.Context, userID int, url string) ([]byte, error)
-	DoPut(ctx context.Context, url string, uuid int) (string, error)
-	DoDel(ctx context.Context, id int, aliases []string) error
+	DoPut(ctx context.Context, url string, alias string, uuid int) (string, error)
+	DoDel(id int, aliases []string)
 	DoHealthcheck() (bool, error)
 }
 
+// Controller represents the application's HTTP controller.
 type Controller struct {
 	uc  UseCase
 	log *zap.Logger
 	cfg config.HTTPServer
 }
 
+// New creates a new Controller.
 func New(uc UseCase, log *zap.Logger, cfg config.HTTPServer) *Controller {
 	return &Controller{uc: uc, log: log, cfg: cfg}
 }
 
-func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
+// Controller sets up the application's HTTP routing and middleware.
+func (c *Controller) Controller(handler *chi.Mux) *chi.Mux {
 	handler.Use(middleware.RequestID)
 	handler.Use(mwLogger.New(c.log, c.cfg))
 	handler.Use(middleware.Logger)
 	handler.Use(gzip.New())
 	handler.Use(middleware.Recoverer)
 
-	// Настройка маршрутов с использованием middleware
+	// Set up routes with middleware
 	handler.Group(func(r chi.Router) {
 		r.Get("/{id}", c.Get)
 		r.Get("/api/user/urls", c.GetAll)
@@ -51,7 +57,7 @@ func (c *Controller) Router(handler *chi.Mux) *chi.Mux {
 		r.Delete("/api/user/urls", c.Del)
 	})
 
-	// Добавление маршрутов pprof
+	// Add pprof routes
 	handler.Route("/debug/pprof", func(r chi.Router) {
 		r.Handle("/", http.HandlerFunc(pprof.Index))
 		r.Handle("/cmdline", http.HandlerFunc(pprof.Cmdline))

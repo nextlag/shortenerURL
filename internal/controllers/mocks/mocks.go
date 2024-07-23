@@ -35,17 +35,15 @@ func (m *MockUseCase) EXPECT() *MockUseCaseMockRecorder {
 }
 
 // DoDel mocks base method.
-func (m *MockUseCase) DoDel(arg0 context.Context, arg1 int, arg2 []string) error {
+func (m *MockUseCase) DoDel(arg0 int, arg1 []string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoDel", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "DoDel", arg0, arg1)
 }
 
 // DoDel indicates an expected call of DoDel.
-func (mr *MockUseCaseMockRecorder) DoDel(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) DoDel(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoDel", reflect.TypeOf((*MockUseCase)(nil).DoDel), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoDel", reflect.TypeOf((*MockUseCase)(nil).DoDel), arg0, arg1)
 }
 
 // DoGet mocks base method.
@@ -95,16 +93,16 @@ func (mr *MockUseCaseMockRecorder) DoHealthcheck() *gomock.Call {
 }
 
 // DoPut mocks base method.
-func (m *MockUseCase) DoPut(arg0 context.Context, arg1 string, arg2 int) (string, error) {
+func (m *MockUseCase) DoPut(arg0 context.Context, arg1, arg2 string, arg3 int) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoPut", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DoPut", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DoPut indicates an expected call of DoPut.
-func (mr *MockUseCaseMockRecorder) DoPut(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) DoPut(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoPut", reflect.TypeOf((*MockUseCase)(nil).DoPut), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoPut", reflect.TypeOf((*MockUseCase)(nil).DoPut), arg0, arg1, arg2, arg3)
 }

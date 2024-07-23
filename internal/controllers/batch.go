@@ -1,3 +1,4 @@
+// Package controllers provides the handlers for managing URL shortening operations.
 package controllers
 
 import (
@@ -13,18 +14,21 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase/auth"
 )
 
+// BatchShortenRequest represents a request structure for shortening multiple URLs.
 type BatchShortenRequest []struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
 }
 
-// BatchShortenResponse представляет структуру ответа для сокращения нескольких URL.
+// BatchShortenResponse represents a response structure for shortening multiple URLs.
 type BatchShortenResponse []struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
 
-// Batch - обрабатывает HTTP-запрос для сокращения нескольких URL.
+// Batch handles the HTTP request for shortening multiple URLs.
+// It decodes the JSON request, processes each URL, and returns the shortened URLs in the response.
+// If an error occurs during processing, it logs the error and responds with an appropriate message.
 func (c *Controller) Batch(w http.ResponseWriter, r *http.Request) {
 	var req BatchShortenRequest
 	var resp BatchShortenResponse
@@ -49,7 +53,7 @@ func (c *Controller) Batch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, url := range req {
-		alias, err := c.uc.DoPut(r.Context(), url.OriginalURL, uuid)
+		alias, err := c.uc.DoPut(r.Context(), url.OriginalURL, "", uuid)
 		if err != nil {
 			c.log.Error("URL", zap.Error(err))
 			return

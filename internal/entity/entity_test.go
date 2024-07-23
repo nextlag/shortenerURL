@@ -11,17 +11,15 @@ func TestDBStorage(t *testing.T) {
 		UUID:        1,
 		URL:         "https://example.com",
 		Alias:       "example",
-		DeletedFlag: false,
+		DeletedFlag: true,
 		CreatedAt:   time.Now(),
 	}
 
-	// Преобразуем структуру в JSON
 	jsonData, err := json.Marshal(original)
 	if err != nil {
 		t.Errorf("Error marshalling JSON: %v", err)
 	}
 
-	// Демаршализуем JSON обратно в структуру
 	var unmarshalled DBStorage
 	err = json.Unmarshal(jsonData, &unmarshalled)
 	if err != nil {
