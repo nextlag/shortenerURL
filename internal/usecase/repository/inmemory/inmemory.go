@@ -22,14 +22,13 @@ const fileDel = "del.json"
 
 type dataDel struct {
 	UserID    string
-	Alias     string
+	URL       string
 	IsDeleted bool
 }
 
 // Data represents the in-memory data storage structure.
 type Data struct {
-	data  map[string]string
-	del   map[string]*dataDel
+	data  map[string]*dataDel
 	log   *zap.Logger
 	cfg   *configuration.Config
 	mutex sync.RWMutex
@@ -38,8 +37,7 @@ type Data struct {
 // New creates a new instance of Data.
 func New(cfg *configuration.Config, log *zap.Logger) (*Data, error) {
 	return &Data{
-		data: make(map[string]string),
-		del:  make(map[string]*dataDel),
+		data: make(map[string]*dataDel),
 		log:  log,
 		cfg:  cfg,
 	}, nil
@@ -50,19 +48,14 @@ func (s *Data) Get(_ context.Context, alias string) (*entity.URL, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	url, ok := s.data[alias]
-	if !ok {
+	delInfo, ok := s.data[alias]
+	if !ok || delInfo.IsDeleted {
 		return nil, fmt.Errorf("key '%s' not found", alias)
 	}
 
-	if delInfo, exists := s.del[alias]; exists && delInfo.IsDeleted {
-		return nil, fmt.Errorf("key '%s' is deleted", alias)
-	}
-
-	// Since we don't store full entity.URL details in memory, create a placeholder
 	return &entity.URL{
 		Alias: alias,
-		URL:   url,
+		URL:   delInfo.URL,
 	}, nil
 }
 
@@ -72,11 +65,11 @@ func (s *Data) GetAll(_ context.Context, _ int, host string) ([]*entity.URL, err
 	defer s.mutex.RUnlock()
 
 	var userUrls []*entity.URL
-	for alias, url := range s.data {
-		if delInfo, exists := s.del[alias]; !exists || !delInfo.IsDeleted {
+	for alias, delInfo := range s.data {
+		if !delInfo.IsDeleted {
 			userUrls = append(userUrls, &entity.URL{
 				Alias: fmt.Sprintf("%s/%s", host, alias),
-				URL:   url,
+				URL:   delInfo.URL,
 			})
 		}
 	}
@@ -120,13 +113,9 @@ func (s *Data) Del(_ context.Context, userID int, aliases []string) error {
 	defer s.mutex.Unlock()
 
 	for _, alias := range aliases {
-		if _, exists := s.data[alias]; exists {
-			s.del[alias] = &dataDel{
-				UserID:    strconv.Itoa(userID),
-				Alias:     alias,
-				IsDeleted: true,
-			}
-			err := save(s.cfg.FileStorage, alias, "", userID, s.del[alias].IsDeleted)
+		if delInfo, exists := s.data[alias]; exists {
+			delInfo.IsDeleted = true
+			err := save(s.cfg.FileStorage, alias, delInfo.URL, userID, delInfo.IsDeleted)
 			if err != nil {
 				return err
 			}
@@ -148,21 +137,19 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 	}
 
 	for k, v := range s.data {
-		if v == url {
+		if v.URL == url {
 			return k, nil
 		}
 	}
 
-	s.data[alias] = url
-
-	s.del[alias] = &dataDel{
+	s.data[alias] = &dataDel{
 		UserID:    strconv.Itoa(userID),
-		Alias:     alias,
+		URL:       url,
 		IsDeleted: false,
 	}
 
 	if s.cfg.FileStorage != "" {
-		err := save(s.cfg.FileStorage, alias, url, userID, s.del[alias].IsDeleted)
+		err := save(s.cfg.FileStorage, alias, url, userID, s.data[alias].IsDeleted)
 		if err != nil {
 			return alias, err
 		}
@@ -230,8 +217,10 @@ func Load(filename string, db *Data) error {
 
 		db.mutex.Lock()
 		for alias := range delMap {
-			db.del[alias] = &dataDel{
-				IsDeleted: true,
+			if delInfo, exists := db.data[alias]; exists {
+				delInfo.IsDeleted = true
+			} else {
+				db.data[alias] = &dataDel{IsDeleted: true}
 			}
 		}
 		db.mutex.Unlock()
@@ -257,8 +246,11 @@ func Load(filename string, db *Data) error {
 			}
 
 			db.mutex.Lock()
-			if _, exists := db.del[item.Alias]; !exists {
-				db.data[item.Alias] = item.URL
+			if delInfo, exists := db.data[item.Alias]; !exists || !delInfo.IsDeleted {
+				db.data[item.Alias] = &dataDel{
+					UserID: item.UUID,
+					URL:    item.URL,
+				}
 			}
 			db.mutex.Unlock()
 		}
@@ -279,16 +271,16 @@ func (s *Data) GetStats(_ context.Context) ([]byte, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	urlCount := len(s.data)
-	userCount := 0
+	urlCount := 0
 	userMap := make(map[string]struct{})
 
-	for _, delInfo := range s.del {
+	for _, delInfo := range s.data {
 		if !delInfo.IsDeleted {
+			urlCount++
 			userMap[delInfo.UserID] = struct{}{}
 		}
 	}
-	userCount = len(userMap)
+	userCount := len(userMap)
 
 	stats := models.Stats{
 		URLs:  urlCount,

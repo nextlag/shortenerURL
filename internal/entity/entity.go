@@ -3,7 +3,10 @@
 // storage representations and their associated metadata.
 package entity
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // URL represents the storage structure for user data in the database.
 // It includes fields for the user's unique identifier (UUID), the original URL,
@@ -15,4 +18,23 @@ type URL struct {
 	Alias     string    `json:"short_url,omitempty"`    // Alias is the shortened URL alias
 	IsDeleted bool      `json:"is_deleted,omitempty"`   // IsDeleted indicates if the record is marked as deleted
 	CreatedAt time.Time `json:"created_at,omitempty"`   // CreatedAt is the timestamp when the record was created
+}
+
+// MarshalJSON customizes the JSON output of URL to omit CreatedAt when zero.
+func (u *URL) MarshalJSON() ([]byte, error) {
+	type Alias URL
+	if u.CreatedAt.IsZero() {
+		return json.Marshal(&struct {
+			CreatedAt interface{} `json:"created_at,omitempty"`
+			*Alias
+		}{
+			CreatedAt: nil,
+			Alias:     (*Alias)(u),
+		})
+	}
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(u),
+	})
 }
