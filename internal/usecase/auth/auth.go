@@ -79,7 +79,8 @@ func CheckCookie(w http.ResponseWriter, r *http.Request, log *zap.Logger) (int, 
 			return 0, fmt.Errorf("UserID cookie is missing")
 		}
 
-		jwt, err := buildJWTString()
+		var jwt string
+		jwt, err = buildJWTString()
 		if err != nil {
 			log.Error("error making cookie", zap.Error(err))
 			return 0, err
