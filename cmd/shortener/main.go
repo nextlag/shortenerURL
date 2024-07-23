@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	stdLog "log"
@@ -8,10 +9,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/config"
@@ -20,12 +21,9 @@ import (
 	"github.com/nextlag/shortenerURL/internal/usecase"
 )
 
-// Время ожидания создания таблицы
-
 func setupServer(router http.Handler) *http.Server {
-	// Создание HTTP-сервера с указанным адресом и обработчиком маршрутов
 	return &http.Server{
-		Addr:    config.Cfg.Host, // Получение адреса из настроек
+		Addr:    config.Cfg.Host,
 		Handler: router,
 	}
 }
@@ -41,12 +39,11 @@ func main() {
 		uc  *usecase.UseCase
 	)
 	log.Info("initialized flags", zap.String("-a", cfg.Host), zap.String("-b", cfg.BaseURL), zap.String("-f", cfg.FileStorage), zap.String("-d", cfg.DSN))
-	// Создание хранилища данных в памяти
 	if cfg.FileStorage != "" {
 		err := usecase.Load(cfg.FileStorage)
 		if err != nil {
 			log.Error("failed to load data from file", zap.Error(err))
-			os.Exit(1) // Завершаем программу при ошибке загрузки данных
+			os.Exit(1)
 		}
 	}
 
@@ -66,7 +63,6 @@ func main() {
 		uc = usecase.New(db, log, cfg)
 	}
 
-	// Создание и настройка маршрутов и HTTP-сервера
 	controller := controllers.New(uc, log, cfg)
 
 	r := chi.NewRouter()
@@ -78,19 +74,22 @@ func main() {
 		zap.String("address", cfg.Host),
 		zap.String("url", cfg.BaseURL))
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// Запуск HTTP-сервера в горутине
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			// Если сервер не стартовал, логируем ошибку
-			log.Error("failed to start server", zap.String("error", err.Error()))
-			done <- os.Interrupt
+			log.Error("failed to start server", zap.Error(err))
+			sigs <- os.Interrupt
 		}
 	}()
 	log.Info("server started")
 
-	<-done // Ожидание сигнала завершения
+	<-sigs
+	ctxTime, cancelShutdown := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancelShutdown()
+	if err := srv.Shutdown(ctxTime); err != nil {
+		log.Error("server shutdown error", zap.Error(err))
+	}
 	log.Info("server stopped")
 }

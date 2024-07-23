@@ -14,7 +14,7 @@ import (
 	"github.com/nextlag/shortenerURL/internal/config"
 )
 
-func main() {
+func Setup() {
 	if err := config.MakeConfig(); err != nil {
 		log.Fatal(err)
 	}
@@ -60,4 +60,8 @@ func main() {
 	}
 	// и печатаем его
 	fmt.Println(string(body))
+}
+
+func main() {
+	Setup()
 }
