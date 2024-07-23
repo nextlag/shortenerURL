@@ -20,6 +20,8 @@ import (
 
 	grpcsrv "github.com/nextlag/shortenerURL/internal/controllers/grpc"
 	http2 "github.com/nextlag/shortenerURL/internal/controllers/http"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository/psql"
 	pb "github.com/nextlag/shortenerURL/proto"
 
 	"github.com/nextlag/shortenerURL/internal/cert"
@@ -48,41 +50,14 @@ func main() {
 		buildDate,
 		buildCommit,
 	)
-	log.Debug(
-		"initialized flags",
-		zap.String("-a", cfg.Host),
-		zap.String("-b", cfg.BaseURL),
-		zap.String("-f", cfg.FileStorage),
-		zap.String("-d", cfg.DSN),
-		zap.String("-c", cfg.ConfigPath),
-		zap.Bool("-s", cfg.EnableHTTPS),
-		zap.String("-t", cfg.TrustedSubnet),
-		zap.Bool("-g", cfg.EnableGRPC),
-		zap.String("-r", cfg.RPCPort),
-	)
 
-	var uc *usecase.UseCase
-	if cfg.DSN != "" {
-		db, err := usecase.NewDB(cfg.DSN, log)
-		if err != nil {
-			log.Fatal("failed to connect in database", zap.Error(err))
-		}
-		defer func() {
-			if err = db.Stop(); err != nil {
-				log.Error("error stopping DB", zap.Error(err))
-			}
-		}()
-		uc = usecase.New(db, log, cfg)
-	} else {
-		db := usecase.NewData(log, cfg)
-		uc = usecase.New(db, log, cfg)
-		if cfg.FileStorage != "" {
-			err = usecase.Load(cfg.FileStorage, db)
-			if err != nil {
-				log.Fatal("failed to load data from file", zap.Error(err))
-			}
-		}
+	log.Debug("init config", zap.String("-f", cfg.FileStorage), zap.String("-d", cfg.DSN))
+
+	db, err := repository.New(cfg, log)
+	if err != nil {
+		log.Fatal("failed to init repository")
 	}
+	uc := usecase.New(db)
 
 	wg := sync.WaitGroup{}
 	controller := http2.New(uc, &wg, cfg, log)
@@ -140,8 +115,8 @@ func main() {
 			s := grpc.NewServer()
 
 			// Создаём экземпляр базы данных отдельно для gRPC сервера
-			db, err := usecase.NewDB(cfg.DSN, log)
-			uc = usecase.New(db, log, cfg)
+			db, err := psql.New(cfg, log)
+			uc = usecase.New(db)
 			if err != nil {
 				log.Fatal("failed to connect in database for gRPC server", zap.Error(err))
 			}

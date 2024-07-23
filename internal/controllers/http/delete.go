@@ -28,16 +28,14 @@ func (c *Controller) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Запуск удаления URL в горутине
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
 		for _, alias := range aliases {
-			c.uc.DoDel(uuid, []string{alias})
+			c.uc.DoDel(r.Context(), uuid, []string{alias})
 		}
 	}()
 
-	// ответ клиенту, какие алиасы отправлены на удаление
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
 		"aliases sent for deletion": aliases,

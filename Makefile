@@ -20,8 +20,11 @@ test:
 	docker-compose -f ./Docker-Compose.yaml down --volumes
 lint:
 	go run ./cmd/staticlint ./...
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative   --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/shortener.proto
 get:
 	grpcurl -plaintext -d '{"shortenLink": "0CF75HmO"}' localhost:3200 proto.Links/Get
 
 
-.PHONY: shorten db_create run runF build docker_run test lint get getAll
+
+.PHONY: shorten db_create run runF build docker_run test lint get proto

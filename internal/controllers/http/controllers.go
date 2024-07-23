@@ -1,4 +1,3 @@
-// Package controllers provides the handlers and routing for the URL shortening service.
 package http
 
 import (
@@ -12,18 +11,19 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
+	"github.com/nextlag/shortenerURL/internal/entity"
 	"github.com/nextlag/shortenerURL/internal/middleware/gzip"
 	mwLogger "github.com/nextlag/shortenerURL/internal/middleware/logger"
 )
 
 // UseCase defines the interface for the application's use case layer.
 //
-//go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/controllers UseCase
+//go:generate mockgen -destination=mocks/mocks.go -package=mocks github.com/nextlag/shortenerURL/internal/controllers/http UseCase
 type UseCase interface {
-	DoGet(ctx context.Context, alias string) (string, bool, error)
-	DoGetAll(ctx context.Context, userID int, url string) ([]byte, error)
+	DoGet(ctx context.Context, alias string) (*entity.URL, error)
+	DoGetAll(ctx context.Context, userID int, url string) ([]*entity.URL, error)
 	DoPut(ctx context.Context, url string, alias string, uuid int) (string, error)
-	DoDel(id int, aliases []string)
+	DoDel(ctx context.Context, id int, aliases []string)
 	DoHealthcheck() (bool, error)
 	DoGetStats(ctx context.Context) ([]byte, error)
 }

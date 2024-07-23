@@ -1,4 +1,4 @@
-package usecase_test
+package inmemory_test
 
 import (
 	"encoding/json"
@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nextlag/shortenerURL/internal/usecase"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository/inmemory"
 )
 
 func TestNewFileStorage(t *testing.T) {
-	fs := usecase.NewFileStorage("243", "alias", "http://example.com")
+	fs := inmemory.NewFileStorage("243", "alias", "http://example.com")
 
 	assert.Equal(t, "243", fs.UUID)
 	assert.Equal(t, "alias", fs.Alias)
@@ -22,11 +22,11 @@ func TestProducer_WriteEvent(t *testing.T) {
 	fileName := "test_file_storage.json"
 	defer os.Remove(fileName) // Clean up the file after the test
 
-	producer, err := usecase.NewProducer(fileName)
+	producer, err := inmemory.NewProducer(fileName)
 	assert.NoError(t, err)
 	defer producer.Close()
 
-	event := &usecase.FileStorage{
+	event := &inmemory.FileStorage{
 		UUID:  "243",
 		Alias: "alias",
 		URL:   "http://example.com",
@@ -40,7 +40,7 @@ func TestProducer_WriteEvent(t *testing.T) {
 	assert.NoError(t, err)
 	defer file.Close()
 
-	consumer, err := usecase.NewConsumer(fileName)
+	consumer, err := inmemory.NewConsumer(fileName)
 	assert.NoError(t, err)
 	defer consumer.Close()
 
@@ -54,7 +54,7 @@ func TestConsumer_ReadEvent(t *testing.T) {
 	defer os.Remove(fileName) // Clean up the file after the test
 
 	// Write a test event to the file
-	event := &usecase.FileStorage{
+	event := &inmemory.FileStorage{
 		UUID:  "12345",
 		Alias: "alias",
 		URL:   "http://example.com",
@@ -69,7 +69,7 @@ func TestConsumer_ReadEvent(t *testing.T) {
 	file.Close()
 
 	// Test reading the event
-	consumer, err := usecase.NewConsumer(fileName)
+	consumer, err := inmemory.NewConsumer(fileName)
 	assert.NoError(t, err)
 	defer consumer.Close()
 
@@ -82,7 +82,7 @@ func TestProducer_Close(t *testing.T) {
 	fileName := "test_file_storage.json"
 	defer os.Remove(fileName) // Clean up the file after the test
 
-	producer, err := usecase.NewProducer(fileName)
+	producer, err := inmemory.NewProducer(fileName)
 	assert.NoError(t, err)
 
 	err = producer.Close()
@@ -93,7 +93,7 @@ func TestConsumer_Close(t *testing.T) {
 	fileName := "test_file_storage.json"
 	defer os.Remove(fileName) // Clean up the file after the test
 
-	consumer, err := usecase.NewConsumer(fileName)
+	consumer, err := inmemory.NewConsumer(fileName)
 	assert.NoError(t, err)
 
 	err = consumer.Close()

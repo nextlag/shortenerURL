@@ -28,6 +28,7 @@ type ServerHTTP struct {
 	BaseURL       string `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStorage   string `json:"file_storage,omitempty" env:"FILE_STORAGE_PATH" envDefault:""`
 	DSN           string `json:"dsn,omitempty" env:"DATABASE_DSN" envDefault:""`
+	StorageType   string `json:"storage_type" env:"STORAGE_TYPE"`
 	EnableHTTPS   bool   `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
 	Cert          string `json:"cert" env:"CERT" envDefault:"cert.pem"`
 	Key           string `json:"key" env:"KEY" envDefault:"key.pem"`

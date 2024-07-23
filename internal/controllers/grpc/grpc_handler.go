@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/jackc/pgerrcode"
@@ -18,7 +19,7 @@ import (
 	pb "github.com/nextlag/shortenerURL/proto"
 )
 
-// LinksServer является интерфейсом объединяющим методы grpc.
+// LinksServer is a gRPC server that implements the Links service.
 type LinksServer struct {
 	pb.UnimplementedLinksServer
 	DB *usecase.UseCase
@@ -26,24 +27,25 @@ type LinksServer struct {
 
 var pgErr *pgconn.PgError
 
-// Get ищет ссылку по короткому адресу и отдает длинную ссылку.
+// Get retrieves a long link by its short link.
 func (s *LinksServer) Get(ctx context.Context, in *pb.ShortenLink) (*pb.ShortenLinkResponse, error) {
 	var response pb.ShortenLinkResponse
-	longLink, deleteStatus, err := s.DB.DoGet(ctx, in.ShortenLink)
+	url, err := s.DB.DoGet(ctx, in.ShortenLink)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Error finding link")
 	}
-	if deleteStatus {
-		return &response, nil
+
+	if url == nil {
+		return nil, status.Errorf(codes.NotFound, "Link not found")
 	}
 
-	response.LongLink = longLink
-	response.DeleteStatus = deleteStatus
+	response.LongLink = url.URL
+	response.DeleteStatus = url.IsDeleted
 
 	return &response, nil
 }
 
-// Save записывает длинную ссылку в хранилище и отдает короткую ссылку и ошибку.
+// Save stores a long link and returns the corresponding short link.
 func (s *LinksServer) Save(ctx context.Context, in *pb.LongLink) (*pb.LongLinkResponse, error) {
 	var response pb.LongLinkResponse
 	userID, err := getUserID(ctx)
@@ -51,41 +53,47 @@ func (s *LinksServer) Save(ctx context.Context, in *pb.LongLink) (*pb.LongLinkRe
 		return nil, err
 	}
 
-	returnedShortLink, err := s.DB.DoPut(ctx, in.LongLink, "", userID)
-	response.ShortenLink = returnedShortLink
+	shortLink, err := s.DB.DoPut(ctx, in.LongLink, "", userID)
 	if err != nil {
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			return &response, nil
 		}
-		return &response, status.Errorf(codes.Internal, "error posting link")
+		return nil, status.Errorf(codes.Internal, "Error saving link")
 	}
 
+	response.ShortenLink = shortLink
 	return &response, nil
 }
 
-// GetAll получает ID клиента из куки и возвращает все ссылки отправленные им.
+// GetAll retrieves all links for a user.
 func (s *LinksServer) GetAll(ctx context.Context, in *pb.Empty) (*pb.ListShortenLinks, error) {
 	cfg, err := configuration.Load()
 	if err != nil {
 		return nil, err
 	}
+
 	userID, err := getUserID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var response pb.ListShortenLinks
-
-	userURLs, err := s.DB.DoGetAll(ctx, userID, cfg.BaseURL)
+	urls, err := s.DB.DoGetAll(ctx, userID, cfg.BaseURL)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting links")
+		return nil, status.Errorf(codes.Internal, "Error getting links")
 	}
 
-	response.UserLinks = string(userURLs)
+	for _, url := range urls {
+		response.UserLinks = append(response.UserLinks, &pb.UserLink{
+			LongLink:  url.URL,
+			ShortLink: url.Alias,
+		})
+	}
+
 	return &response, nil
 }
 
-// Del удаляет ссылки, отправленные клиентом при том условии, что он их загрузил.
+// Del deletes links for a user with correlation_id.
 func (s *LinksServer) Del(ctx context.Context, in *pb.ListShortenLinksToDelete) (*pb.Empty, error) {
 	userID, err := getUserID(ctx)
 	if err != nil {
@@ -96,28 +104,59 @@ func (s *LinksServer) Del(ctx context.Context, in *pb.ListShortenLinksToDelete) 
 
 	go func() {
 		for _, alias := range in.UserLinks {
-			s.DB.DoDel(userID, []string{alias})
+			s.DB.DoDel(ctx, userID, []string{alias})
 		}
 	}()
 
 	return &result, nil
 }
 
+// BatchShorten processes multiple URLs in a batch and returns their shortened versions.
+func (s *LinksServer) BatchShorten(ctx context.Context, in *pb.BatchShortenRequest) (*pb.BatchShortenResponse, error) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var response pb.BatchShortenResponse
+
+	for _, item := range in.Items {
+		if item.OriginalUrl == "" {
+			continue
+		}
+
+		alias, err := s.DB.DoPut(ctx, item.OriginalUrl, "", userID)
+		if err != nil {
+			if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+				// Skip URLs that fail due to integrity constraints
+				continue
+			}
+			return nil, status.Errorf(codes.Internal, "Error shortening URL")
+		}
+
+		response.Items = append(response.Items, &pb.BatchShortenResponseItem{
+			CorrelationId: item.CorrelationId,
+			ShortUrl:      fmt.Sprintf("%s/%s", "http://localhost:3200", alias),
+		})
+	}
+
+	return &response, nil
+}
+
 func getUserID(ctx context.Context) (int, error) {
-	var id int
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return id, status.Errorf(codes.DataLoss, "no metadata")
+		return 0, status.Errorf(codes.DataLoss, "No metadata")
 	}
 
 	values := md.Get("userID")
 	if len(values) == 0 {
-		return id, status.Errorf(codes.Unauthenticated, "invalid access token")
+		return 0, status.Errorf(codes.Unauthenticated, "No userID in metadata")
 	}
 
 	id, err := strconv.Atoi(values[0])
 	if err != nil {
-		return id, status.Errorf(codes.Internal, "can't convert to int")
+		return 0, status.Errorf(codes.Internal, "Invalid userID format")
 	}
 
 	return id, nil

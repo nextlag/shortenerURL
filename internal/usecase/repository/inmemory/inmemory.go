@@ -1,4 +1,4 @@
-package usecase
+package inmemory
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
+	"github.com/nextlag/shortenerURL/internal/entity"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository/models"
 	"github.com/nextlag/shortenerURL/pkg/tools/generatestring"
 )
 
@@ -33,62 +35,87 @@ type Data struct {
 	mutex sync.RWMutex
 }
 
-// NewData creates a new instance of Data.
-func NewData(log *zap.Logger, cfg *configuration.Config) *Data {
+// New creates a new instance of Data.
+func New(cfg *configuration.Config, log *zap.Logger) (*Data, error) {
 	return &Data{
 		data: make(map[string]string),
 		del:  make(map[string]*dataDel),
 		log:  log,
 		cfg:  cfg,
-	}
+	}, nil
 }
 
 // Get retrieves a URL by its alias from the in-memory storage.
-func (s *Data) Get(_ context.Context, alias string) (string, bool, error) {
+func (s *Data) Get(_ context.Context, alias string) (*entity.URL, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
 	url, ok := s.data[alias]
 	if !ok {
-		return "", false, fmt.Errorf("key '%s' not found", alias)
+		return nil, fmt.Errorf("key '%s' not found", alias)
 	}
 
 	if delInfo, exists := s.del[alias]; exists && delInfo.IsDeleted {
-		return "", false, fmt.Errorf("key '%s' is deleted", alias)
+		return nil, fmt.Errorf("key '%s' is deleted", alias)
 	}
 
-	return url, false, nil
+	// Since we don't store full entity.URL details in memory, create a placeholder
+	return &entity.URL{
+		Alias: alias,
+		URL:   url,
+	}, nil
 }
 
 // GetAll retrieves all URLs for a given user.
-func (s *Data) GetAll(_ context.Context, _ int, _ string) ([]byte, error) {
+func (s *Data) GetAll(_ context.Context, _ int, host string) ([]*entity.URL, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	userUrls := make(map[string]string)
-	for alias, urlData := range s.data {
+	var userUrls []*entity.URL
+	for alias, url := range s.data {
 		if delInfo, exists := s.del[alias]; !exists || !delInfo.IsDeleted {
-			userUrls[alias] = urlData
+			userUrls = append(userUrls, &entity.URL{
+				Alias: fmt.Sprintf("%s/%s", host, alias),
+				URL:   url,
+			})
 		}
 	}
-	return json.Marshal(userUrls)
+	return userUrls, nil
 }
 
-// Healthcheck checks if a file exists at the specified path.
+// Healthcheck checks if a file exists at the specified path and is accessible for reading and writing.
 func (s *Data) Healthcheck() (bool, error) {
 	filePath := s.cfg.FileStorage
 	_, err := os.Stat(filePath)
+
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, errors.New("file does not exist")
+			file, createErr := os.Create(filePath)
+			if createErr != nil {
+				s.log.Error("Healthcheck: unable to create file", zap.Error(createErr))
+				return false, errors.New("file does not exist and cannot be created")
+			}
+			file.Close()
+			s.log.Info("Healthcheck: file created successfully", zap.String("file", filePath))
+			return true, nil
 		}
+		s.log.Error("Healthcheck: error stating file", zap.Error(err))
 		return false, err
 	}
+
+	file, openErr := os.OpenFile(filePath, os.O_RDWR, 0666)
+	if openErr != nil {
+		s.log.Error("Healthcheck: unable to open file", zap.Error(openErr))
+		return false, openErr
+	}
+	file.Close()
+
+	s.log.Info("Healthcheck: file is accessible", zap.String("file", filePath))
 	return true, nil
 }
 
 // Del marks URLs as deleted in the in-memory storage.
-func (s *Data) Del(userID int, aliases []string) error {
+func (s *Data) Del(_ context.Context, userID int, aliases []string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -247,12 +274,28 @@ func Load(filename string, db *Data) error {
 	return nil
 }
 
-// GetStats is not implemented in memory storage.
+// GetStats retrieves statistics on the number of URLs and users.
 func (s *Data) GetStats(_ context.Context) ([]byte, error) {
-	readyStats, err := json.Marshal(stats{
-		URLs:  len(s.data),
-		Users: 0,
-	})
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	urlCount := len(s.data)
+	userCount := 0
+	userMap := make(map[string]struct{})
+
+	for _, delInfo := range s.del {
+		if !delInfo.IsDeleted {
+			userMap[delInfo.UserID] = struct{}{}
+		}
+	}
+	userCount = len(userMap)
+
+	stats := models.Stats{
+		URLs:  urlCount,
+		Users: userCount,
+	}
+
+	readyStats, err := json.Marshal(stats)
 	if err != nil {
 		return nil, err
 	}

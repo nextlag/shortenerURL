@@ -1,8 +1,9 @@
 {
   "host": ":8191",
   "base_url": "http://localhost:8191",
-  "file_storage": "file.json",
-  "dsn": "",
+  "dsn": "postgres://postgres:Xer_0101@localhost/shorten?sslmode=disable",
+  "file_storage": "",
+  "storage_type": "pg",
   "enable_https": false,
   "trusted_subnet": "10.0.0.1/24",
   "enable_grpc": false,

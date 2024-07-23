@@ -12,23 +12,26 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
 	http2 "github.com/nextlag/shortenerURL/internal/controllers/http"
+	"github.com/nextlag/shortenerURL/internal/entity"
 )
 
 type mockUsecase struct{}
 
-func (m *mockUsecase) DoGet(ctx context.Context, alias string) (string, bool, error) {
-	return "http://example.com", false, nil
+func (m *mockUsecase) DoGet(ctx context.Context, alias string) (*entity.URL, error) {
+	return &entity.URL{URL: "http://example.com", Alias: alias, IsDeleted: false}, nil
 }
 
-func (m *mockUsecase) DoGetAll(ctx context.Context, userID int, url string) ([]byte, error) {
-	return []byte(`[{"short_url": "http://example.com/short1", "original_url": "http://example.com/original1"}]`), nil
+func (m *mockUsecase) DoGetAll(ctx context.Context, userID int, url string) ([]*entity.URL, error) {
+	return []*entity.URL{
+		{Alias: "short1", URL: "http://example.com/original1"},
+	}, nil
 }
 
 func (m *mockUsecase) DoPut(ctx context.Context, url string, alias string, uuid int) (string, error) {
 	return "shortened_url", nil
 }
 
-func (m *mockUsecase) DoDel(id int, aliases []string) {}
+func (m *mockUsecase) DoDel(ctx context.Context, id int, aliases []string) {}
 
 func (m *mockUsecase) DoHealthcheck() (bool, error) {
 	return true, nil
@@ -38,9 +41,7 @@ func (m *mockUsecase) DoGetStats(ctx context.Context) ([]byte, error) {
 	return nil, nil
 }
 
-// ExampleController_HealthCheck demonstrates how to use the HealthCheck endpoint.
 func ExampleController_HealthCheck() {
-	// Setup
 	log := zap.NewNop()
 	cfg := configuration.Config{}
 	uc := &mockUsecase{}
@@ -50,7 +51,6 @@ func ExampleController_HealthCheck() {
 	r := chi.NewRouter()
 	ctrl.Controller(r)
 
-	// Example request to the /ping endpoint
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -58,17 +58,13 @@ func ExampleController_HealthCheck() {
 	res := w.Result()
 	defer res.Body.Close()
 
-	// Output response status
 	if res.StatusCode == http.StatusOK {
 		println("Healthcheck OK")
 	} else {
 		println("Healthcheck Failed")
 	}
-
-	// Output:
 }
 
-// TestController_HealthCheck tests the HealthCheck endpoint of the Controller.
 func TestController_HealthCheck(t *testing.T) {
 	log := zap.NewNop()
 	cfg := configuration.Config{}
@@ -78,17 +74,14 @@ func TestController_HealthCheck(t *testing.T) {
 	ctrl := http2.New(uc, &wg, &cfg, log)
 	r := chi.NewRouter()
 
-	// Handle not found routes
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "404 not found", http.StatusNotFound)
 	})
 
-	// Handle method not allowed
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "400 bad request", http.StatusBadRequest)
 	})
 
-	// Setup routes with the controller
 	ctrl.Controller(r)
 
 	tests := []struct {

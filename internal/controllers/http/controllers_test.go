@@ -15,8 +15,10 @@ import (
 
 	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/controllers/http/mocks"
+	"github.com/nextlag/shortenerURL/internal/entity"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/usecase"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository"
 )
 
 func Ctrl(t *testing.T) (*Controller, *mocks.MockUseCase, *usecase.UseCase) {
@@ -31,8 +33,8 @@ func Ctrl(t *testing.T) (*Controller, *mocks.MockUseCase, *usecase.UseCase) {
 	defer mockCtl.Finish()
 
 	db := mocks.NewMockUseCase(mockCtl)
-	repo := usecase.NewMockRepository(mockCtl)
-	uc := usecase.New(repo, l, cfg)
+	repo := repository.NewMockRepository(mockCtl)
+	uc := usecase.New(repo)
 	wg := sync.WaitGroup{}
 	controller := New(db, &wg, cfg, l)
 	return controller, db, uc
@@ -58,7 +60,7 @@ func TestController(t *testing.T) {
 			target:         "/testid",
 			expectedStatus: http.StatusTemporaryRedirect,
 			mockSetup: func() {
-				db.EXPECT().DoGet(gomock.Any(), "testid").Return("http://example.com", false, nil).Times(1)
+				db.EXPECT().DoGet(gomock.Any(), "testid").Return(&entity.URL{URL: "http://example.com", Alias: "testid", IsDeleted: false}, nil).Times(1)
 			},
 		},
 		{

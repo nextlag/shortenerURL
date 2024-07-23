@@ -1,6 +1,4 @@
-// Package usecase provides use cases for managing short URLs,
-// including file-based storage for reading and writing URL records.
-package usecase
+package inmemory
 
 import (
 	"encoding/json"

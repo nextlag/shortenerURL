@@ -19,20 +19,32 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	Links_Get_FullMethodName    = "/proto.Links/Get"
-	Links_Save_FullMethodName   = "/proto.Links/Save"
-	Links_GetAll_FullMethodName = "/proto.Links/GetAll"
-	Links_Del_FullMethodName    = "/proto.Links/Del"
+	Links_Get_FullMethodName          = "/proto.Links/Get"
+	Links_Save_FullMethodName         = "/proto.Links/Save"
+	Links_GetAll_FullMethodName       = "/proto.Links/GetAll"
+	Links_Del_FullMethodName          = "/proto.Links/Del"
+	Links_Healthcheck_FullMethodName  = "/proto.Links/Healthcheck"
+	Links_BatchShorten_FullMethodName = "/proto.Links/BatchShorten"
 )
 
 // LinksClient is the client API for Links service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// gRPC service definition for managing links.
 type LinksClient interface {
+	// RPC to get the long link from a shortened link.
 	Get(ctx context.Context, in *ShortenLink, opts ...grpc.CallOption) (*ShortenLinkResponse, error)
+	// RPC to save a long link and get its shortened version.
 	Save(ctx context.Context, in *LongLink, opts ...grpc.CallOption) (*LongLinkResponse, error)
+	// RPC to get all shortened links for a user.
 	GetAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListShortenLinks, error)
+	// RPC to delete specified shortened links.
 	Del(ctx context.Context, in *ListShortenLinksToDelete, opts ...grpc.CallOption) (*Empty, error)
+	// RPC to check the health of the service.
+	Healthcheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthcheckResponse, error)
+	// RPC to process multiple URLs in a batch and return their shortened versions.
+	BatchShorten(ctx context.Context, in *BatchShortenRequest, opts ...grpc.CallOption) (*BatchShortenResponse, error)
 }
 
 type linksClient struct {
@@ -83,14 +95,44 @@ func (c *linksClient) Del(ctx context.Context, in *ListShortenLinksToDelete, opt
 	return out, nil
 }
 
+func (c *linksClient) Healthcheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HealthcheckResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HealthcheckResponse)
+	err := c.cc.Invoke(ctx, Links_Healthcheck_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linksClient) BatchShorten(ctx context.Context, in *BatchShortenRequest, opts ...grpc.CallOption) (*BatchShortenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchShortenResponse)
+	err := c.cc.Invoke(ctx, Links_BatchShorten_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LinksServer is the server API for Links service.
 // All implementations must embed UnimplementedLinksServer
 // for forward compatibility
+//
+// gRPC service definition for managing links.
 type LinksServer interface {
+	// RPC to get the long link from a shortened link.
 	Get(context.Context, *ShortenLink) (*ShortenLinkResponse, error)
+	// RPC to save a long link and get its shortened version.
 	Save(context.Context, *LongLink) (*LongLinkResponse, error)
+	// RPC to get all shortened links for a user.
 	GetAll(context.Context, *Empty) (*ListShortenLinks, error)
+	// RPC to delete specified shortened links.
 	Del(context.Context, *ListShortenLinksToDelete) (*Empty, error)
+	// RPC to check the health of the service.
+	Healthcheck(context.Context, *Empty) (*HealthcheckResponse, error)
+	// RPC to process multiple URLs in a batch and return their shortened versions.
+	BatchShorten(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error)
 	mustEmbedUnimplementedLinksServer()
 }
 
@@ -109,6 +151,12 @@ func (UnimplementedLinksServer) GetAll(context.Context, *Empty) (*ListShortenLin
 }
 func (UnimplementedLinksServer) Del(context.Context, *ListShortenLinksToDelete) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Del not implemented")
+}
+func (UnimplementedLinksServer) Healthcheck(context.Context, *Empty) (*HealthcheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Healthcheck not implemented")
+}
+func (UnimplementedLinksServer) BatchShorten(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchShorten not implemented")
 }
 func (UnimplementedLinksServer) mustEmbedUnimplementedLinksServer() {}
 
@@ -195,6 +243,42 @@ func _Links_Del_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Links_Healthcheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinksServer).Healthcheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Links_Healthcheck_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinksServer).Healthcheck(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Links_BatchShorten_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchShortenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinksServer).BatchShorten(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Links_BatchShorten_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinksServer).BatchShorten(ctx, req.(*BatchShortenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Links_ServiceDesc is the grpc.ServiceDesc for Links service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -217,6 +301,14 @@ var Links_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Del",
 			Handler:    _Links_Del_Handler,
+		},
+		{
+			MethodName: "Healthcheck",
+			Handler:    _Links_Healthcheck_Handler,
+		},
+		{
+			MethodName: "BatchShorten",
+			Handler:    _Links_BatchShorten_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

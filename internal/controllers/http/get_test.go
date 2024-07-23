@@ -8,7 +8,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"github.com/nextlag/shortenerURL/internal/entity"
 )
 
 func TestGetHandler(t *testing.T) {
@@ -27,36 +28,32 @@ func TestGetHandler(t *testing.T) {
 		{
 			Name:             "Invalid ID",
 			RequestPath:      "/nonexistent",
-			ExpectedStatus:   http.StatusBadRequest,
+			ExpectedStatus:   http.StatusNotFound,
 			ExpectedLocation: "",
-		}}
+		},
+	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			ctrl, db, _ := Ctrl(t)
 
 			if test.Name == "Valid ID" {
-				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return("", false, nil).Times(1)
+				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return(&entity.URL{URL: "http://example.com", Alias: "example", IsDeleted: false}, nil).Times(1)
 			} else {
-				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return("", false, errors.New("error")).Times(1)
+				db.EXPECT().DoGet(gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).Times(1)
 			}
-			// Создаем фейковый запрос
+
 			r := httptest.NewRequest("GET", test.RequestPath, nil)
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(ctrl.Get)
 			handler(w, r)
 
-			// Создаем и вызываем handler для маршрута
 			resp := w.Result()
+			defer resp.Body.Close()
 
-			// Проверяем статус кода
 			assert.Equal(t, test.ExpectedStatus, resp.StatusCode)
-			// Получаем значение Location
 			location := resp.Header.Get("Location")
-			assert.Empty(t, location)
-
-			// Закрываем тело HTTP-ответа
-			require.NoError(t, resp.Body.Close())
+			assert.Equal(t, test.ExpectedLocation, location)
 		})
 	}
 }
