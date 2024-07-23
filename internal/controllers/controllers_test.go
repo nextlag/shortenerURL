@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/controllers/mocks"
 	"github.com/nextlag/shortenerURL/internal/middleware/logger"
 	"github.com/nextlag/shortenerURL/internal/usecase"
@@ -20,7 +21,11 @@ import (
 func Ctrl(t *testing.T) (*Controller, *mocks.MockUseCase, *usecase.UseCase) {
 	t.Helper()
 	l := logger.SetupLogger()
-	var cfg config.HTTPServer
+	cfg, err := configuration.Load()
+	if err != nil {
+		log.Fatal("Failed to get configuration")
+		return nil, nil, nil
+	}
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 

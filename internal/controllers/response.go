@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 )
 
 // Response represents a JSON response with a field for error messages and the result as a shortened URL.
@@ -44,9 +44,9 @@ func ValidationError(errs validator.ValidationErrors) Response {
 }
 
 // ResponseConflict handles a conflict request and returns the existing shortened URL.
-func ResponseConflict(w http.ResponseWriter, alias string) {
+func ResponseConflict(w http.ResponseWriter, alias string, cfg *configuration.Config) {
 	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
+		Result: fmt.Sprintf("%s/%s", cfg.BaseURL, alias),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -59,9 +59,9 @@ func ResponseConflict(w http.ResponseWriter, alias string) {
 }
 
 // ResponseCreated sends a successful response with the shortened URL in JSON format.
-func ResponseCreated(w http.ResponseWriter, alias string) {
+func ResponseCreated(w http.ResponseWriter, alias string, cfg *configuration.Config) {
 	response := Response{
-		Result: fmt.Sprintf("%s/%s", config.Cfg.BaseURL, alias),
+		Result: fmt.Sprintf("%s/%s", cfg.BaseURL, alias),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

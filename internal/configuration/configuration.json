@@ -1,0 +1,7 @@
+{
+  "host": ":8191",
+  "base_url": "http://localhost:8191",
+  "file_storage": "",
+  "dsn": "",
+  "enable_https": false
+}

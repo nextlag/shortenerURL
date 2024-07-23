@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"github.com/nextlag/shortenerURL/internal/config"
+	"github.com/nextlag/shortenerURL/internal/configuration"
 	"github.com/nextlag/shortenerURL/internal/controllers"
 )
 
@@ -37,10 +37,10 @@ func (m *mockUsecase) DoHealthcheck() (bool, error) {
 func ExampleController_HealthCheck() {
 	// Setup
 	log := zap.NewNop()
-	cfg := config.HTTPServer{}
+	cfg := configuration.Config{}
 	uc := &mockUsecase{}
 
-	ctrl := controllers.New(uc, log, cfg)
+	ctrl := controllers.New(uc, log, &cfg)
 	r := chi.NewRouter()
 	ctrl.Controller(r)
 
@@ -65,10 +65,10 @@ func ExampleController_HealthCheck() {
 // TestController_HealthCheck tests the HealthCheck endpoint of the Controller.
 func TestController_HealthCheck(t *testing.T) {
 	log := zap.NewNop()
-	cfg := config.HTTPServer{}
+	cfg := configuration.Config{}
 	uc := &mockUsecase{}
 
-	ctrl := controllers.New(uc, log, cfg)
+	ctrl := controllers.New(uc, log, &cfg)
 	r := chi.NewRouter()
 
 	// Handle not found routes
