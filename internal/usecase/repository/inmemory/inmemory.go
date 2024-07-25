@@ -157,7 +157,7 @@ func (s *Data) Put(_ context.Context, url string, alias string, userID int) (str
 	return alias, nil
 }
 
-// save writes a URL record to the specified file.
+// save writes URL record and deletion status to the specified files.
 func save(file, alias, url string, userID int, isDeleted bool) error {
 	uuid := strconv.Itoa(userID)
 	if url != "" {
@@ -167,23 +167,24 @@ func save(file, alias, url string, userID int, isDeleted bool) error {
 		}
 		defer producer.Close()
 		event := NewFileStorage(uuid, alias, url)
-		if err = producer.WriteEvent(event); err != nil {
+		if err = WriteEvent(producer, event); err != nil {
 			return err
 		}
 	}
+
 	producerDel, err := NewProducer(fileDel)
 	if err != nil {
 		return err
 	}
 	defer producerDel.Close()
 	eventDel := NewIsDeleted(uuid, alias, isDeleted)
-	if err := producerDel.WriteEventDel(eventDel); err != nil {
+	if err = WriteEvent(producerDel, eventDel); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Load reads URL records from the specified file and loads them into memory.
+// Load reads URL records and deletion statuses from the specified files and loads them into memory.
 func Load(filename string, db *Data) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, 2)
@@ -202,7 +203,7 @@ func Load(filename string, db *Data) error {
 		delMap := make(map[string]bool)
 
 		for {
-			itemDel, err := consumerDel.ReadEventDel()
+			itemDel, err := ReadEvent[IsDeleted](consumerDel)
 			if err != nil {
 				if err == io.EOF {
 					break
@@ -216,6 +217,8 @@ func Load(filename string, db *Data) error {
 		}
 
 		db.mutex.Lock()
+		defer db.mutex.Unlock()
+
 		for alias := range delMap {
 			if delInfo, exists := db.data[alias]; exists {
 				delInfo.IsDeleted = true
@@ -223,7 +226,6 @@ func Load(filename string, db *Data) error {
 				db.data[alias] = &dataDel{IsDeleted: true}
 			}
 		}
-		db.mutex.Unlock()
 	}()
 
 	go func() {
@@ -236,7 +238,7 @@ func Load(filename string, db *Data) error {
 		defer consumer.Close()
 
 		for {
-			item, err := consumer.ReadEvent()
+			item, err := ReadEvent[FileStorage](consumer)
 			if err != nil {
 				if err == io.EOF {
 					break
@@ -259,8 +261,8 @@ func Load(filename string, db *Data) error {
 	wg.Wait()
 	close(errChan)
 
-	if len(errChan) > 0 {
-		return <-errChan
+	if err := <-errChan; err != nil {
+		return err
 	}
 
 	return nil

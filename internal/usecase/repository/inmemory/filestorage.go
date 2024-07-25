@@ -56,13 +56,8 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-// WriteEvent writes a URL record to the file.
-func (p *Producer) WriteEvent(event *FileStorage) error {
-	return p.encoder.Encode(event)
-}
-
-// WriteEventDel writes a deletion status to the file.
-func (p *Producer) WriteEventDel(event *IsDeleted) error {
+// WriteEvent writes a record to the file.
+func WriteEvent[T any](p *Producer, event T) error {
 	return p.encoder.Encode(event)
 }
 
@@ -71,7 +66,7 @@ func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
-// Consumer is responsible for reading URL records from a file.
+// Consumer is responsible for reading records from a file.
 type Consumer struct {
 	file    *os.File
 	decoder *json.Decoder
@@ -90,20 +85,11 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-// ReadEvent reads a URL record from the file.
-func (c *Consumer) ReadEvent() (*FileStorage, error) {
-	event := &FileStorage{}
-	if err := c.decoder.Decode(event); err != nil {
-		return nil, err
-	}
-	return event, nil
-}
-
-// ReadEventDel reads a deletion status from the file.
-func (c *Consumer) ReadEventDel() (*IsDeleted, error) {
-	event := &IsDeleted{}
-	if err := c.decoder.Decode(event); err != nil {
-		return nil, err
+// ReadEvent reads a record from the file.
+func ReadEvent[T any](c *Consumer) (T, error) {
+	var event T
+	if err := c.decoder.Decode(&event); err != nil {
+		return event, err
 	}
 	return event, nil
 }

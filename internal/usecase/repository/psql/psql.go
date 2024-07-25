@@ -37,7 +37,7 @@ func New(cfg *configuration.Config, log *zap.Logger) (*Repo, error) {
 		return nil, fmt.Errorf("DB connection error: %w", err)
 	}
 
-	if err := DB.PingContext(ctx); err != nil {
+	if err = DB.PingContext(ctx); err != nil {
 		log.Error("error when checking database connection", zap.Error(err))
 		return nil, fmt.Errorf("DB ping error: %w", err)
 	}

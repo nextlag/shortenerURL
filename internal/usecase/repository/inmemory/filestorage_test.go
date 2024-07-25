@@ -20,19 +20,15 @@ func TestNewFileStorage(t *testing.T) {
 
 func TestProducer_WriteEvent(t *testing.T) {
 	fileName := "test_file_storage.json"
-	defer os.Remove(fileName) // Clean up the file after the test
+	defer os.Remove(fileName)
 
 	producer, err := inmemory.NewProducer(fileName)
 	assert.NoError(t, err)
 	defer producer.Close()
 
-	event := &inmemory.FileStorage{
-		UUID:  "243",
-		Alias: "alias",
-		URL:   "http://example.com",
-	}
+	event := inmemory.NewFileStorage("243", "alias", "http://example.com")
 
-	err = producer.WriteEvent(event)
+	err = inmemory.WriteEvent(producer, event)
 	assert.NoError(t, err)
 
 	// Verify the file content
@@ -44,21 +40,17 @@ func TestProducer_WriteEvent(t *testing.T) {
 	assert.NoError(t, err)
 	defer consumer.Close()
 
-	readEvent, err := consumer.ReadEvent()
+	readEvent, err := inmemory.ReadEvent[inmemory.FileStorage](consumer)
 	assert.NoError(t, err)
-	assert.Equal(t, event, readEvent)
+
+	assert.Equal(t, *event, readEvent)
 }
 
 func TestConsumer_ReadEvent(t *testing.T) {
 	fileName := "test_file_storage.json"
-	defer os.Remove(fileName) // Clean up the file after the test
+	defer os.Remove(fileName)
 
-	// Write a test event to the file
-	event := &inmemory.FileStorage{
-		UUID:  "12345",
-		Alias: "alias",
-		URL:   "http://example.com",
-	}
+	event := inmemory.NewFileStorage("12345", "alias", "http://example.com")
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	assert.NoError(t, err)
@@ -68,19 +60,18 @@ func TestConsumer_ReadEvent(t *testing.T) {
 	assert.NoError(t, err)
 	file.Close()
 
-	// Test reading the event
 	consumer, err := inmemory.NewConsumer(fileName)
 	assert.NoError(t, err)
 	defer consumer.Close()
 
-	readEvent, err := consumer.ReadEvent()
+	readEvent, err := inmemory.ReadEvent[inmemory.FileStorage](consumer)
 	assert.NoError(t, err)
-	assert.Equal(t, event, readEvent)
+	assert.Equal(t, *event, readEvent)
 }
 
 func TestProducer_Close(t *testing.T) {
 	fileName := "test_file_storage.json"
-	defer os.Remove(fileName) // Clean up the file after the test
+	defer os.Remove(fileName)
 
 	producer, err := inmemory.NewProducer(fileName)
 	assert.NoError(t, err)
@@ -91,7 +82,7 @@ func TestProducer_Close(t *testing.T) {
 
 func TestConsumer_Close(t *testing.T) {
 	fileName := "test_file_storage.json"
-	defer os.Remove(fileName) // Clean up the file after the test
+	defer os.Remove(fileName)
 
 	consumer, err := inmemory.NewConsumer(fileName)
 	assert.NoError(t, err)
