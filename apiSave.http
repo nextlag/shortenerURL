@@ -57,7 +57,7 @@ Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9Jql
 
 ### GET all
 # @no-redirect
-GET http://localhost:8080/api/user/urls
+GET https://localhost:8080/api/user/urls
 Cookie: UserID=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo5MjR9.3-u9JqljBCsqfT_yrPfIpwwvKtoryZYuLB_UouDB5TM
 
 ### DELETE
