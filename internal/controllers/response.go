@@ -15,7 +15,7 @@ import (
 // Response represents a JSON response with a field for error messages and the result as a shortened URL.
 type Response struct {
 	Error  string `json:"error,omitempty"`
-	Result string `json:"result"` // Result - shortened URL.
+	Result string `json:"result,omitempty"` // Result - shortened URL.
 }
 
 // Error creates a JSON response with the given error message.
@@ -25,8 +25,8 @@ func Error(msg string) Response {
 	}
 }
 
-// ValidationError creates a JSON response with validation error messages.
-func ValidationError(errs validator.ValidationErrors) Response {
+// validationError creates a JSON response with validation error messages.
+func validationError(errs validator.ValidationErrors) Response {
 	var errMsgs []string
 
 	for _, err := range errs {
@@ -43,8 +43,8 @@ func ValidationError(errs validator.ValidationErrors) Response {
 	}
 }
 
-// ResponseConflict handles a conflict request and returns the existing shortened URL.
-func ResponseConflict(w http.ResponseWriter, alias string, cfg *configuration.Config) {
+// responseConflict handles a conflict request and returns the existing shortened URL.
+func responseConflict(w http.ResponseWriter, alias string, cfg *configuration.Config) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", cfg.BaseURL, alias),
 	}
@@ -58,8 +58,8 @@ func ResponseConflict(w http.ResponseWriter, alias string, cfg *configuration.Co
 	}
 }
 
-// ResponseCreated sends a successful response with the shortened URL in JSON format.
-func ResponseCreated(w http.ResponseWriter, alias string, cfg *configuration.Config) {
+// responseCreated sends a successful response with the shortened URL in JSON format.
+func responseCreated(w http.ResponseWriter, alias string, cfg *configuration.Config) {
 	response := Response{
 		Result: fmt.Sprintf("%s/%s", cfg.BaseURL, alias),
 	}

@@ -69,11 +69,12 @@ func New(log *zap.Logger, cfg *configuration.Config) func(next http.Handler) htt
 // SetupLogger sets up and returns a new zap logger with development configuration.
 func SetupLogger() *zap.Logger {
 	// Configure the logger
-	cfg := zap.NewDevelopmentConfig()
-	cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel) // Set log level
+	cfgLogger := zap.NewDevelopmentConfig()
+	cfgLogger.Level = zap.NewAtomicLevelAt(zap.DebugLevel) // Set log level
+	cfgLogger.DisableStacktrace = true
 
 	// Create the logger
-	logger, err := cfg.Build()
+	logger, err := cfgLogger.Build()
 	if err != nil {
 		panic(err)
 	}
