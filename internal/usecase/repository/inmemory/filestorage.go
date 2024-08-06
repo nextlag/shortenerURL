@@ -1,6 +1,4 @@
-// Package usecase provides use cases for managing short URLs,
-// including file-based storage for reading and writing URL records.
-package usecase
+package inmemory
 
 import (
 	"encoding/json"
@@ -15,11 +13,27 @@ type FileStorage struct {
 }
 
 // NewFileStorage creates a new instance of FileStorage.
-func NewFileStorage(uuid, alias, url string) *FileStorage {
+func NewFileStorage(userID, alias, url string) *FileStorage {
 	return &FileStorage{
-		UUID:  uuid,
+		UUID:  userID,
 		Alias: alias,
 		URL:   url,
+	}
+}
+
+// IsDeleted represents a deletion status of a URL record.
+type IsDeleted struct {
+	UserID    string `json:"uuid"`
+	Alias     string `json:"alias"`
+	StatusDel bool   `json:"status_del"`
+}
+
+// NewIsDeleted creates a new instance of IsDeleted.
+func NewIsDeleted(userID, alias string, del bool) *IsDeleted {
+	return &IsDeleted{
+		UserID:    userID,
+		Alias:     alias,
+		StatusDel: del,
 	}
 }
 
@@ -42,8 +56,8 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-// WriteEvent writes a URL record to the file.
-func (p *Producer) WriteEvent(event *FileStorage) error {
+// WriteEvent writes a record to the file.
+func WriteEvent[T any](p *Producer, event T) error {
 	return p.encoder.Encode(event)
 }
 
@@ -52,7 +66,7 @@ func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
-// Consumer is responsible for reading URL records from a file.
+// Consumer is responsible for reading records from a file.
 type Consumer struct {
 	file    *os.File
 	decoder *json.Decoder
@@ -71,11 +85,11 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	}, nil
 }
 
-// ReadEvent reads a URL record from the file.
-func (c *Consumer) ReadEvent() (*FileStorage, error) {
-	event := &FileStorage{}
-	if err := c.decoder.Decode(event); err != nil {
-		return nil, err
+// ReadEvent reads a record from the file.
+func ReadEvent[T any](c *Consumer) (T, error) {
+	var event T
+	if err := c.decoder.Decode(&event); err != nil {
+		return event, err
 	}
 	return event, nil
 }

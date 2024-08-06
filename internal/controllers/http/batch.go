@@ -1,5 +1,5 @@
 // Package controllers provides the handlers for managing URL shortening operations.
-package controllers
+package http
 
 import (
 	"encoding/json"

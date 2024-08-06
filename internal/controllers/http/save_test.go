@@ -1,4 +1,4 @@
-package controllers
+package http
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nextlag/shortenerURL/internal/usecase"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository/psql"
 )
 
 func TestSaveHandler(t *testing.T) {
@@ -38,7 +38,7 @@ func TestSaveHandler(t *testing.T) {
 			case "Valid URL":
 				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("newAlias", nil).Times(1)
 			case "Duplicate URL":
-				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("duplicateAlias", usecase.ErrConflict).Times(1)
+				db.EXPECT().DoPut(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("duplicateAlias", psql.ErrConflict).Times(1)
 			case "Invalid Request Body":
 				// No need to mock db.DoPut for invalid request body case
 			}

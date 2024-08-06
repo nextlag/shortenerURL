@@ -1,5 +1,5 @@
 // Package controllers provides the handlers for managing URL shortening operations.
-package controllers
+package http
 
 import (
 	"net/http"
@@ -14,9 +14,7 @@ import (
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		// Perform health check
 		ok, err := c.uc.DoHealthcheck()
-
 		if err != nil {
 			c.log.Error("Ошибка при выполнении healthcheck", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
@@ -25,6 +23,7 @@ func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 		if ok {
 			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("success!"))
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

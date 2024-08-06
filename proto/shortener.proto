@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/nextlag/proto";
+
+// Message for retrieving a shortened link.
+message ShortenLink {
+  string shortenLink = 1; // The shortened link.
+}
+
+// Message for saving a long link.
+message LongLink {
+  string longLink = 1; // The long link to be shortened.
+}
+
+// Message for representing a user link with both long and short links.
+message UserLink {
+  string longLink = 1; // The long link.
+  string shortLink = 2; // The corresponding shortened link.
+}
+
+// Message for retrieving all user links.
+message ListShortenLinks {
+  repeated UserLink userLinks = 1; // List of user links with their long and short versions.
+}
+
+// Message for deleting shortened links.
+message ListShortenLinksToDelete {
+  repeated string userLinks = 1; // List of shortened links to be deleted.
+}
+
+// Message for responding to a request for a shortened link.
+message ShortenLinkResponse {
+  string longLink = 1; // The long link corresponding to the shortened link.
+  bool deleteStatus = 2; // Status indicating if the link is marked for deletion.
+}
+
+// Message for responding to a request for a long link.
+message LongLinkResponse {
+  string shortenLink = 1; // The shortened link corresponding to the long link.
+}
+
+// Message for checking the health of the service.
+message HealthcheckResponse {
+  bool isHealthy = 1; // Indicator of the service's health status.
+}
+
+// Message for batch shortening request.
+message BatchShortenRequest {
+  repeated BatchShortenItem items = 1; // List of items to be processed in the batch.
+}
+
+// Item within a batch shorten request.
+message BatchShortenItem {
+  string correlationId = 1; // Correlation ID for tracking the request.
+  string originalUrl = 2; // The URL to be shortened.
+}
+
+// Message for batch shortening response.
+message BatchShortenResponse {
+  repeated BatchShortenResponseItem items = 1; // List of items with responses for the batch.
+}
+
+// Item within a batch shorten response.
+message BatchShortenResponseItem {
+  string correlationId = 1; // Correlation ID for tracking the request.
+  string shortUrl = 2; // The shortened URL.
+}
+
+// Empty message for methods that do not require input or output.
+message Empty {}
+
+// gRPC service definition for managing links.
+service Links {
+  // RPC to get the long link from a shortened link.
+  rpc Get(ShortenLink) returns (ShortenLinkResponse);
+
+  // RPC to save a long link and get its shortened version.
+  rpc Save(LongLink) returns (LongLinkResponse);
+
+  // RPC to get all shortened links for a user.
+  rpc GetAll(Empty) returns (ListShortenLinks);
+
+  // RPC to delete specified shortened links.
+  rpc Del(ListShortenLinksToDelete) returns (Empty);
+
+  // RPC to check the health of the service.
+  rpc Healthcheck(Empty) returns (HealthcheckResponse);
+
+  // RPC to process multiple URLs in a batch and return their shortened versions.
+  rpc BatchShorten(BatchShortenRequest) returns (BatchShortenResponse);
+}

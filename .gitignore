@@ -26,3 +26,7 @@ vendor/
 .vscode
 
 .env
+
+tmp
+
+cmd/shortener/docker

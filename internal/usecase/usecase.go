@@ -4,46 +4,29 @@ package usecase
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 
-	"go.uber.org/zap"
-
-	"github.com/nextlag/shortenerURL/internal/configuration"
+	"github.com/nextlag/shortenerURL/internal/entity"
+	"github.com/nextlag/shortenerURL/internal/usecase/repository"
 )
-
-// Repository represents the interface for data storage.
-//
-//go:generate mockgen -destination=mocks.go -package=usecase github.com/nextlag/shortenerURL/internal/usecase Repository
-type Repository interface {
-	Get(ctx context.Context, alias string) (string, bool, error)
-	GetAll(ctx context.Context, userID int, url string) ([]byte, error)
-	Put(ctx context.Context, url string, alias string, uuid int) (string, error)
-	Del(id int, aliases []string) error
-	Healthcheck() (bool, error)
-	GetStats(ctx context.Context) ([]byte, error)
-}
 
 // UseCase provides the use cases for interacting with the repository.
 type UseCase struct {
-	repo Repository            // interface for the repository
-	log  *zap.Logger           // logger instance
-	cfg  *configuration.Config // configuration for the HTTP server
-	DB   *sql.DB               // database connection
+	repo repository.Repository // interface for the repository
 }
 
 // New creates a new instance of UseCase.
-func New(r Repository, log *zap.Logger, cfg *configuration.Config) *UseCase {
-	var db *sql.DB
-	return &UseCase{repo: r, log: log, cfg: cfg, DB: db}
+func New(r repository.Repository) *UseCase {
+	return &UseCase{repo: r}
 }
 
 // DoGet retrieves a URL by its alias.
-func (uc *UseCase) DoGet(ctx context.Context, alias string) (string, bool, error) {
+func (uc *UseCase) DoGet(ctx context.Context, alias string) (*entity.URL, error) {
 	return uc.repo.Get(ctx, alias)
 }
 
 // DoGetAll retrieves all URLs for a specific user.
-func (uc *UseCase) DoGetAll(ctx context.Context, userID int, url string) ([]byte, error) {
+func (uc *UseCase) DoGetAll(ctx context.Context, userID int, url string) ([]*entity.URL, error) {
 	return uc.repo.GetAll(ctx, userID, url)
 }
 
@@ -53,10 +36,10 @@ func (uc *UseCase) DoPut(ctx context.Context, url string, alias string, uuid int
 }
 
 // DoDel deletes URLs for a user with the specified ID.
-func (uc *UseCase) DoDel(id int, aliases []string) {
-	err := uc.repo.Del(id, aliases)
+func (uc *UseCase) DoDel(ctx context.Context, id int, aliases []string) {
+	err := uc.repo.Del(ctx, id, aliases)
 	if err != nil {
-		uc.log.Error("Error deleting user URL", zap.Error(err))
+		_ = fmt.Errorf("error deleting user URL: %w", err)
 	}
 }
 
